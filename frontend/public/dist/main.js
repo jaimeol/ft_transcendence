@@ -12,9 +12,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const paddleWidth = 10;
     const paddleHeight = 120;
     const ballRadius = 10;
-    const INITIAL_BALL_SPEED = 12;
-    const MAX_BALL_SPEED = 20;
-    const paddleSpeed = 10;
+    const INITIAL_BALL_SPEED = 5;
+    const MAX_BALL_SPEED = 10;
+    const paddleSpeed = 5;
     const keys = {};
     let leftPaddleY = (canvas.height - paddleHeight) / 2;
     let rightPaddleY = (canvas.height - paddleHeight) / 2;
@@ -75,6 +75,74 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.font = '40px Arial';
             ctx.fillText('Press Space to Start', canvas.width / 2, canvas.height / 2 - 40);
         }
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAI = urlParams.get('mode') === 'ai';
+    if (isAI) {
+        let aiPressedKey;
+        function simulateKeyPress(key) {
+            const event = new KeyboardEvent('keydown', {
+                key: key,
+                bubbles: true,
+                cancelable: true
+            });
+            window.dispatchEvent(event);
+        }
+        function simulateKeyRelease(key) {
+            const event = new KeyboardEvent('keyup', {
+                key: key,
+                bubbles: true,
+                cancelable: true,
+            });
+            window.dispatchEvent(event);
+        }
+        function predictballY() {
+            let x = ballX;
+            let y = ballY;
+            let dx = ballSpeedX;
+            let dy = ballSpeedY;
+            while (x < canvas.width - 20) {
+                x += dx;
+                y += dy;
+                // rebote vertical
+                if (y - ballRadius < 0 || y + ballRadius > canvas.height) {
+                    dy *= -1;
+                    // corregir overflow fuera de canvas
+                    y = Math.max(ballRadius, Math.min(canvas.height - ballRadius, y));
+                }
+            }
+            return y;
+        }
+        function updateAI() {
+            if (!gameRunning)
+                return;
+            // Solo actuar si la pelota viene hacia la derecha
+            if (ballSpeedX <= 0) {
+                // La pelota va hacia la izquierda, no hacemos nada
+                if (aiPressedKey) {
+                    simulateKeyRelease(aiPressedKey);
+                    aiPressedKey = null;
+                }
+                return;
+            }
+            const predictedY = predictballY();
+            const paddleCenter = rightPaddleY + paddleHeight / 2;
+            let keyToPress = null;
+            if (predictedY < paddleCenter - 20) {
+                keyToPress = 'ArrowUp';
+            }
+            else if (predictedY > paddleCenter + 20) {
+                keyToPress = 'ArrowDown';
+            }
+            if (keyToPress !== aiPressedKey) {
+                if (aiPressedKey)
+                    simulateKeyRelease(aiPressedKey);
+                if (keyToPress)
+                    simulateKeyPress(keyToPress);
+                aiPressedKey = keyToPress;
+            }
+        }
+        setInterval(updateAI, 1000);
     }
     function update() {
         if (!gameRunning)
