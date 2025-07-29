@@ -12,8 +12,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const paddleWidth = 10;
     const paddleHeight = 120;
     const ballRadius = 10;
-    const INITIAL_BALL_SPEED = 5;
-    const MAX_BALL_SPEED = 10;
+    const INITIAL_BALL_SPEED = 8;
+    const MAX_BALL_SPEED = 15;
     const paddleSpeed = 5;
     const keys = {};
     let leftPaddleY = (canvas.height - paddleHeight) / 2;
@@ -27,6 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
     let gameRunning = false;
     let gameOver = false;
     window.addEventListener('keydown', (e) => {
+        if (isAI && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.isTrusted)
+            return;
         keys[e.key] = true;
         if (e.key === ' ') {
             if (!gameRunning && !gameOver) {
@@ -44,6 +46,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
     window.addEventListener('keyup', (e) => {
+        if (isAI && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.isTrusted)
+            return;
         keys[e.key] = false;
     });
     function drawRect(x, y, w, h, color, ctx) {
@@ -79,35 +83,41 @@ window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const isAI = urlParams.get('mode') === 'ai';
     if (isAI) {
-        let aiPressedKey;
+        keys['ArrowUp'] = false;
+        keys['ArrowDown'] = false;
+        let aiPressedKey = null;
         function simulateKeyPress(key) {
-            const event = new KeyboardEvent('keydown', {
-                key: key,
-                bubbles: true,
-                cancelable: true
-            });
-            window.dispatchEvent(event);
+            if (!keys[key]) {
+                const event = new KeyboardEvent('keydown', {
+                    key,
+                    bubbles: true,
+                    cancelable: true,
+                });
+                window.dispatchEvent(event);
+            }
         }
         function simulateKeyRelease(key) {
-            const event = new KeyboardEvent('keyup', {
-                key: key,
-                bubbles: true,
-                cancelable: true,
-            });
-            window.dispatchEvent(event);
+            if (keys[key]) {
+                const event = new KeyboardEvent('keyup', {
+                    key,
+                    bubbles: true,
+                    cancelable: true,
+                });
+                window.dispatchEvent(event);
+            }
         }
         function predictballY() {
             let x = ballX;
             let y = ballY;
             let dx = ballSpeedX;
             let dy = ballSpeedY;
+            if (dx <= 0)
+                return rightPaddleY + paddleHeight / 2;
             while (x < canvas.width - 20) {
                 x += dx;
                 y += dy;
-                // rebote vertical
                 if (y - ballRadius < 0 || y + ballRadius > canvas.height) {
                     dy *= -1;
-                    // corregir overflow fuera de canvas
                     y = Math.max(ballRadius, Math.min(canvas.height - ballRadius, y));
                 }
             }
@@ -116,9 +126,8 @@ window.addEventListener('DOMContentLoaded', () => {
         function updateAI() {
             if (!gameRunning)
                 return;
-            // Solo actuar si la pelota viene hacia la derecha
             if (ballSpeedX <= 0) {
-                // La pelota va hacia la izquierda, no hacemos nada
+                // Soltar tecla si no hay que moverse
                 if (aiPressedKey) {
                     simulateKeyRelease(aiPressedKey);
                     aiPressedKey = null;
@@ -127,11 +136,13 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             const predictedY = predictballY();
             const paddleCenter = rightPaddleY + paddleHeight / 2;
+            const diff = predictedY - paddleCenter;
+            const DEAD_ZONE = 30;
             let keyToPress = null;
-            if (predictedY < paddleCenter - 20) {
+            if (diff < -DEAD_ZONE && rightPaddleY > 0) {
                 keyToPress = 'ArrowUp';
             }
-            else if (predictedY > paddleCenter + 20) {
+            else if (diff > DEAD_ZONE && rightPaddleY + paddleHeight < canvas.height) {
                 keyToPress = 'ArrowDown';
             }
             if (keyToPress !== aiPressedKey) {
@@ -142,7 +153,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 aiPressedKey = keyToPress;
             }
         }
-        setInterval(updateAI, 1000);
+        setInterval(updateAI, 100); // Más reactivo: cada 100ms
     }
     function update() {
         if (!gameRunning)

@@ -13,8 +13,8 @@ window.addEventListener('DOMContentLoaded', () => {
 	const paddleWidth = 10;
 	const paddleHeight = 120;
 	const ballRadius = 10;
-	const INITIAL_BALL_SPEED = 5;
-	const MAX_BALL_SPEED = 10;
+	const INITIAL_BALL_SPEED = 8;
+	const MAX_BALL_SPEED = 15;
 	const paddleSpeed = 5;
   
 	const keys: Record<string, boolean> = {};
@@ -32,28 +32,31 @@ window.addEventListener('DOMContentLoaded', () => {
   
 	let gameRunning = false;
 	let gameOver = false;
-  
+
 	window.addEventListener('keydown', (e: KeyboardEvent) => {
-	  keys[e.key] = true;
-  
-	  if (e.key === ' ') {
-		if (!gameRunning && !gameOver) {
-		  gameRunning = true;
-		  resetBall();
-		} else if (gameOver) {
-		  leftScore = 0;
-		  rightScore = 0;
-		  gameOver = false;
-		  gameRunning = false;
-		  resetBall();
-		  updateScore();
+		if (isAI && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.isTrusted) return;
+		keys[e.key] = true;
+
+		if (e.key === ' ') {
+			if (!gameRunning && !gameOver) {
+				gameRunning = true;
+				resetBall();
+			} else if (gameOver) {
+				leftScore = 0;
+				rightScore = 0;
+				gameOver = false;
+				gameRunning = false;
+				resetBall();
+				updateScore();
+			}
 		}
-	  }
 	});
-  
+
 	window.addEventListener('keyup', (e: KeyboardEvent) => {
-	  keys[e.key] = false;
+		if (isAI && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.isTrusted) return;
+		keys[e.key] = false;
 	});
+
   
 	function drawRect(x: number, y: number, w: number, h: number, color: string, ctx: CanvasRenderingContext2D) {
 		ctx.fillStyle = color;
@@ -90,24 +93,31 @@ window.addEventListener('DOMContentLoaded', () => {
 	const isAI = urlParams.get('mode') === 'ai';
 
 	if (isAI) {
-		let aiPressedKey: string | null;
+		keys['ArrowUp'] = false;
+		keys['ArrowDown'] = false;
 
+		let aiPressedKey: string | null = null;
+	
 		function simulateKeyPress(key: string) {
-			const event = new KeyboardEvent('keydown', {
-				key: key,
-				bubbles: true,
-				cancelable: true
-			});
-			window.dispatchEvent(event);
+			if (!keys[key]) {
+				const event = new KeyboardEvent('keydown', {
+					key,
+					bubbles: true,
+					cancelable: true,
+				});
+				window.dispatchEvent(event);
+			}
 		}
 
 		function simulateKeyRelease(key: string) {
-			const event = new KeyboardEvent('keyup', {
-				key: key,
-				bubbles: true,
-				cancelable: true,
-			});
-			window.dispatchEvent(event);
+			if (keys[key]) {
+				const event = new KeyboardEvent('keyup', {
+					key,
+					bubbles: true,
+					cancelable: true,
+				});
+				window.dispatchEvent(event);
+			}
 		}
 
 		function predictballY(): number {
@@ -115,54 +125,55 @@ window.addEventListener('DOMContentLoaded', () => {
 			let y = ballY;
 			let dx = ballSpeedX;
 			let dy = ballSpeedY;
-
+	
+			if (dx <= 0) return rightPaddleY + paddleHeight / 2;
+	
 			while (x < canvas.width - 20) {
 				x += dx;
 				y += dy;
-
-				// rebote vertical
+		
 				if (y - ballRadius < 0 || y + ballRadius > canvas.height) {
 					dy *= -1;
-				// corregir overflow fuera de canvas
 					y = Math.max(ballRadius, Math.min(canvas.height - ballRadius, y));
 				}
 			}
 			return y;
 		}
 
-
 		function updateAI() {
 			if (!gameRunning) return;
-
-		// Solo actuar si la pelota viene hacia la derecha
+	
 			if (ballSpeedX <= 0) {
-			// La pelota va hacia la izquierda, no hacemos nada
+			// Soltar tecla si no hay que moverse
 				if (aiPressedKey) {
 					simulateKeyRelease(aiPressedKey);
-				aiPressedKey = null;
+					aiPressedKey = null;
 				}
 				return;
 			}
-
+	
 			const predictedY = predictballY();
 			const paddleCenter = rightPaddleY + paddleHeight / 2;
-
+			const diff = predictedY - paddleCenter;
+			const DEAD_ZONE = 30;
+	
 			let keyToPress: string | null = null;
-
-			if (predictedY < paddleCenter - 20) {
+			
+			if (diff < -DEAD_ZONE && rightPaddleY > 0) {
 				keyToPress = 'ArrowUp';
-			} else if (predictedY > paddleCenter + 20) {
+			} else if (diff > DEAD_ZONE && rightPaddleY + paddleHeight < canvas.height) {
 				keyToPress = 'ArrowDown';
 			}
-
+	
 			if (keyToPress !== aiPressedKey) {
 				if (aiPressedKey) simulateKeyRelease(aiPressedKey);
 				if (keyToPress) simulateKeyPress(keyToPress);
-				aiPressedKey = keyToPress;
+					aiPressedKey = keyToPress;
 			}
 		}
-		setInterval(updateAI, 1000);
+		setInterval(updateAI, 100); // Más reactivo: cada 100ms
 	}
+
 
 	function update() {
 		if (!gameRunning) return;
