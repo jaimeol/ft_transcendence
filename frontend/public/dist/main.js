@@ -12,8 +12,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const paddleWidth = 10;
     const paddleHeight = 120;
     const ballRadius = 10;
-    const INITIAL_BALL_SPEED = 8;
-    const MAX_BALL_SPEED = 15;
+    const INITIAL_BALL_SPEED = 5;
+    const MAX_BALL_SPEED = 10;
     const paddleSpeed = 5;
     const keys = {};
     let leftPaddleY = (canvas.height - paddleHeight) / 2;
@@ -82,6 +82,26 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     const urlParams = new URLSearchParams(window.location.search);
     const isAI = urlParams.get('mode') === 'ai';
+    let difficulty = urlParams.get('level');
+    if (isAI && !difficulty) {
+        const overlay = document.getElementById('difficulty-overlay');
+        const buttons = document.querySelectorAll('.difficulty-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const level = btn.getAttribute('data-level');
+                urlParams.set('level', level);
+                // Animación de salida
+                overlay.classList.remove('animate-fade-in');
+                overlay.classList.add('animate-fade-out');
+                // Redirigir después de la animación
+                setTimeout(() => {
+                    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+                    window.location.href = newUrl;
+                }, 400); // 
+            });
+        });
+        return;
+    }
     if (isAI) {
         keys['ArrowUp'] = false;
         keys['ArrowDown'] = false;
@@ -127,7 +147,6 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!gameRunning)
                 return;
             if (ballSpeedX <= 0) {
-                // Soltar tecla si no hay que moverse
                 if (aiPressedKey) {
                     simulateKeyRelease(aiPressedKey);
                     aiPressedKey = null;
@@ -137,7 +156,13 @@ window.addEventListener('DOMContentLoaded', () => {
             const predictedY = predictballY();
             const paddleCenter = rightPaddleY + paddleHeight / 2;
             const diff = predictedY - paddleCenter;
-            const DEAD_ZONE = 30;
+            let DEAD_ZONE = 60;
+            if (difficulty === 'easy')
+                DEAD_ZONE = 110;
+            else if (difficulty === 'medium')
+                DEAD_ZONE = 100;
+            else if (difficulty === 'hard')
+                DEAD_ZONE = 60;
             let keyToPress = null;
             if (diff < -DEAD_ZONE && rightPaddleY > 0) {
                 keyToPress = 'ArrowUp';

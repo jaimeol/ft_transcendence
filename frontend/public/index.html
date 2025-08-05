@@ -11,13 +11,17 @@
   <h1 class="text-4xl font-bold mb-10">Ft_Transcendence</h1>
 
   <div class="flex flex-col gap-4">
-    <button onclick="window.location.href='/game.html'" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+		<a id="play-1v1-btn" href="game.html" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded text-xl transition">Jugar 1v1</a>
+		
+		<a id="play-ai-btn" href="game.html?mode=ai" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded text-xl transition">Jugar contra IA</a>
+
+    <!-- <button onclick="window.location.href='/game.html'" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
       Jugar 1 vs 1
     </button>
 
     <button id="play-ai" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
       Jugar contra IA
-    </button>
+    </button> -->
   </div>
 
   <script>
@@ -25,6 +29,27 @@
       window.location.href = '/game.html?mode=ai';
     });
   </script>
+	<script>
+		document.addEventListener('DOMContentLoaded', () => {
+		  const buttons = [document.getElementById('play-ai-btn'), document.getElementById('play-1v1-btn')];
+		
+		  buttons.forEach(btn => {
+		    if (!btn) return;
+			
+		    btn.addEventListener('click', (e) => {
+		      e.preventDefault(); // Evita que navegue directamente
+				
+		      btn.classList.add('zoom-into-game');
+		      btn.style.pointerEvents = 'none'; // Evita doble click
+				
+		      // Espera la animación y redirige
+		      setTimeout(() => {
+		        window.location.href = btn.href;
+		      }, 500); // debe coincidir con la duración de la animación
+		    });
+		  });
+		});
+	</script>
 
 </body>
 </html>
