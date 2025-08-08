@@ -12,9 +12,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const paddleWidth = 10;
     const paddleHeight = 120;
     const ballRadius = 10;
-    const INITIAL_BALL_SPEED = 5;
-    const MAX_BALL_SPEED = 10;
-    const paddleSpeed = 5;
+    const INITIAL_BALL_SPEED = 12;
+    const MAX_BALL_SPEED = 20;
+    const paddleSpeed = 10;
     const keys = {};
     let leftPaddleY = (canvas.height - paddleHeight) / 2;
     let rightPaddleY = (canvas.height - paddleHeight) / 2;
@@ -160,7 +160,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (difficulty === 'easy')
                 DEAD_ZONE = 110;
             else if (difficulty === 'medium')
-                DEAD_ZONE = 100;
+                DEAD_ZONE = 90;
             else if (difficulty === 'hard')
                 DEAD_ZONE = 60;
             let keyToPress = null;
