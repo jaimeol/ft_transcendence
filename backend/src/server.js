@@ -1,18 +1,32 @@
 // backend/server.js
 const path = require('path');
-const fastify = require('fastify')({ logger: true });
+const fs = require('fs');
+const fastify = require('fastify');
 const fastifyStatic = require('@fastify/static');
 
-// Sirve todos los archivos de frontend/public
-fastify.register(fastifyStatic, {
-  root: path.join(__dirname, '../../frontend/public'),
-  prefix: '/', // Accede a todo directamente desde la raíz
+
+const certsDir = path.join(__dirname, '..', 'certs');
+const httpsOptions = {
+	key: fs.readFileSync(path.join(certsDir, 'server.key')),
+	cert: fs.readFileSync(path.join(certsDir, 'server.crt'))
+};
+
+const server = fastify({
+	https: httpsOptions,
+	logger: true
 });
 
-fastify.listen({ port: 1234 }, (err, address) => {
-  if (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-  console.log(`Servidor en: ${address}`);
+// Sirve todos los archivos de frontend/public
+// Sirve todos los archivos de frontend/public
+server.register(fastifyStatic, {
+    root: path.join(__dirname, '..', 'public'),
+    prefix: '/',
+});
+
+server.listen({ port: 1234, host: '0.0.0.0' }, (err, address) => {
+	if (err) {
+		server.log.error(err);
+		process.exit(1);
+	}
+	console.log(`Servidor en: ${address}`);
 });

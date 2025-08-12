@@ -13,9 +13,9 @@ window.addEventListener('DOMContentLoaded', () => {
 	const paddleWidth = 10;
 	const paddleHeight = 120;
 	const ballRadius = 10;
-	const INITIAL_BALL_SPEED = 12;
-	const MAX_BALL_SPEED = 20;
-	const paddleSpeed = 10;
+	const INITIAL_BALL_SPEED = 5;
+	const MAX_BALL_SPEED = 10;
+	const paddleSpeed = 4;
   
 	const keys: Record<string, boolean> = {};
   
@@ -182,7 +182,7 @@ window.addEventListener('DOMContentLoaded', () => {
 			let DEAD_ZONE = 60;
 
 			if (difficulty === 'easy') DEAD_ZONE = 110;
-			else if (difficulty === 'medium') DEAD_ZONE = 90;
+			else if (difficulty === 'medium') DEAD_ZONE = 75;
 			else if(difficulty === 'hard') DEAD_ZONE = 60;
 	
 			let keyToPress: string | null = null;

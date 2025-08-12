@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"npm:watch:tailwind\" \"npm:watch:ts\" \"npm:serve\"",
+    "dev": "concurrently \"npm:watch:tailwind\" \"npm:watch:ts\"",
     "watch:tailwind": "tailwindcss -i ./src/styles.css -o ./public/tailwind.css --watch",
     "watch:ts": "tsc --watch",
     "build:ts": "tsc",
