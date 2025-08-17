@@ -1,0 +1,11 @@
+{
+  "play_1v1": "Play 1v1",
+  "play_ai": "Play vs AI",
+  "select_difficulty": "Select difficulty",
+  "easy": "easy",
+  "medium": "medium",
+  "hard": "hard",
+  "game_over": "Game Over",
+  "press_space_start": "Press space to start",
+  "press_space_restart": "Press space to restart"
+}

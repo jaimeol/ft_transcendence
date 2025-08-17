@@ -8,8 +8,20 @@ services:
       - /app/node_modules
       - ./data:/app/data
       - ./frontend/public:/app/public
+    develop:
+      watch:
+         - path: ./backend/src 
+           action: sync
+           target: /app/src
+         - path: ./backend/package.json
+           action: rebuild
   frontend:
     build: ./frontend
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    develop:
+      watch:
+        - path: ./frontend/src
+          action: sync
+          target: /app/src

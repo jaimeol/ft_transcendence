@@ -16,8 +16,7 @@ const server = fastify({
 	logger: true
 });
 
-// Sirve todos los archivos de frontend/public
-// Sirve todos los archivos de frontend/public
+
 server.register(fastifyStatic, {
     root: path.join(__dirname, '..', 'public'),
     prefix: '/',

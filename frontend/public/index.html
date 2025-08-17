@@ -5,43 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ft_Transcendence</title>
   <link rel="stylesheet" href="/tailwind.css" />
+  <script src="/dist/translate.js" type="module" defer></script>
 </head>
 <body class="bg-black text-white flex flex-col items-center justify-center min-h-screen">
 
+    <div class="language-selector absolute top-4 right-4 text-sm">
+        <button class="hover:underline" onclick="changeLanguage('en')">EN</button>
+        <span class="mx-1">|</span>
+        <button class="hover:underline" onclick="changeLanguage('es')">ES</button>
+        <span class="mx-1">|</span>
+        <button class="hover:underline" onclick="changeLanguage('fr')">FR</button>
+    </div>
+    
   <h1 class="text-4xl font-bold mb-10">Ft_Transcendence</h1>
 
   <div class="flex flex-col gap-4">
-		<a id="play-1v1-btn" href="game.html" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded text-xl transition">Jugar 1v1</a>
-		
-		<a id="play-ai-btn" href="game.html?mode=ai" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded text-xl transition">Jugar contra IA</a>
+        <a id="play-1v1-btn" href="game.html" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded text-xl transition game-link flex justify-center" data-translate="play_1v1">Jugar 1v1</a>
+        
+        <a id="play-ai-btn" href="game.html?mode=ai" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded text-xl transition game-link flex justify-center" data-translate="play_ai">Jugar contra IA</a>
   </div>
-
-  <script>
-    document.getElementById('play-ai').addEventListener('click', () => {
-      window.location.href = '/game.html?mode=ai';
-    });
-  </script>
-	<script>
-		document.addEventListener('DOMContentLoaded', () => {
-		  const buttons = [document.getElementById('play-ai-btn'), document.getElementById('play-1v1-btn')];
-		
-		  buttons.forEach(btn => {
-		    if (!btn) return;
-			
-		    btn.addEventListener('click', (e) => {
-		      e.preventDefault(); // Evita que navegue directamente
-				
-		      btn.classList.add('zoom-into-game');
-		      btn.style.pointerEvents = 'none'; // Evita doble click
-				
-		      // Espera la animación y redirige
-		      setTimeout(() => {
-		        window.location.href = btn.href;
-		      }, 500); // debe coincidir con la duración de la animación
-		    });
-		  });
-		});
-	</script>
 
 </body>
 </html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Desarrollo</title>
+  <link href="/tailwind.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+  <div class="bg-gray-800 p-8 rounded-lg shadow-lg text-center">
+    <h1 class="text-2xl font-bold mb-6">Panel de Login de Desarrollo</h1>
+    <p class="mb-4">Haz clic para iniciar sesión como un usuario de prueba:</p>
+    <div class="space-y-4">
+      <button onclick="loginAs(1)" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full">
+        Iniciar sesión como Usuario 1 (Alice)
+      </button>
+      <button onclick="loginAs(2)" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full">
+        Iniciar sesión como Usuario 2 (Bob)
+      </button>
+      <button onclick="loginAs(42)" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded w-full">
+        Iniciar sesión como Usuario 42 (jolivare)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    async function loginAs(userId) {
+      try {
+        // Llama a nuestro endpoint falso del backend
+        const response = await fetch(`/auth/dev-login/${userId}`);
+
+        if (!response.ok) {
+          throw new Error('Falló el login de desarrollo.');
+        }
+
+        const data = await response.json();
+        const token = data.token;
+
+        if (token) {
+          console.log(`Token recibido para el usuario ${userId}:`, token);
+
+          // Guarda el token en el almacenamiento local del navegador
+          localStorage.setItem('jwt_token', token);
+
+          alert(`¡Has iniciado sesión como Usuario ${userId}! Redirigiendo a la página principal...`);
+
+          // Redirige a la página principal
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('No se pudo iniciar sesión. Revisa la consola del navegador y los logs de Docker.');
+      }
+    }
+  </script>
+</body>
+</html>
