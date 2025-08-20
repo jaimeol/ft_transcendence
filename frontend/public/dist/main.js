@@ -1,5 +1,15 @@
-"use strict";
-window.addEventListener('DOMContentLoaded', () => {
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+import { currentTranslations, initializeLanguages } from "./translate.js";
+window.addEventListener('DOMContentLoaded', () => __awaiter(void 0, void 0, void 0, function* () {
+    yield initializeLanguages();
     const canvas = document.getElementById('pong');
     if (!canvas) {
         console.error('Canvas element not found!');
@@ -71,33 +81,39 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = 'center';
         if (gameOver) {
             ctx.font = '40px Arial';
-            ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 100);
-            ctx.font = '24px Arial';
-            ctx.fillText('Press Space to restart', canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillText(currentTranslations['game_over'], canvas.width / 2, canvas.height / 2 - 100);
+            ctx.font = '20px Arial';
+            ctx.fillText(currentTranslations['press_space_restart'], canvas.width / 2, canvas.height / 2 - 40);
         }
         else if (!gameRunning) {
             ctx.font = '40px Arial';
-            ctx.fillText('Press Space to Start', canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillText(currentTranslations['press_space_start'], canvas.width / 2, canvas.height / 2 - 40);
         }
     }
     const urlParams = new URLSearchParams(window.location.search);
     const isAI = urlParams.get('mode') === 'ai';
     let difficulty = urlParams.get('level');
-    if (isAI && !difficulty) {
-        const overlay = document.getElementById('difficulty-overlay');
+    const overlay = document.getElementById('difficulty-overlay');
+    if (!isAI || difficulty) {
+        if (overlay)
+            overlay.style.display = 'none';
+    }
+    else {
+        if (overlay)
+            overlay.style.display = 'flex';
         const buttons = document.querySelectorAll('.difficulty-btn');
         buttons.forEach(btn => {
             btn.addEventListener('click', () => {
                 const level = btn.getAttribute('data-level');
+                if (!level)
+                    return;
                 urlParams.set('level', level);
-                // Animación de salida
-                overlay.classList.remove('animate-fade-in');
-                overlay.classList.add('animate-fade-out');
-                // Redirigir después de la animación
+                overlay === null || overlay === void 0 ? void 0 : overlay.classList.remove('animate-fade-in');
+                overlay === null || overlay === void 0 ? void 0 : overlay.classList.add('animate-fade-out');
                 setTimeout(() => {
                     const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
-                    window.location.href = newUrl;
-                }, 400); // 
+                    window.location.replace(newUrl);
+                }, 400);
             });
         });
         return;
@@ -160,7 +176,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (difficulty === 'easy')
                 DEAD_ZONE = 110;
             else if (difficulty === 'medium')
-                DEAD_ZONE = 100;
+                DEAD_ZONE = 75;
             else if (difficulty === 'hard')
                 DEAD_ZONE = 60;
             let keyToPress = null;
@@ -266,4 +282,4 @@ window.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(() => gameLoop(ctx));
     }
     gameLoop(ctx);
-});
+}));

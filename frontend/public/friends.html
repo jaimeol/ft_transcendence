@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Amigos — ft_transcendence</title>
+  <link rel="stylesheet" href="/tailwind.css"/>
+  <style>
+    .avatar { border-radius: 50%; }
+  </style>
+</head>
+<body class="bg-black text-white flex items-center justify-center min-h-screen">
+  <div class="bg-zinc-900 p-6 rounded-2xl shadow w-[520px]">
+    <h1 class="text-2xl font-bold mb-4">Amigos</h1>
+
+    <!-- Lista de amigos -->
+    <div id="list" class="space-y-2 text-sm">Cargando...</div>
+    <div id="err" class="text-red-400 text-sm min-h-[1.25rem] mt-2"></div>
+
+    <!-- Navegación -->
+    <div class="flex justify-between mt-4">
+      <a class="underline opacity-80 hover:opacity-100" href="/profile.html">Perfil</a>
+      <a class="underline opacity-80 hover:opacity-100" href="/">Inicio</a>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    function escape(s){
+      return (s||'').replace(/[&<>"']/g, c => (
+        {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+      ));
+    }
+
+    async function loadFriends(){
+      const listEl = document.getElementById('list');
+      const errBox = document.getElementById('err');
+      listEl.textContent = "Cargando...";
+      errBox.textContent = "";
+
+      try {
+        const { friends } = await api('/api/friends');
+        if (!friends || friends.length === 0) {
+          listEl.textContent = "Todavía no tienes amigos 😢";
+          return;
+        }
+
+        listEl.innerHTML = friends.map(f => `
+          <div class="flex items-center gap-3 p-2 rounded bg-zinc-800/60 hover:bg-zinc-800 transition">
+            <img src="${f.avatar_path || '/default-avatar.png'}" width="36" height="36" class="avatar" alt="Avatar">
+            <div>
+              <div class="font-semibold">${escape(f.display_name)}</div>
+              <div class="opacity-70 text-xs">${f.online ? '🟢 Online' : '⚪ Offline'}</div>
+            </div>
+          </div>`).join('');
+      } catch (err) {
+        if (err?.status === 401) {
+          location.href = '/login.html';
+        } else {
+          listEl.textContent = "";
+          errBox.textContent = "❌ Error cargando amigos";
+        }
+      }
+    }
+
+    loadFriends();
+  </script>
+</body>
+</html>

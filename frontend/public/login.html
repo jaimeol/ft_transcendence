@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Iniciar sesión</title>
+  <link rel="stylesheet" href="/tailwind.css" />
+  <style>
+    input {
+      color: #000000 !important;
+    }
+    input:not(:placeholder-shown) {
+      color: #000000 !important;
+    }
+    input::placeholder {
+      color: #6b7280 !important;
+    }
+  </style>
+</head>
+<body class="bg-black text-white flex items-center justify-center min-h-screen">
+  <main class="w-full max-w-md p-8 rounded-2xl bg-zinc-900/60 backdrop-blur">
+    <h1 class="text-3xl font-bold mb-8 text-center">Iniciar sesión</h1>
+
+    <form id="login-form" class="space-y-6" autocomplete="on">
+      <div class="space-y-2">
+        <label for="email" class="block text-sm text-zinc-300">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          inputmode="email"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          class="w-full px-4 py-3 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 outline-none ring-1 ring-zinc-700 focus:ring-2 focus:ring-indigo-500 transition"
+          placeholder="tu@email.com"
+          required
+        />
+      </div>
+
+      <div class="space-y-2">
+        <label for="password" class="block text-sm text-zinc-300">Contraseña</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          class="w-full px-4 py-3 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 outline-none ring-1 ring-zinc-700 focus:ring-2 focus:ring-indigo-500 transition"
+          placeholder="••••••••"
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-3 rounded-lg text-lg font-semibold transition"
+      >
+        Entrar
+      </button>
+
+      <p class="text-sm text-center text-zinc-400">
+        ¿No tienes cuenta?
+        <a class="text-indigo-400 hover:text-indigo-300 underline" href="/register.html">Regístrate</a>
+      </p>
+    </form>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const body = {
+        email: form.email.value.trim(),
+        password: form.password.value
+      };
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('Credenciales incorrectas');
+        window.location.href = '/menu.html';
+      } catch (err) {
+        alert(err.message || 'Error al iniciar sesión');
+      }
+    });
+  </script>
+</body>
+</html>

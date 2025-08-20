@@ -1,0 +1,5 @@
+services:
+  backend:
+    command: ["npm", "start"]
+  frontend:
+    command: ["npm", "run", "build:ts"]

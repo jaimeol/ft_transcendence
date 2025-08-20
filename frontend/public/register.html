@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Registro — ft_transcendence</title>
+  <link rel="stylesheet" href="/tailwind.css"/>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white relative overflow-hidden">
+
+  <!-- Acentos -->
+  <div class="pointer-events-none absolute -top-24 -left-24 w-[36rem] h-[36rem] rounded-full bg-indigo-600/20 blur-3xl"></div>
+  <div class="pointer-events-none absolute -bottom-32 -right-24 w-[30rem] h-[30rem] rounded-full bg-emerald-500/20 blur-3xl"></div>
+
+  <main class="w-full min-h-screen flex items-center justify-center px-4">
+    <section class="w-full max-w-md">
+      <div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-8">
+
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-center mb-6">
+          <span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent" data-translate="register-title">
+            Crear cuenta
+          </span>
+        </h1>
+
+        <form id="f" class="space-y-5" autocomplete="off">
+          <!-- Email -->
+          <div class="space-y-2">
+            <label class="text-sm text-zinc-300" data-translate="field-email">Email</label>
+            <input
+              class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
+                     border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              name="email"
+              placeholder="tu@email.com"
+              type="email"
+              inputmode="email"
+              spellcheck="false"
+              autocapitalize="none"
+              autocomplete="off"
+              readonly
+              required
+            />
+          </div>
+
+          <!-- Display name -->
+          <div class="space-y-2">
+            <label class="text-sm text-zinc-300" data-translate="field-display_name">Display name</label>
+            <input
+              class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
+                     border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              name="display_name"
+              placeholder="Tu nombre público"
+              autocomplete="nickname"
+              required
+            />
+          </div>
+
+          <!-- Nombre y apellidos -->
+          <div class="flex gap-4">
+            <div class="flex-1 space-y-2">
+              <label class="text-sm text-zinc-300" data-translate="field-first_name">Nombre</label>
+              <input
+                class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
+                       border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                name="first_name"
+                placeholder="Nombre"
+                autocomplete="given-name"
+              />
+            </div>
+            <div class="flex-1 space-y-2">
+              <label class="text-sm text-zinc-300" data-translate="field-last_name">Apellidos</label>
+              <input
+                class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
+                       border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                name="last_name"
+                placeholder="Apellidos"
+                autocomplete="family-name"
+              />
+            </div>
+          </div>
+
+          <!-- Fecha -->
+          <div class="space-y-2">
+            <label class="text-sm text-zinc-300" data-translate="field-birthdate">Fecha de nacimiento</label>
+            <input
+              class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
+                     border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              name="birthdate"
+              type="date"
+              autocomplete="bday"
+            />
+          </div>
+
+          <!-- Contraseña -->
+          <div class="space-y-2">
+            <label class="text-sm text-zinc-300" data-translate="field-password">Contraseña</label>
+            <div class="relative">
+              <input
+                id="pwd"
+                class="w-full p-3 pr-12 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
+                       border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                name="password"
+                placeholder="Contraseña (mín. 8)"
+                type="password"
+                minlength="8"
+                autocomplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                id="togglePwd"
+                class="absolute inset-y-0 right-0 px-3 text-sm text-white/70 hover:text-white"
+                aria-label="Mostrar u ocultar contraseña"
+              >
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <!-- Enviar -->
+          <button
+            id="submitBtn"
+            class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 font-semibold py-3 rounded-xl transition
+                   shadow-lg shadow-indigo-600/25
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-black
+                   disabled:opacity-60 disabled:cursor-not-allowed"
+            type="submit"
+            data-translate="action-register"
+          >
+            Registrarse
+          </button>
+
+          <div id="err" class="text-red-400 text-sm min-h-[1.25rem]"></div>
+        </form>
+
+        <a href="/" class="block text-center mt-4 underline opacity-80 hover:opacity-100" data-translate="action-back">Volver</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Carga api global y tu módulo TS compilado -->
+  <script src="./js/api.js"></script>
+  <script type="module" src="/dist/register.js"></script>
+  <script type="module">
+		import { initializeLanguages, changeLanguage } from '/dist/translate.js';
+
+		document.addEventListener('DOMContentLoaded', () => {
+			initializeLanguages();
+		});
+
+		window.changeLanguage = changeLanguage;
+	</script>
+</body>
+</html>

@@ -1,4 +1,8 @@
-window.addEventListener('DOMContentLoaded', () => {
+import { currentTranslations, initializeLanguages } from "./translate.js";
+
+window.addEventListener('DOMContentLoaded', async () => {
+
+	await initializeLanguages();
 	const canvas = document.getElementById('pong') as HTMLCanvasElement;
 	
 	if (!canvas) {
@@ -81,36 +85,40 @@ window.addEventListener('DOMContentLoaded', () => {
 		ctx.textAlign = 'center';
 		if (gameOver) {
 			ctx.font = '40px Arial';
-			ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 100);
-			ctx.font = '24px Arial';
-			ctx.fillText('Press Space to restart', canvas.width / 2, canvas.height / 2 - 40);
+			ctx.fillText(currentTranslations['game_over'], canvas.width / 2, canvas.height / 2 - 100);
+			ctx.font = '20px Arial';
+			ctx.fillText(currentTranslations['press_space_restart'], canvas.width / 2, canvas.height / 2 - 40);
 		} else if (!gameRunning) {
 			ctx.font = '40px Arial';
-			ctx.fillText('Press Space to Start', canvas.width / 2, canvas.height / 2 - 40);
+			ctx.fillText(currentTranslations['press_space_start'], canvas.width / 2, canvas.height / 2 - 40);
 		}
 	}
 	const urlParams = new URLSearchParams(window.location.search);
 	const isAI = urlParams.get('mode') === 'ai';
 	let difficulty = urlParams.get('level');
 
-	if (isAI && !difficulty) {
-		const overlay = document.getElementById('difficulty-overlay') as HTMLElement;
-		const buttons = document.querySelectorAll('.difficulty-btn');
 
+	const overlay = document.getElementById('difficulty-overlay') as HTMLElement;
+	if (!isAI || difficulty) {
+		if (overlay) overlay.style.display = 'none';
+	} else {
+		if (overlay) overlay.style.display = 'flex';
+
+		const buttons = document.querySelectorAll<HTMLButtonElement>('.difficulty-btn');
 		buttons.forEach(btn => {
 			btn.addEventListener('click', () => {
 				const level = btn.getAttribute('data-level');
-				urlParams.set('level', level!);
+				if (!level) return;
 
-				// Animación de salida
-				overlay.classList.remove('animate-fade-in');
-				overlay.classList.add('animate-fade-out');
+				urlParams.set('level', level);
 
-				// Redirigir después de la animación
+				overlay?.classList.remove('animate-fade-in');
+				overlay?.classList.add('animate-fade-out');
+
 				setTimeout(() => {
 					const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
-					window.location.href = newUrl;
-				}, 400); // 
+					window.location.replace(newUrl);
+				}, 400);
 			});
 		});
 		return;
@@ -182,7 +190,7 @@ window.addEventListener('DOMContentLoaded', () => {
 			let DEAD_ZONE = 60;
 
 			if (difficulty === 'easy') DEAD_ZONE = 110;
-			else if (difficulty === 'medium') DEAD_ZONE = 100;
+			else if (difficulty === 'medium') DEAD_ZONE = 75;
 			else if(difficulty === 'hard') DEAD_ZONE = 60;
 	
 			let keyToPress: string | null = null;

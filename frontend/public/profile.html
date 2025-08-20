@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Perfil — ft_transcendence</title>
+  <link rel="stylesheet" href="/tailwind.css"/>
+  <style>
+    .avatar { border-radius: 50%; }
+    input {
+      color: #000 !important;
+    }
+    input:not(:placeholder-shown) {
+      color: #000 !important;
+    }
+    input::placeholder {
+      color: #6b7280 !important;
+    }
+  </style>
+</head>
+<body class="bg-black text-white flex items-center justify-center min-h-screen">
+  <div class="bg-zinc-900 p-6 rounded-2xl shadow w-[520px]">
+    <h1 class="text-2xl font-bold mb-4">Mi perfil</h1>
+    <div id="info" class="flex items-center gap-3 mb-4"></div>
+
+    <!-- Actualizar datos -->
+    <h2 class="text-xl font-semibold mb-2">Actualizar datos</h2>
+    <form id="upd" class="space-y-3 mb-4">
+      <input class="w-full p-2 rounded bg-zinc-800 text-white" name="display_name" placeholder="Display name">
+      <div class="flex gap-2">
+        <input class="w-1/2 p-2 rounded bg-zinc-800 text-white" name="first_name" placeholder="Nombre">
+        <input class="w-1/2 p-2 rounded bg-zinc-800 text-white" name="last_name" placeholder="Apellidos">
+      </div>
+      <input class="w-full p-2 rounded bg-zinc-800 text-white" name="birthdate" type="date">
+      <button class="w-full bg-indigo-500 hover:bg-indigo-600 font-semibold py-2 rounded" type="submit">Guardar</button>
+      <div id="err-upd" class="text-red-400 text-sm min-h-[1.25rem]"></div>
+    </form>
+
+    <!-- Avatar -->
+    <h2 class="text-xl font-semibold mb-2">Avatar</h2>
+    <form id="ava" enctype="multipart/form-data" class="space-y-3 mb-2">
+      <input type="file" name="avatar" accept="image/*" class="w-full p-2 rounded bg-zinc-800 text-white">
+      <button class="w-full bg-blue-500 hover:bg-blue-600 font-semibold py-2 rounded" type="submit">Subir avatar</button>
+      <div id="err-ava" class="text-red-400 text-sm min-h-[1.25rem]"></div>
+    </form>
+
+    <!-- Enlaces -->
+    <div class="flex justify-between mt-4">
+      <a class="underline opacity-80" href="./friends.html">Amigos</a>
+      <a class="underline opacity-80" href="/" onclick="logout(event)">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // Sanitizar salida
+    function escape(s){ 
+      return (s||'').replace(/[&<>"']/g, c => (
+        {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+      )); 
+    }
+
+    // Cargar perfil
+    async function me(){
+      try {
+        const j = await api('/api/auth/me');
+        const u = j.user;
+        document.getElementById('info').innerHTML = `
+          <img class="avatar" src="${u.avatar_path || '/default-avatar.png'}" width="72" height="72" alt="Avatar">
+          <div>
+            <div class="font-bold">${escape(u.display_name)}</div>
+            <div class="opacity-80 text-sm">${escape(u.email)}</div>
+          </div>`;
+        return u;
+      } catch {
+        location.href = '/login.html';
+      }
+    }
+
+    // Actualizar datos
+    document.getElementById('upd').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(e.target).entries());
+      const errBox = document.getElementById('err-upd');
+      try {
+        await api('/api/users/me', { method:'PUT', body: JSON.stringify(data) });
+        await me();
+        errBox.textContent = "✅ Datos actualizados";
+      } catch(err) {
+        errBox.textContent = err?.message || "Error actualizando perfil";
+      }
+    });
+
+    // Subir avatar
+    document.getElementById('ava').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const errBox = document.getElementById('err-ava');
+      try {
+        const res = await fetch('/api/users/me/avatar', { 
+          method:'POST', 
+          body: fd, 
+          credentials:'include' 
+        });
+        if(res.ok) {
+          await me();
+          errBox.textContent = "✅ Avatar actualizado";
+        } else {
+          errBox.textContent = "Error subiendo avatar";
+        }
+      } catch {
+        errBox.textContent = "Error de red subiendo avatar";
+      }
+    });
+
+    // Logout
+    async function logout(e){ 
+      e && e.preventDefault(); 
+      try { 
+        await api('/api/auth/logout', { method:'POST' }); 
+      } finally { 
+        location.href='/'; 
+      } 
+    }
+
+    // Inicializar
+    me();
+  </script>
+</body>
+</html>
