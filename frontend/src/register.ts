@@ -35,7 +35,7 @@ async function onSubmit(e: Event) {
 			body: JSON.stringify(data),
 			headers: { "Content-Type": "application/json" },
 		});
-		location.href = "../menu.html";
+		location.href = "../home.html";
 	} catch (err: any) {
 		setError(err?.message ?? "Error inesperado");
 	} finally {

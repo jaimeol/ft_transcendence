@@ -9,61 +9,49 @@
     .avatar { border-radius: 50%; }
   </style>
 </head>
-<body class="bg-black text-white flex items-center justify-center min-h-screen">
-  <div class="bg-zinc-900 p-6 rounded-2xl shadow w-[520px]">
-    <h1 class="text-2xl font-bold mb-4">Amigos</h1>
+<body class="bg-black text-white min-h-screen flex flex-col">
+  <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/home.html" class="flex items-center gap-2">
+        <div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+        <span class="font-semibold">ft_transcendence</span>
+      </a>
+
+      <div class="flex items-center gap-3">
+        <!-- Language -->
+        <div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+          <button class="hover:underline" onclick="changeLanguage?.('en')">EN</button>
+          <span class="mx-1 text-white/40">|</span>
+          <button class="hover:underline" onclick="changeLanguage?.('es')">ES</button>
+          <span class="mx-1 text-white/40">|</span>
+          <button class="hover:underline" onclick="changeLanguage?.('fr')">FR</button>
+        </div>
+
+        <!-- Logout -->
+        <button id="logoutBtn"
+          class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
+          data-translate="home.logout">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </header>
+  <main class="flex-1 flex items-center justify-center">
+    <div class="bg-zinc-900 p-6 rounded-2xl shadow w-[520px]">
+      <h1 class="text-2xl font-bold mb-4" data-translate="Friends.title">Amigos</h1>
 
     <!-- Lista de amigos -->
-    <div id="list" class="space-y-2 text-sm">Cargando...</div>
-    <div id="err" class="text-red-400 text-sm min-h-[1.25rem] mt-2"></div>
+      <div id="list" class="space-y-2 text-sm">Cargando...</div>
+      <div id="err" class="text-red-400 text-sm min-h-[1.25rem] mt-2"></div>
 
     <!-- Navegación -->
-    <div class="flex justify-between mt-4">
-      <a class="underline opacity-80 hover:opacity-100" href="/profile.html">Perfil</a>
-      <a class="underline opacity-80 hover:opacity-100" href="/">Inicio</a>
+      <div class="flex justify-between mt-4">
+        <a class="underline opacity-80 hover:opacity-100" href="/profile.html">Perfil</a>
+        <a class="underline opacity-80 hover:opacity-100" href="/home.html">Inicio</a>
+      </div>
     </div>
-  </div>
-
+  </main>
   <script src="/js/api.js"></script>
-  <script>
-    function escape(s){
-      return (s||'').replace(/[&<>"']/g, c => (
-        {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
-      ));
-    }
-
-    async function loadFriends(){
-      const listEl = document.getElementById('list');
-      const errBox = document.getElementById('err');
-      listEl.textContent = "Cargando...";
-      errBox.textContent = "";
-
-      try {
-        const { friends } = await api('/api/friends');
-        if (!friends || friends.length === 0) {
-          listEl.textContent = "Todavía no tienes amigos 😢";
-          return;
-        }
-
-        listEl.innerHTML = friends.map(f => `
-          <div class="flex items-center gap-3 p-2 rounded bg-zinc-800/60 hover:bg-zinc-800 transition">
-            <img src="${f.avatar_path || '/default-avatar.png'}" width="36" height="36" class="avatar" alt="Avatar">
-            <div>
-              <div class="font-semibold">${escape(f.display_name)}</div>
-              <div class="opacity-70 text-xs">${f.online ? '🟢 Online' : '⚪ Offline'}</div>
-            </div>
-          </div>`).join('');
-      } catch (err) {
-        if (err?.status === 401) {
-          location.href = '/login.html';
-        } else {
-          listEl.textContent = "";
-          errBox.textContent = "❌ Error cargando amigos";
-        }
-      }
-    }
-
-    loadFriends();
-  </script>
+  <script type="module" src="dist/friends.js"></script>
 </body>
 </html>

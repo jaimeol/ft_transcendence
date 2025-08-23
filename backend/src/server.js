@@ -37,12 +37,18 @@ app.register(fastifyStatic, {
 });
 
 const uploadsDir = path.join('/app', 'data', 'uploads');
+const defaultAvatarPath = path.join(uploadsDir, 'default-avatar.png');
 fs.mkdirSync(uploadsDir, { recursive: true });
 app.get('/uploads/*', async (req, reply)=>{
   const p = req.params['*'];
   const file = path.join(uploadsDir, p);
-  if(!fs.existsSync(file)) return reply.code(404).send();
-  return reply.send(fs.createReadStream(file));
+  reply.header('Cache-Control', 'no-store');
+
+  if (fs.existsSync(file))
+    return reply.send(fs.createReadStream(file));
+  if (fs.existsSync(defaultAvatarPath))
+    return reply.send(fs.createReadStream(defaultAvatarPath));
+  return reply.redirect('/default-avatar.png');
 });
 
 app.register(authRoutes);

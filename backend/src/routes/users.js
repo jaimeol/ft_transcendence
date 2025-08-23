@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('../db');
 
+
 function toUserSafe(row){
   return {
     id: row.id, email: row.email, display_name: row.display_name,
