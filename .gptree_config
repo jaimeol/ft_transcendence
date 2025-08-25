@@ -1,0 +1,31 @@
+# GPTree Local Config
+version: 3
+
+# Whether to use .gitignore
+useGitIgnore: true
+# File types to include (e.g., .py,.js) - use * for all types
+includeFileTypes: *
+# File types to exclude (e.g., .log,.tmp)
+excludeFileTypes: 
+# Advanced: Glob patterns to include (e.g., src/**/*.py,**/*.js) - overrides includeFileTypes if specified
+includePatterns: 
+# Advanced: Glob patterns to exclude (e.g., **/tests/**,**/*.log) - combined with excludeFileTypes
+excludePatterns: 
+# Output file name
+outputFile: gptree_output.txt
+# Whether to output the file locally or relative to the project directory
+outputFileLocally: true
+# Whether to copy the output to the clipboard
+copyToClipboard: false
+# Whether to use safe mode (prevent overly large files from being combined)
+safeMode: true
+# Whether to store the files chosen in the config file (--save, -s)
+storeFilesChosen: true
+# Whether to include line numbers in the output (--line-numbers, -n)
+lineNumbers: false
+# Whether to show ignored files in the directory tree
+showIgnoredInTree: false
+# Whether to show only default ignored files in the directory tree while still respecting gitignore
+showDefaultIgnoredInTree: false
+# Previously selected files (when using the -s or --save flag previously)
+previousFiles: frontend/public/dist/register.js,backend/Dockerfile,frontend/Dockerfile,frontend/public/index.html,frontend/package.json,backend/certs/server.key,frontend/public/dist/main.js,frontend/public/friends.html,frontend/public/game.html,frontend/public/login.html,frontend/src/register.ts,backend/src/server.js,data/app.db-shm,data/app.db,frontend/public/locales/fr.json,frontend/src/styles.css,frontend/public/locales/es.json,.gptree_config,frontend/src/translate.ts,frontend/src/main.ts,data/app.db-wal,backend/certs/server.crt,frontend/postcss.config.js,frontend/public/register.html,docker-compose.yml,backend/src/routes/auth.js,frontend/public/tailwind.css,frontend/public/locales/en.json,frontend/public/menu.html,frontend/public/js/api.js,backend/src/routes/friends.js,backend/src/db.js,frontend/tailwind.config.js,frontend/tsconfig.json,backend/src/schema.sql,backend/src/routes/users.js,Makefile,frontend/public/dist/translate.js,backend/package.json,frontend/public/profile.html

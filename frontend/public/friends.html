@@ -46,13 +46,13 @@
         }
 
         listEl.innerHTML = friends.map(f => `
-          <div class="flex items-center gap-3 p-2 rounded bg-zinc-800/60 hover:bg-zinc-800 transition">
+          <a href="/user.html?id=${f.id}" class="flex items-center gap-3 p-2 rounded bg-zinc-800/60 hover:bg-zinc-800 transition">
             <img src="${f.avatar_path || '/default-avatar.png'}" width="36" height="36" class="avatar" alt="Avatar">
             <div>
               <div class="font-semibold">${escape(f.display_name)}</div>
               <div class="opacity-70 text-xs">${f.online ? '🟢 Online' : '⚪ Offline'}</div>
             </div>
-          </div>`).join('');
+          </a>`).join('');
       } catch (err) {
         if (err?.status === 401) {
           location.href = '/login.html';

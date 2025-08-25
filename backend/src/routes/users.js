@@ -14,15 +14,24 @@ async function routes(fastify){
   fastify.put('/api/users/me', async (req, reply)=>{
     const uid = req.session.uid;
     if(!uid) return reply.code(401).send({ error: 'Unauthorized' });
-    const { display_name, first_name, last_name, birthdate } = req.body || {};
+
+    const { email, display_name, first_name, last_name, birthdate } = req.body || {};
+
     try{
-      db.prepare(`UPDATE users SET display_name = COALESCE(?, display_name),
-        first_name = COALESCE(?, first_name), last_name = COALESCE(?, last_name), birthdate = COALESCE(?, birthdate)
-        WHERE id = ?`).run(display_name ?? null, first_name ?? null, last_name ?? null, birthdate ?? null, uid);
+      db.prepare(`UPDATE users
+        SET email        = COALESCE(?, email),
+            display_name = COALESCE(?, display_name),
+            first_name   = COALESCE(?, first_name),
+            last_name    = COALESCE(?, last_name),
+            birthdate    = COALESCE(?, birthdate)
+        WHERE id = ?`)
+        .run(email ?? null, display_name ?? null, first_name ?? null, last_name ?? null, birthdate ?? null, uid);
     }catch(e){
-      if(e.code === 'SQLITE_CONSTRAINT_UNIQUE') return reply.code(409).send({ error: 'Display name already in use' });
+      if(e.code === 'SQLITE_CONSTRAINT_UNIQUE')
+        return reply.code(409).send({ error: 'Email o nombre público ya en uso' });
       return reply.code(500).send({ error: 'Update failed' });
     }
+
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(uid);
     return { user: toUserSafe(user) };
   });
