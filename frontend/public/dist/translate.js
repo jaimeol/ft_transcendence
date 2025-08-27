@@ -8,14 +8,38 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 export let currentTranslations = {};
+function normalize(l) {
+    if (!l)
+        return null;
+    const s = l.toLowerCase();
+    if (s.startsWith("es"))
+        return "es";
+    if (s.startsWith("en"))
+        return "en";
+    if (s.startsWith("fr"))
+        return "fr";
+    return null;
+}
+function getLangFromURL() {
+    const p = new URLSearchParams(window.location.search);
+    return normalize(p.get("lang"));
+}
 export function getCurrentLanguage() {
-    const savedLang = localStorage.getItem('language');
-    if (savedLang && ['es', 'en', 'fr'].includes(savedLang))
+    const urlLang = getLangFromURL();
+    if (urlLang)
+        return urlLang;
+    const savedLang = normalize(localStorage.getItem("language"));
+    if (savedLang)
         return savedLang;
-    const browserLang = navigator.language.split('-')[0];
-    if (['es', 'en', 'fr'].includes(browserLang))
-        return browserLang;
-    return 'en';
+    const browserLang = normalize(navigator.language.split("-")[0]);
+    return browserLang !== null && browserLang !== void 0 ? browserLang : "en";
+    // const savedLang = localStorage.getItem('language') as language;
+    // if (savedLang && ['es', 'en', 'fr'].includes(savedLang))
+    // 	return savedLang;
+    // const browserLang = navigator.language.split('-')[0] as language;
+    // if (['es', 'en', 'fr'].includes(browserLang))
+    // 	return browserLang;
+    // return 'en';
 }
 export function loadTranslations(lang) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -84,11 +108,25 @@ export function updateContent() {
 export function changeLanguage(lang) {
     return __awaiter(this, void 0, void 0, function* () {
         localStorage.setItem('language', lang);
+        const url = new URL(location.href);
+        url.searchParams.set('lang', lang);
+        history.replaceState({}, '', url.toString());
         yield loadTranslations(lang);
         updateContent();
     });
 }
 window.changeLanguage = changeLanguage;
+export function ensureLinksCarryLang(selector = 'a[href]') {
+    const lang = getCurrentLanguage();
+    document.querySelectorAll(selector).forEach(a => {
+        try {
+            const url = new URL(a.href, location.href);
+            url.searchParams.set('lang', lang);
+            a.href = url.pathname + url.search + url.hash;
+        }
+        catch (_a) { }
+    });
+}
 export function initializeAnimations() {
     const gameLinks = document.querySelectorAll('.game-link');
     gameLinks.forEach(link => {
@@ -105,8 +143,16 @@ export function initializeAnimations() {
 export function initializeLanguages() {
     return __awaiter(this, void 0, void 0, function* () {
         const initialLang = getCurrentLanguage();
+        localStorage.setItem('language', initialLang);
         yield loadTranslations(initialLang);
         updateContent();
         window.changeLanguage = changeLanguage;
+        ensureLinksCarryLang('a[href^="game.html"], a[href^="/"], a[href^="./"]');
+        window.addEventListener('storage', (e) => {
+            var _a;
+            if (e.key === 'language' && e.newValue) {
+                changeLanguage((_a = normalize(e.newValue)) !== null && _a !== void 0 ? _a : 'en');
+            }
+        });
     });
 }

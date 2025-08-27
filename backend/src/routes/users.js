@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { db } = require('../db');
+const { error } = require('console');
 
 
 function toUserSafe(row){
@@ -53,6 +54,23 @@ async function routes(fastify){
     const total = db.prepare('SELECT COUNT(*) as c FROM matches WHERE player1_id = ? OR player2_id = ?').get(id, id).c;
     const losses = Math.max(0, total - wins);
     return { user: toUserSafe(user), stats: { wins, losses } };
+  });
+
+  fastify.get('/api/users/search', async (req, reply) => {
+    const uid = req.session.uid;
+    if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
+    const q = String(req.query.q || '').trim();
+    if (!q) return { users: [] };
+    const like = `%${q}%`;
+    const rows = db.prepare(`
+      SELECT id, display_name, avatar_path
+      FROM users
+      WHERE (display_name LIKE ? OR email LIKE ?)
+        AND id != ?
+      ORDER BY display_name
+      LIMIT 20
+      `).all(like, like, uid);
+    return { users: rows};
   });
 
   fastify.get('/api/users/me/matches', async (req, reply)=>{

@@ -1,57 +1,66 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Amigos — ft_transcendence</title>
-  <link rel="stylesheet" href="/tailwind.css"/>
-  <style>
-    .avatar { border-radius: 50%; }
-  </style>
+	<meta charset="UTF-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>Amigos — ft_transcendence</title>
+	<link rel="stylesheet" href="/tailwind.css"/>
+	<style>
+		.avatar { border-radius: 50%; }
+	</style>
 </head>
 <body class="bg-black text-white min-h-screen flex flex-col">
-  <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
-    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-      <a href="/home.html" class="flex items-center gap-2">
-        <div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
-        <span class="font-semibold">ft_transcendence</span>
-      </a>
+	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+		<div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+			<a href="/home.html" class="flex items-center gap-2">
+				<div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+				<span class="font-semibold">ft_transcendence</span>
+			</a>
 
-      <div class="flex items-center gap-3">
-        <!-- Language -->
-        <div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
-          <button class="hover:underline" onclick="changeLanguage?.('en')">EN</button>
-          <span class="mx-1 text-white/40">|</span>
-          <button class="hover:underline" onclick="changeLanguage?.('es')">ES</button>
-          <span class="mx-1 text-white/40">|</span>
-          <button class="hover:underline" onclick="changeLanguage?.('fr')">FR</button>
-        </div>
+			<div class="flex items-center gap-3">
+				<!-- Language -->
+				<div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+					<button class="hover:underline" onclick="changeLanguage?.('en')">EN</button>
+					<span class="mx-1 text-white/40">|</span>
+					<button class="hover:underline" onclick="changeLanguage?.('es')">ES</button>
+					<span class="mx-1 text-white/40">|</span>
+					<button class="hover:underline" onclick="changeLanguage?.('fr')">FR</button>
+				</div>
 
-        <!-- Logout -->
-        <button id="logoutBtn"
-          class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
-          data-translate="home.logout">
-          Cerrar sesión
-        </button>
-      </div>
-    </div>
-  </header>
-  <main class="flex-1 flex items-center justify-center">
-    <div class="bg-zinc-900 p-6 rounded-2xl shadow w-[520px]">
-      <h1 class="text-2xl font-bold mb-4" data-translate="Friends.title">Amigos</h1>
+				<!-- Logout -->
+				<button id="logoutBtn"
+					class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
+					data-translate="home.logout">
+					Cerrar sesión
+				</button>
+			</div>
+		</div>
+	</header>
+	<main class="flex-1 flex items-center justify-center">
+		<div class="bg-zinc-900 p-6 rounded-2xl shadow w-[520px]">
+			<h1 class="text-2xl font-bold mb-4" data-translate="Friends.title">Amigos</h1>
+			<!-- friends.html -->
+			<div class="space-y-3 mb-4">
+				<input id="search" class="w-full p-2 rounded bg-zinc-800 text-white"
+					placeholder="Buscar por nombre o email…"/>
+				<div id="results" class="space-y-2 text-sm"></div>
+			</div>
+	
+			<h2 class="text-lg font-semibold mt-6">Solicitudes pendientes</h2>
+				<div id="pending" class="space-y-2 text-sm">—</div>
+	
+			<h2 class="text-lg font-semibold mt-6">Tus amigos</h2>
+				<div id="list" class="space-y-2 text-sm">Cargando...</div>
+				<div id="err" class="text-red-400 text-sm min-h-[1.25rem] mt-2"></div>
 
-    <!-- Lista de amigos -->
-      <div id="list" class="space-y-2 text-sm">Cargando...</div>
-      <div id="err" class="text-red-400 text-sm min-h-[1.25rem] mt-2"></div>
-
-    <!-- Navegación -->
-      <div class="flex justify-between mt-4">
-        <a class="underline opacity-80 hover:opacity-100" href="/profile.html">Perfil</a>
-        <a class="underline opacity-80 hover:opacity-100" href="/home.html">Inicio</a>
-      </div>
-    </div>
-  </main>
-  <script src="/js/api.js"></script>
-  <script type="module" src="dist/friends.js"></script>
+		<!-- Navegación -->
+			<div class="flex justify-between mt-4">
+				<a class="underline opacity-80 hover:opacity-100" href="/profile.html">Perfil</a>
+				<a class="underline opacity-80 hover:opacity-100" href="/home.html">Inicio</a>
+			</div>
+		</div>
+	</main>
+	<script src="/js/api.js"></script>
+	<script type="module" src="dist/friends.js"></script>
 </body>
 </html>

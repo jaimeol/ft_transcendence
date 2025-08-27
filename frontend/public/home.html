@@ -107,10 +107,8 @@
   <script src="/js/api.js"></script>
   <script type="module" src="/dist/home.js"></script>
   <script type="module">
-    import { initializeLanguages, changeLanguage } from '/dist/translate.js';
+    import { initializeLanguages } from '/dist/translate.js';
     initializeLanguages();
-    // expón para los botones del header
-    window.changeLanguage = changeLanguage;
   </script>
 </body>
 </html>

@@ -4,14 +4,37 @@ export let currentTranslations: Record<string, string> = {};
 
 export type language = "es" | "fr" | "en";
 
+function normalize(l: string | null | undefined): language | null {
+  if (!l) return null;
+  const s = l.toLowerCase();
+  if (s.startsWith("es")) return "es";
+  if (s.startsWith("en")) return "en";
+  if (s.startsWith("fr")) return "fr";
+  return null;
+}
+
+function getLangFromURL(): language | null {
+  const p = new URLSearchParams(window.location.search);
+  return normalize(p.get("lang"));
+}
+
 export function getCurrentLanguage(): language {
-	const savedLang = localStorage.getItem('language') as language;
-	if (savedLang && ['es', 'en', 'fr'].includes(savedLang))
-		return savedLang;
-	const browserLang = navigator.language.split('-')[0] as language;
-	if (['es', 'en', 'fr'].includes(browserLang))
-		return browserLang;
-	return 'en';
+
+  const urlLang = getLangFromURL();
+  if (urlLang) return urlLang;
+
+  const savedLang = normalize(localStorage.getItem("language"));
+  if (savedLang) return savedLang;
+
+  const browserLang = normalize(navigator.language.split("-")[0]);
+  return browserLang ?? "en";
+	// const savedLang = localStorage.getItem('language') as language;
+	// if (savedLang && ['es', 'en', 'fr'].includes(savedLang))
+	// 	return savedLang;
+	// const browserLang = navigator.language.split('-')[0] as language;
+	// if (['es', 'en', 'fr'].includes(browserLang))
+	// 	return browserLang;
+	// return 'en';
 }
 
 export async function loadTranslations(lang: language): Promise<void> {
@@ -79,12 +102,28 @@ export function updateContent(): void {
 
 
 export async function changeLanguage(lang: language): Promise<void> {
-	localStorage.setItem('language', lang);
-	await loadTranslations(lang);
-	updateContent();
+  localStorage.setItem('language', lang);
+
+  const url = new URL(location.href);
+  url.searchParams.set('lang', lang);
+  history.replaceState({}, '', url.toString());
+
+  await loadTranslations(lang);
+  updateContent();
 }
 
 (window as any).changeLanguage = changeLanguage;
+
+export function ensureLinksCarryLang(selector = 'a[href]') {
+  const lang = getCurrentLanguage();
+  document.querySelectorAll<HTMLAnchorElement>(selector).forEach(a => {
+    try {
+      const url = new URL(a.href, location.href);
+      url.searchParams.set('lang', lang);
+      a.href = url.pathname + url.search + url.hash;
+    } catch {}
+  });
+}
 
 export function initializeAnimations() {
 	const gameLinks = document.querySelectorAll<HTMLAnchorElement>('.game-link');
@@ -103,7 +142,17 @@ export function initializeAnimations() {
 
 export async function initializeLanguages() {
 	const initialLang = getCurrentLanguage();
-	await loadTranslations(initialLang);
-	updateContent();
-	(window as any).changeLanguage = changeLanguage;
+	localStorage.setItem('language', initialLang);
+  await loadTranslations(initialLang);
+  updateContent();
+
+  (window as any).changeLanguage = changeLanguage;
+
+  ensureLinksCarryLang('a[href^="game.html"], a[href^="/"], a[href^="./"]');
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'language' && e.newValue) {
+      changeLanguage(normalize(e.newValue) ?? 'en');
+    }
+  });
 }

@@ -39,5 +39,22 @@
   "home.cards.matches.title": "Matches",
   "home.cards.matches.desc": "History and upcoming",
   "home.editProfile": "Edit Profile",
-  "home.logout": "Log out" 
+  "home.logout": "Log out",
+  "profile.memberSince": "Member since",
+  "profile.level": "Level",
+  "profile.wins": "Wins",
+  "profile.draws": "Draws",
+  "profile.losses": "Losses",
+  "profile.matches": "Matches",
+  "profile.winrate": "Winrate",
+  "profile.streak": "Streak",
+  "profile.timePlayed": "Time played",
+  "profile.resultDistribution": "Result distribution",
+  "profile.lastMatches": "Recent matches",
+  "profile.personalInfo": "Personal info",
+  "profile.updated": "Updated",
+  "profile.avatar": "Avatar",
+  "profile.account": "Account",
+  "profile.updateEmail": "Update email",
+  "profile.chooseFile": "Choose file"
 }
