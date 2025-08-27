@@ -60,11 +60,10 @@ clean: down
 
 # Limpieza total (contenedores, redes, volúmenes, imágenes locales + node_modules)
 fclean:
-	@echo "💥 Limpieza profunda..."
 	$(DC) $(COMPOSE_FILES) down -v --remove-orphans --rmi local
+	@echo "Eliminando posibles node_modules locales..."
 	@rm -rf backend/node_modules frontend/node_modules backend/package-lock.json frontend/package-lock.json || true
-	@rm -rf ./data
-	@echo "✅ fclean completo."
+	@echo "Fclean completo."
 
 # Rebuild total
 re: fclean all

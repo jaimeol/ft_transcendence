@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfil — Player Card</title>
-  <link rel="stylesheet" href="tailwind.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-translate="Profile-text">Mi perfil</title>
+  <link rel="stylesheet" href="/tailwind.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4"></script>
   <style>
     .glass { background: rgba(24,24,27,.65); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(10px); }
     .ring-neon { box-shadow: 0 0 0 6px rgba(99,102,241,.25), 0 10px 40px rgba(99,102,241,.35); }
@@ -18,15 +18,46 @@
     .field { background: rgba(255,255,255,.07); }
     .grid-card { display:grid; grid-template-columns: 1fr; }
     @media (min-width: 1024px) { .grid-card { grid-template-columns: 1fr 1fr; gap: 1rem; } }
-    /* Compact stat tiles */
     .stat-card{ padding:.5rem .75rem; min-width:100px }
     .stat-num{ font-size:1.25rem; line-height:1.2; font-weight:800 }
     .stat-lbl{ font-size:.7rem; opacity:.75 }
-    /* Spacing for definition list */
     dl > div dd{ margin-top:.25rem }
   </style>
 </head>
 <body class="min-h-screen bg-black text-white">
+  <!-- HEADER común -->
+  <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/home.html" class="flex items-center gap-2">
+        <div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+        <span class="font-semibold">ft_transcendence</span>
+      </a>
+
+      <nav class="hidden sm:flex items-center gap-4 text-sm">
+        <a href="/home.html" class="opacity-80 hover:opacity-100" data-translate="action-back">Volver</a>
+        <a href="/friends.html" class="opacity-80 hover:opacity-100" data-translate="home.cards.friends.title">Amigos</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <!-- Selector idioma -->
+        <div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+          <button class="hover:underline" onclick="changeLanguage?.('en')">EN</button>
+          <span class="mx-1 text-white/40">|</span>
+          <button class="hover:underline" onclick="changeLanguage?.('es')">ES</button>
+          <span class="mx-1 text-white/40">|</span>
+          <button class="hover:underline" onclick="changeLanguage?.('fr')">FR</button>
+        </div>
+        <!-- Logout (lo engancha profile.ts por id) -->
+        <button id="btn-logout"
+          class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
+          data-translate="home.logout">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Glows -->
   <div class="pointer-events-none fixed -top-24 -left-24 w-[36rem] h-[36rem] rounded-full bg-indigo-600/20 blur-3xl"></div>
   <div class="pointer-events-none fixed -bottom-32 -right-24 w-[30rem] h-[30rem] rounded-full bg-emerald-500/20 blur-3xl"></div>
 
@@ -37,38 +68,38 @@
       <div class="glass rounded-2xl -mt-16 sm:-mt-20 px-4 sm:px-8 pt-20 pb-6">
         <div class="flex flex-col sm:flex-row sm:items-end gap-6">
           <div class="-mt-24 sm:-mt-28">
-            <img id="avatar" class="avatar-xl ring-neon" src="default-avatar.png" alt="Avatar por defecto">
+            <img id="avatar" class="avatar-xl ring-neon" src="/default-avatar.png" alt="Avatar">
           </div>
           <div class="flex-1">
-            <h1 id="player-name" class="text-3xl md:text-4xl font-extrabold tracking-tight">Jugador</h1>
+            <h1 id="player-name" class="text-3xl md:text-4xl font-extrabold tracking-tight" data-translate="Profile-text">Mi perfil</h1>
             <p id="player-email" class="opacity-80 mt-1">email@dominio.com</p>
             <div class="mt-3.5 flex flex-wrap items-center gap-3">
-              <span class="badge">Miembro desde <span id="member-since">—</span></span>
-              <span class="badge">Nivel <span id="level">1</span></span>
+              <span class="badge"><span data-translate="profile.memberSince">Miembro desde</span> <span id="member-since">—</span></span>
+              <span class="badge"><span data-translate="profile.level">Nivel</span> <span id="level">1</span></span>
               <span class="badge">ELO <span id="elo">1000</span></span>
             </div>
           </div>
-          <!-- Compact stats on the right -->
+          <!-- Compact stats -->
           <div class="grid grid-cols-3 gap-2 self-start sm:self-auto">
             <div class="glass rounded-2xl text-center stat-card">
               <div id="stat-wins" class="stat-num">0</div>
-              <div class="stat-lbl">Victorias</div>
+              <div class="stat-lbl" data-translate="profile.wins">Victorias</div>
             </div>
             <div class="glass rounded-2xl text-center stat-card">
               <div id="stat-draws" class="stat-num">0</div>
-              <div class="stat-lbl">Empates</div>
+              <div class="stat-lbl" data-translate="profile.draws">Empates</div>
             </div>
             <div class="glass rounded-2xl text-center stat-card">
               <div id="stat-losses" class="stat-num">0</div>
-              <div class="stat-lbl">Derrotas</div>
+              <div class="stat-lbl" data-translate="profile.losses">Derrotas</div>
             </div>
           </div>
         </div>
 
-        <!-- Visible quick actions -->
+        <!-- Quick actions -->
         <div class="mt-5 flex flex-wrap gap-2 justify-end">
-          <a href="menu.html" class="badge hover:bg-white/10">← Volver a menú</a>
-          <a href="friends.html" class="badge hover:bg-white/10">👥 Ver amigos</a>
+          <a href="/home.html" class="badge hover:bg-white/10" data-translate="action-back">← Volver</a>
+          <a href="/friends.html" class="badge hover:bg-white/10">👥 <span data-translate="home.cards.friends.title">Amigos</span></a>
         </div>
       </div>
     </section>
@@ -76,19 +107,19 @@
     <!-- SUMMARY STRIP -->
     <section class="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
       <div class="glass rounded-2xl p-4 text-center">
-        <div class="text-sm opacity-70">Partidas</div>
+        <div class="text-sm opacity-70" data-translate="profile.matches">Partidas</div>
         <div id="stat-total" class="text-2xl font-bold">0</div>
       </div>
       <div class="glass rounded-2xl p-4 text-center">
-        <div class="text-sm opacity-70">Winrate</div>
+        <div class="text-sm opacity-70" data-translate="profile.winrate">Winrate</div>
         <div id="stat-winrate" class="text-2xl font-bold">0%</div>
       </div>
       <div class="glass rounded-2xl p-4 text-center">
-        <div class="text-sm opacity-70">Racha</div>
+        <div class="text-sm opacity-70" data-translate="profile.streak">Racha</div>
         <div id="stat-streak" class="text-2xl font-bold">0</div>
       </div>
       <div class="glass rounded-2xl p-4 text-center">
-        <div class="text-sm opacity-70">Tiempo jugado</div>
+        <div class="text-sm opacity-70" data-translate="profile.timePlayed">Tiempo jugado</div>
         <div id="stat-time" class="text-2xl font-bold">—</div>
       </div>
     </section>
@@ -96,11 +127,11 @@
     <!-- CHARTS -->
     <section class="mt-6 grid-card">
       <div class="glass rounded-2xl p-5">
-        <h2 class="text-lg font-semibold mb-3">Distribución de resultados</h2>
+        <h2 class="text-lg font-semibold mb-3" data-translate="profile.resultDistribution">Distribución de resultados</h2>
         <canvas id="chart-pie" height="220"></canvas>
       </div>
       <div class="glass rounded-2xl p-5">
-        <h2 class="text-lg font-semibold mb-3">Últimas partidas</h2>
+        <h2 class="text-lg font-semibold mb-3" data-translate="profile.lastMatches">Últimas partidas</h2>
         <canvas id="chart-last" height="220"></canvas>
       </div>
     </section>
@@ -110,20 +141,20 @@
       <!-- Información personal -->
       <details class="glass rounded-2xl overflow-hidden">
         <summary class="px-6 py-4 flex items-center justify-between">
-          <div class="text-lg font-semibold">Información personal</div>
+          <div class="text-lg font-semibold" data-translate="profile.personalInfo">Información personal</div>
           <svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
           </svg>
         </summary>
         <div class="px-6 pb-6 border-t border-white/10">
           <dl class="grid sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-            <div><dt class="opacity-70">Nombre público</dt><dd id="ov-display" class="font-medium">—</dd></div>
-            <div><dt class="opacity-70">Email</dt><dd id="ov-email" class="font-medium">—</dd></div>
-            <div><dt class="opacity-70">Nombre</dt><dd id="ov-first" class="font-medium">—</dd></div>
-            <div><dt class="opacity-70">Apellidos</dt><dd id="ov-last" class="font-medium">—</dd></div>
-            <div><dt class="opacity-70">Fecha de nacimiento</dt><dd id="ov-birth" class="font-medium">—</dd></div>
-            <div><dt class="opacity-70">Miembro desde</dt><dd id="ov-created" class="font-medium">—</dd></div>
-            <div><dt class="opacity-70">Actualizado</dt><dd id="ov-updated" class="font-medium">—</dd></div>
+            <div><dt class="opacity-70" data-translate="field-display_name">Nombre público</dt><dd id="ov-display" class="font-medium">—</dd></div>
+            <div><dt class="opacity-70" data-translate="field-email">Email</dt><dd id="ov-email" class="font-medium">—</dd></div>
+            <div><dt class="opacity-70" data-translate="field-first_name">Nombre</dt><dd id="ov-first" class="font-medium">—</dd></div>
+            <div><dt class="opacity-70" data-translate="field-last_name">Apellidos</dt><dd id="ov-last" class="font-medium">—</dd></div>
+            <div><dt class="opacity-70" data-translate="field-birthdate">Fecha de nacimiento</dt><dd id="ov-birth" class="font-medium">—</dd></div>
+            <div><dt class="opacity-70" data-translate="profile.memberSince">Miembro desde</dt><dd id="ov-created" class="font-medium">—</dd></div>
+            <div><dt class="opacity-70" data-translate="profile.updated">Actualizado</dt><dd id="ov-updated" class="font-medium">—</dd></div>
           </dl>
         </div>
       </details>
@@ -131,7 +162,7 @@
       <!-- Editar perfil -->
       <details class="glass rounded-2xl overflow-hidden">
         <summary class="px-6 py-4 flex items-center justify-between">
-          <div class="text-lg font-semibold">Editar perfil</div>
+          <div class="text-lg font-semibold" data-translate="home.editProfile">Editar perfil</div>
           <svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
           </svg>
@@ -139,23 +170,28 @@
         <div class="px-6 pb-6 border-t border-white/10">
           <form id="form-edit" class="grid md:grid-cols-2 gap-4 max-w-3xl">
             <label class="grid gap-1">
-              <span class="text-sm opacity-80">Nombre público</span>
-              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" name="display_name" placeholder="Tu nick" required/>
+              <span class="text-sm opacity-80" data-translate="field-display_name">Nombre público</span>
+              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                     name="display_name" required data-translate-placeholder="username-placeholder" placeholder="Tu nick"/>
             </label>
             <label class="grid gap-1">
-              <span class="text-sm opacity-80">Fecha de nacimiento</span>
-              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" type="date" name="birthdate"/>
+              <span class="text-sm opacity-80" data-translate="field-birthdate">Fecha de nacimiento</span>
+              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                     type="date" name="birthdate" data-translate-placeholder="bithdate-placeholder"/>
             </label>
             <label class="grid gap-1">
-              <span class="text-sm opacity-80">Nombre</span>
-              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" name="first_name" placeholder="Nombre"/>
+              <span class="text-sm opacity-80" data-translate="field-first_name">Nombre</span>
+              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                     name="first_name" data-translate-placeholder="name-placeholder" placeholder="Nombre"/>
             </label>
             <label class="grid gap-1">
-              <span class="text-sm opacity-80">Apellidos</span>
-              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" name="last_name" placeholder="Apellidos"/>
+              <span class="text-sm opacity-80" data-translate="field-last_name">Apellidos</span>
+              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                     name="last_name" data-translate-placeholder="last_name-placeholder" placeholder="Apellidos"/>
             </label>
             <div class="md:col-span-2 flex gap-2">
-              <button class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 px-5 py-2 rounded-xl font-semibold">Guardar cambios</button>
+              <button class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 px-5 py-2 rounded-xl font-semibold"
+                      data-translate="submit">Guardar cambios</button>
               <span id="msg-edit" class="text-sm min-h-[1.25rem] self-center"></span>
             </div>
           </form>
@@ -165,19 +201,22 @@
       <!-- Avatar -->
       <details class="glass rounded-2xl overflow-hidden">
         <summary class="px-6 py-4 flex items-center justify-between">
-          <div class="text-lg font-semibold">Avatar</div>
+          <div class="text-lg font-semibold" data-translate="profile.avatar">Avatar</div>
           <svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
           </svg>
         </summary>
         <div class="px-6 pb-6 border-t border-white/10">
           <form id="form-avatar" class="grid gap-4 md:grid-cols-[auto,1fr] items-center max-w-3xl" enctype="multipart/form-data">
-            <img id="preview-avatar" class="avatar-xl ring-neon" src="default-avatar.png" alt="Previsualización">
+            <img id="preview-avatar" class="avatar-xl ring-neon" src="/default-avatar.png" alt="Previsualización">
             <div class="grid gap-3">
-              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" type="file" name="avatar" accept="image/*" id="avatar-file"/>
+              <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                     type="file" name="avatar" accept="image/*" id="avatar-file"/>
               <div class="flex gap-2">
-                <label for="avatar-file" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-xl font-semibold cursor-pointer">Elegir archivo</label>
-                <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-xl font-semibold" type="submit">Subir</button>
+                <label for="avatar-file" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-xl font-semibold cursor-pointer"
+                       data-translate="profile.chooseFile">Elegir archivo</label>
+                <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-xl font-semibold" type="submit"
+                        data-translate="upload-avatar">Subir</button>
               </div>
               <p id="msg-avatar" class="text-sm min-h-[1.25rem]"></p>
             </div>
@@ -188,120 +227,36 @@
       <!-- Cuenta -->
       <details class="glass rounded-2xl overflow-hidden">
         <summary class="px-6 py-4 flex items-center justify-between">
-          <div class="text-lg font-semibold">Cuenta</div>
+          <div class="text-lg font-semibold" data-translate="profile.account">Cuenta</div>
           <svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
           </svg>
         </summary>
         <div class="px-6 pb-6 border-t border-white/10">
           <form id="form-email" class="grid md:grid-cols-[1fr_auto] gap-3 max-w-md">
-            <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" type="email" name="email" placeholder="tu@email.com"/>
-            <button class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-xl font-semibold">Actualizar email</button>
+            <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                   type="email" name="email"
+                   data-translate-placeholder="email-placeholder" placeholder="tu@email.com"/>
+            <button class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-xl font-semibold"
+                    data-translate="profile.updateEmail">Actualizar email</button>
             <p id="msg-email" class="text-sm md:col-span-2"></p>
           </form>
           <div class="mt-4">
-            <button id="btn-logout" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-semibold">Cerrar sesión</button>
+            <button id="btn-logout" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-semibold"
+                    data-translate="home.logout">Cerrar sesión</button>
           </div>
         </div>
       </details>
     </section>
   </main>
 
-  <script>
-    const $ = (s,p=document)=>p.querySelector(s);
-    const $$ = (s,p=document)=>[...p.querySelectorAll(s)];
-    const escapeHTML = s => (s ?? '').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const fmtDate = s => !s ? '—' : new Date(s).toLocaleString();
-
-    // one-open accordion
-    $$('.glass[open], details.glass').forEach(d => {
-      d.addEventListener('toggle', () => {
-        if (d.open) $$('.glass[open], details.glass').forEach(o => { if (o !== d && o.open) o.open = false; });
-      });
-    });
-
-    // charts
-    let pieChart, lastChart;
-    function renderCharts({wins, losses, draws, lastResults=[]}){
-      const ctxPie = document.getElementById('chart-pie');
-      const ctxLast = document.getElementById('chart-last');
-      pieChart && pieChart.destroy();
-      lastChart && lastChart.destroy();
-
-      pieChart = new Chart(ctxPie, {
-        type: 'doughnut',
-        data: { labels: ['Victorias','Empates','Derrotas'], datasets: [{ data: [wins, draws, losses], borderWidth: 0 }] },
-        options: { plugins: { legend: { labels: { color: '#D4D4D8' } } }, cutout: '60%' }
-      });
-
-      const labels = lastResults.map((_,i)=>`#${i+1}`);
-      lastChart = new Chart(ctxLast, {
-        type: 'bar',
-        data: { labels, datasets: [{ label: 'Resultado (1=Win, 0=Draw, -1=Loss)', data: lastResults, borderWidth: 1 }] },
-        options: { plugins: { legend: { labels: { color: '#D4D4D8' } } }, scales: {
-          x: { ticks: { color: '#D4D4D8' } },
-          y: { ticks: { color: '#D4D4D8' }, suggestedMin: -1, suggestedMax: 1 }
-        }} 
-      });
-    }
-
-    // data (tries API, else demo)
-    const state = { me: { id:null, display_name:'Jugador', email:'email@dominio.com', avatar_path:null, created_at:null, first_name:'', last_name:'', birthdate:'' }, matches: [] };
-    async function tryFetchJSON(url){ try{ const r=await fetch(url,{credentials:'include'}); if(!r.ok) throw 0; return await r.json(); }catch{ return null; } }
-
-    async function load(){
-      const meRes = await tryFetchJSON('/api/auth/me'); if (meRes?.user) state.me = meRes.user;
-      const matchesRes = await tryFetchJSON('/api/users/me/matches');
-      state.matches = matchesRes?.matches || [
-        { winner_id: 1 }, {}, { winner_id: -1 }, { winner_id: 1 },
-        { winner_id: 1 }, {}, { winner_id: -1 }, { winner_id: 1 }
-      ];
-
-      $('#avatar').src = state.me.avatar_path || 'default-avatar.png';
-      $('#preview-avatar').src = state.me.avatar_path || 'default-avatar.png';
-      $('#player-name').textContent = escapeHTML(state.me.display_name || 'Jugador');
-      $('#player-email').textContent = escapeHTML(state.me.email || 'email@dominio.com');
-      const createdTxt = fmtDate(state.me.created_at);
-      $('#member-since').textContent = createdTxt;
-      $('#ov-display').textContent = state.me.display_name || '—';
-      $('#ov-email').textContent = state.me.email || '—';
-      $('#ov-first').textContent = state.me.first_name || '—';
-      $('#ov-last').textContent = state.me.last_name || '—';
-      $('#ov-birth').textContent = state.me.birthdate || '—';
-      $('#ov-created').textContent = createdTxt;
-      $('#ov-updated').textContent = fmtDate(state.me.updated_at);
-
-      const myId = state.me.id;
-      let wins=0, losses=0, draws=0; let lastResults=[];
-      for (const m of state.matches.slice(-12)) {
-        if (m.winner_id === myId) { wins++; lastResults.push(1); }
-        else if (m.hasOwnProperty('is_draw') ? m.is_draw : (!m.winner_id || m.winner_id === 0 || m.winner_id === -1)) { draws++; lastResults.push(0); }
-        else { losses++; lastResults.push(-1); }
-      }
-      const total = wins + losses + draws;
-      const winrate = total ? Math.round((wins/total)*100) : 0;
-      let streak=0; for(let i=lastResults.length-1;i>=0;i--){ if(lastResults[i]===1) streak++; else break; }
-
-      $('#stat-wins').textContent=wins; $('#stat-draws').textContent=draws; $('#stat-losses').textContent=losses;
-      $('#stat-total').textContent=total; $('#stat-winrate').textContent=winrate + '%'; $('#stat-streak').textContent=streak;
-      $('#stat-time').textContent= total ? (total*5)+' min' : '—';
-
-      renderCharts({wins, losses, draws, lastResults});
-    }
-
-    document.addEventListener('change', (e)=>{
-      if (e.target && e.target.id === 'avatar-file') {
-        const f = e.target.files?.[0]; if (f) $('#preview-avatar').src = URL.createObjectURL(f);
-      }
-    });
-
-    // placeholders for forms
-    $('#form-edit')?.addEventListener('submit', (e)=>{ e.preventDefault(); $('#msg-edit').textContent = '✅ Cambios listos para enviar (conecta el endpoint)'; });
-    $('#form-avatar')?.addEventListener('submit', (e)=>{ e.preventDefault(); $('#msg-avatar').textContent = '✅ Avatar listo para subir (conecta el endpoint)'; });
-    $('#form-email')?.addEventListener('submit', (e)=>{ e.preventDefault(); $('#msg-email').textContent = '✅ Email listo para actualizar (conecta el endpoint)'; });
-    $('#btn-logout')?.addEventListener('click', async ()=>{ try{ await fetch('/api/auth/logout',{method:'POST',credentials:'include'}); }catch{} location.href = '/'; });
-
-    load();
+  <!-- App scripts -->
+  <script src="/js/api.js"></script>
+  <script type="module" src="/dist/profile.js"></script>
+  <script type="module">
+    import { initializeLanguages, changeLanguage } from '/dist/translate.js';
+    initializeLanguages();
+    window.changeLanguage = changeLanguage;
   </script>
 </body>
 </html>

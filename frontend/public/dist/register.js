@@ -35,7 +35,7 @@ function onSubmit(e) {
                 body: JSON.stringify(data),
                 headers: { "Content-Type": "application/json" },
             });
-            location.href = "../menu.html";
+            location.href = "../home.html";
         }
         catch (err) {
             setError((_a = err === null || err === void 0 ? void 0 : err.message) !== null && _a !== void 0 ? _a : "Error inesperado");
