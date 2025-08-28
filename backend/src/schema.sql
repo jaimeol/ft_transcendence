@@ -27,3 +27,35 @@ CREATE TABLE IF NOT EXISTS matches (
   played_at TEXT DEFAULT (datetime('now')),
   details TEXT
 );
+
+-- Mensajes directos
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender_id   INTEGER NOT NULL,
+  receiver_id INTEGER NOT NULL,
+  body        TEXT,
+  kind        TEXT NOT NULL DEFAULT 'text' CHECK (kind IN ('text','invite','system')),
+  meta        TEXT, -- JSON opcional (por ejemplo, datos de invitación)
+  created_at  TEXT DEFAULT (datetime('now')),
+  read_at     TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_messages_pair_time
+ON messages(sender_id, receiver_id, created_at);
+
+-- Bloqueos unidireccionales
+CREATE TABLE IF NOT EXISTS blocks (
+  blocker_id INTEGER NOT NULL,
+  blocked_id INTEGER NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (blocker_id, blocked_id)
+);
+
+-- Notificaciones (p.ej. torneo)
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  type TEXT NOT NULL,
+  payload TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  read_at TEXT
+);

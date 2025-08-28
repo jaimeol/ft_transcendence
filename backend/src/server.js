@@ -7,10 +7,12 @@ const multipart = require('@fastify/multipart');
 const cookie = require('@fastify/cookie');
 const session = require('@fastify/session');
 const formbody = require('@fastify/formbody');
+const websocket = require('@fastify/websocket');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const friendsRoutes = require('./routes/friends');
+const chatRoutes    = require('./routes/chat');
 require('./db');
 
 const certsDir = path.join(__dirname, '..', 'certs');
@@ -30,6 +32,7 @@ app.register(session, {
   secret: '12345678901234567890123456789012', //esto quiza lo meta en un .env
   cookie: { httpOnly: true, sameSite: 'lax', secure: false }
 });
+app.register(websocket);
 
 app.register(fastifyStatic, {
   root: path.join(__dirname, '..', 'public'),
@@ -51,9 +54,63 @@ app.get('/uploads/*', async (req, reply)=>{
   return reply.redirect('/default-avatar.png');
 });
 
+const socketsByUser = new Map(); // userId -> Set<WebSocket>
+
+app.decorate('websocketPush', (userId, payload) => {
+  const set = socketsByUser.get(Number(userId));
+  if (!set) return;
+  for (const sock of set) {
+    try { sock.send(JSON.stringify(payload)); } catch {}
+  }
+});
+
+// Endpoint WS autenticado por sesión
+app.get('/ws/chat', { websocket: true }, (connection, req) => {
+  const uid = req.session.uid; // <- autenticado vía cookie de sesión
+  if (!uid) { try { connection.socket.close(); } catch {} ; return; }
+
+  // Registrar
+  const set = socketsByUser.get(uid) || new Set();
+  set.add(connection.socket);
+  socketsByUser.set(uid, set);
+
+  // Presencia simple
+  connection.socket.send(JSON.stringify({ type: 'hello', userId: uid }));
+
+  connection.socket.on('message', (buf) => {
+    let msg = {};
+    try { msg = JSON.parse(String(buf)); } catch { return; }
+
+    // Mensajes enviados por WS (text / invite)
+    if (msg.type === 'send') {
+      const { to, body } = msg;
+      if (!to || (!body && msg.kind !== 'invite')) return;
+      // Persistir
+      const k = msg.kind === 'invite' ? 'invite' : 'text';
+      const meta = k === 'invite' ? JSON.stringify({ game: 'pong' }) : null;
+      const info = require('./db').db.prepare(`
+        INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(uid, Number(to), body ?? null, k, meta);
+      const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
+
+      // Eco al propio cliente
+      try { connection.socket.send(JSON.stringify({ type: 'message', message: saved })); } catch {}
+      // Push al destinatario
+      app.websocketPush(Number(to), { type: k === 'invite' ? 'invite' : 'message', message: saved });
+    }
+  });
+
+  connection.socket.on('close', () => {
+    const s = socketsByUser.get(uid);
+    if (s) { s.delete(connection.socket); if (s.size === 0) socketsByUser.delete(uid); }
+  });
+});
+
 app.register(authRoutes);
 app.register(usersRoutes);
 app.register(friendsRoutes);
+app.register(chatRoutes);
 
 const PORT = 1234;
 app.listen({ port: PORT, host: '0.0.0.0' }, (err, address)=>{
