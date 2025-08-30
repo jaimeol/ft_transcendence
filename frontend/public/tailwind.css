@@ -283,7 +283,7 @@ sup {
 
 /*
 1. Remove text indentation from table contents in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)
-2. Correct table border color inheritance in all Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)
+2. Correct table border color inheritance in all Chrome and Safari.
 3. Remove gaps between table borders by default.
 */
 
@@ -1679,3 +1679,46 @@ video {
   }
 }
 
+/* utilidades que faltaban */
+.h-5 { height: 1.25rem; }      /* 20px */
+.w-5 { width: 1.25rem; }       /* 20px */
+.h-11 { height: 2.75rem; }     /* 44px */
+
+/* botón: gris oscuro elegante + texto blanco + borde sutil */
+#google-btn{
+  background-color:#1e232c;        /* gray-900 */
+  color:#ffffff;                    /* texto blanco */
+  border:1px solid #27272a;         /* zinc-800 */
+  min-height:2.75rem;               /* h-11 */
+  padding-left:1rem; padding-right:1rem; /* px-4 */
+}
+#google-btn:hover{ box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+#google-btn:active{ transform: scale(0.99); }
+
+/* brillo radial DETRÁS del contenido */
+#google-btn::before{
+  content:'';
+  position:absolute; inset:0; border-radius:inherit;
+  pointer-events:none; z-index:0;
+  background: radial-gradient(120px 120px at var(--x) var(--y),
+              rgba(59,130,246,0.12), transparent 60%);
+  opacity:0; transition: opacity .2s ease;
+}
+#google-btn:hover::before{ opacity:1; }
+#google-btn > *{ position:relative; z-index:1; }
+
+/* tamaño del icono / spinner (sin forzar display) */
+#google-g-icon, #google-spinner{ width:20px; height:20px; }
+
+/* respeta la utilidad .hidden para alternar icono y spinner */
+#google-g-icon.hidden, #google-spinner.hidden{ display:none !important; }
+
+/* colores del logo (por si hay fill: currentColor global) */
+#google-g-icon path:nth-child(1){ fill:#FFC107 !important; }
+#google-g-icon path:nth-child(2){ fill:#FF3D00 !important; }
+#google-g-icon path:nth-child(3){ fill:#4CAF50 !important; }
+#google-g-icon path:nth-child(4){ fill:#1976D2 !important; }
+
+/* >>> faltaba animate-spin (sin esto el círculo no gira) */
+@keyframes tw-spin{ to { transform: rotate(360deg); } }
+.animate-spin{ animation: tw-spin 1s linear infinite; }
