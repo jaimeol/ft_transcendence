@@ -18,4 +18,9 @@ try {
     END;`);
 } catch {}
 
+try {
+  // Crear índice único para google_id (solo cuando no es NULL)
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;`);
+} catch {}
+
 module.exports = { db };

@@ -26,6 +26,9 @@
   <main class="w-full max-w-md p-8 rounded-2xl bg-zinc-900/60 backdrop-blur">
     <h1 class="text-3xl font-bold mb-8 text-center">Iniciar sesión</h1>
 
+    <!-- Mensaje de error -->
+    <div id="error-message" class="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm hidden"></div>
+
     <form id="login-form" class="space-y-6" autocomplete="on">
       <div class="space-y-2">
         <label for="email" class="block text-sm text-white">Email</label>
@@ -81,13 +84,9 @@
   </main>
 
   <script src="/js/api.js"></script>
-  <script type="module">
-    import { initializeLanguages, changeLanguage } from '/dist/translate.js';
-    document.addEventListener('DOMContentLoaded', () => initializeLanguages());
-    window.changeLanguage = changeLanguage;
-  </script>
-
+  
   <!-- ⚠️ Asegúrate de que este archivo exista FÍSICAMENTE en /public/dist/google.js -->
   <script type="module" src="/dist/google.js?v=5"></script>
+  <script type="module" src="/dist/login.js"></script>
 </body>
 </html>

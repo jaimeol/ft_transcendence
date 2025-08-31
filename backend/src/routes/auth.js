@@ -30,11 +30,26 @@ async function routes(fastify){
 
   fastify.post('/api/auth/login', async (req, reply)=>{
     const { email, password } = req.body || {};
-    if(!email || !password) return reply.code(400).send({ error: 'Missing credentials' });
+    if(!email || !password) {
+      return reply.code(400).send({ error: 'Missing credentials' });
+    }
+    
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    if(!user) return reply.code(401).send({ error: 'Invalid email or password' });
+    
+    if(!user) {
+      return reply.code(401).send({ error: 'Invalid email or password' });
+    }
+    
+    // Verificar que el usuario tenga contraseña configurada
+    if(!user.password_hash) {
+      return reply.code(401).send({ error: 'This account was created with Google. Please use Google Sign In.' });
+    }
+    
     const ok = await bcrypt.compare(password, user.password_hash);
-    if(!ok) return reply.code(401).send({ error: 'Invalid email or password' });
+    if(!ok) {
+      return reply.code(401).send({ error: 'Invalid email or password' });
+    }
+    
     req.session.uid = user.id;
     return { user: toUserSafe(user) };
   });

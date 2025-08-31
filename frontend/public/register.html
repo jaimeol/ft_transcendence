@@ -4,6 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Registro — ft_transcendence</title>
+  
+  <!-- Google Client ID -->
+  <meta name="google-client-id" content="42380017002-djg345a26snh503oksetl0nk3a7pa2t5.apps.googleusercontent.com">
+  
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
   <link rel="stylesheet" href="/tailwind.css"/>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white relative overflow-hidden">
@@ -144,6 +151,42 @@
             Registrarse
           </button>
 
+          <!-- Separador -->
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-white/10"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-zinc-900/60 text-zinc-400">o</span>
+            </div>
+          </div>
+
+          <!-- Botón Google -->
+          <button id="google-btn" type="button" aria-label="Registrarse con Google" aria-busy="false"
+            class="w-full group inline-flex items-center justify-center gap-3 rounded-2xl font-medium h-11 px-4 text-sm
+                   ring-1 ring-zinc-300/20
+                   relative transition-all duration-200 ease-out
+                   hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none
+                   focus-visible:ring-2 focus-visible:ring-zinc-300/60
+                   disabled:opacity-70 disabled:cursor-not-allowed">
+            <span class="relative inline-flex h-5 w-5 items-center justify-center">
+              <!-- Icono -->
+              <svg id="google-g-icon" viewBox="0 0 48 48" aria-hidden="true" class="h-5 w-5">
+                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.835 32.662 29.322 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C33.64 6.053 29.084 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20c10.494 0 19.127-7.619 19.127-20 0-1.341-.147-2.651-.389-3.917z"/>
+                <path fill="#FF3D00" d="M6.306 14.691l6.571 4.818C14.5 16.108 18.86 12 24 12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C33.64 6.053 29.084 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                <path fill="#4CAF50" d="M24 44c5.258 0 10.055-2.007 13.67-5.271l-6.303-5.335C29.37 34.471 26.83 36 24 36c-5.299 0-9.793-3.37-11.41-8.063l-6.54 5.037C8.348 39.556 15.585 44 24 44z"/>
+                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.076 3.162-3.366 5.633-6.633 7.311l.001.001 6.303 5.335C33.793 41.239 44 36 44 24c0-1.341-.147-2.651-.389-3.917z"/>
+              </svg>
+              <!-- Spinner -->
+              <svg id="google-spinner" viewBox="0 0 24 24" class="h-5 w-5 animate-spin hidden" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" stroke-width="4" stroke="currentColor" fill="none" opacity="0.2"></circle>
+                <path d="M22 12a10 10 0 0 0-10-10" stroke-width="4" stroke="currentColor" fill="none"></path>
+              </svg>
+            </span>
+            <span id="google-label" class="relative">Registrarse con Google</span>
+            <span class="pointer-events-none ml-1 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden>→</span>
+          </button>
+
           <div id="err" class="text-red-400 text-sm min-h-[1.25rem]"></div>
         </form>
 
@@ -154,6 +197,7 @@
 
   <!-- Carga api global y tu módulo TS compilado -->
   <script src="./js/api.js"></script>
+  <script type="module" src="/dist/google.js"></script>
   <script type="module" src="/dist/register.js"></script>
   <script type="module">
 		import { initializeLanguages, changeLanguage } from '/dist/translate.js';

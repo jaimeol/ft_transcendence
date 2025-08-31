@@ -12,6 +12,8 @@ const btn = document.getElementById("google-btn");
 const label = document.getElementById("google-label");
 const gIcon = document.getElementById("google-g-icon");
 const spinner = document.getElementById("google-spinner");
+// Guardar el texto original del botón
+const originalLabelText = (label === null || label === void 0 ? void 0 : label.textContent) || "Continuar con Google";
 function setLoading(loading) {
     if (!btn || !label || !gIcon || !spinner)
         return;
@@ -23,7 +25,7 @@ function setLoading(loading) {
         spinner.classList.remove("hidden");
     }
     else {
-        label.textContent = "Continuar con Google";
+        label.textContent = originalLabelText;
         gIcon.classList.remove("hidden");
         spinner.classList.add("hidden");
     }

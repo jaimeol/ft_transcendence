@@ -153,6 +153,7 @@ module.exports = async function (fastify) {
       }
 
       const email = payload.email;
+      const googleId = payload.sub; // ID único de Google
       const name =
         payload.name || payload.given_name || payload.email.split("@")[0];
       const picture = payload.picture || null;
@@ -162,28 +163,61 @@ module.exports = async function (fastify) {
         return reply.code(400).send("Email no presente en token");
       }
 
-      fastify.log.info("Procesando usuario con email:", email);
-      // 5) upsert usuario + sesión
+      if (!googleId) {
+        fastify.log.warn("Google ID no presente en token");
+        return reply.code(400).send("Google ID no presente en token");
+      }
+
+      fastify.log.info("Procesando usuario con email:", email, "y Google ID:", googleId);
+      // 5) upsert usuario + sesión con lógica de unificación
       const db = fastify.db;
 
-      const selectByEmail = db.prepare("SELECT * FROM users WHERE email = ?");
-      let user = selectByEmail.get(email);
+      // Buscar usuario por email O por google_id
+      const selectByEmailOrGoogleId = db.prepare("SELECT * FROM users WHERE email = ? OR google_id = ?");
+      let user = selectByEmailOrGoogleId.get(email, googleId);
 
       if (!user) {
+        // Usuario completamente nuevo - crear cuenta OAuth
+        fastify.log.info("Creando nueva cuenta OAuth para:", email);
         const dn = pickDisplayName(db, email);
-        // INSERT sin password_hash ya que es NULL para usuarios de Google
         const ins = db.prepare(
-          "INSERT INTO users(email, display_name, avatar_path) VALUES (?, ?, ?)"
+          "INSERT INTO users(email, display_name, avatar_path, google_linked, google_id) VALUES (?, ?, ?, 1, ?)"
         );
-        const info = ins.run(email, dn, picture);
+        const info = ins.run(email, dn, picture, googleId);
         user = db
           .prepare("SELECT * FROM users WHERE id = ?")
           .get(info.lastInsertRowid);
-      } else {
-        // actualizamos nombre/avatar si vienen de Google
+        fastify.log.info("Nueva cuenta OAuth creada con ID:", user.id);
+        
+      } else if (user.email === email && !user.google_linked) {
+        // Usuario existe con mismo email pero sin Google vinculado - VINCULAR
+        fastify.log.info("Vinculando cuenta existente con Google para:", email);
+        
+        // Preservar avatar existente, solo usar Google si no hay avatar previo
         db.prepare(
-          "UPDATE users SET avatar_path = COALESCE(?, avatar_path), updated_at = datetime('now') WHERE id = ?"
+          "UPDATE users SET google_linked = 1, google_id = ?, avatar_path = COALESCE(avatar_path, ?), updated_at = datetime('now') WHERE id = ?"
+        ).run(googleId, picture, user.id);
+        
+        // Recargar usuario actualizado
+        user = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+        fastify.log.info("Cuenta vinculada exitosamente. Avatar preservado:", user.avatar_path);
+        
+      } else if (user.google_id === googleId) {
+        // Usuario ya vinculado con Google - login normal
+        fastify.log.info("Login con Google para cuenta ya vinculada:", email);
+        
+        // Solo actualizar avatar si no hay uno previo
+        db.prepare(
+          "UPDATE users SET avatar_path = COALESCE(avatar_path, ?), updated_at = datetime('now') WHERE id = ?"
         ).run(picture, user.id);
+        
+        // Recargar usuario actualizado
+        user = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+        
+      } else {
+        // Caso extraño: otro usuario tiene este google_id pero diferente email
+        fastify.log.warn("Conflicto de Google ID con diferente email");
+        return reply.code(409).send("Conflicto de identidad Google");
       }
 
       // sesión
