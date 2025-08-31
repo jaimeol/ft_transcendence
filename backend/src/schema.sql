@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
   last_name TEXT,
   birthdate TEXT,
   avatar_path TEXT DEFAULT '/uploads/default-avatar.png',
+  google_linked INTEGER DEFAULT 0,
+  google_id TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
