@@ -2,12 +2,14 @@ PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
   display_name TEXT UNIQUE NOT NULL,
   first_name TEXT,
   last_name TEXT,
   birthdate TEXT,
   avatar_path TEXT DEFAULT '/uploads/default-avatar.png',
+  google_linked INTEGER DEFAULT 0,
+  google_id TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );

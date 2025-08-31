@@ -8,11 +8,23 @@ function toUserSafe(row){
   return {
     id: row.id, email: row.email, display_name: row.display_name,
     first_name: row.first_name, last_name: row.last_name, birthdate: row.birthdate,
-    avatar_path: row.avatar_path, created_at: row.created_at, updated_at: row.updated_at
+    avatar_path: row.avatar_path, created_at: row.created_at, updated_at: row.updated_at,
+    google_linked: row.google_linked || 0, has_password: !!row.password_hash
   };
 }
 
 async function routes(fastify){
+  // GET /api/users/me - Obtener información del usuario autenticado
+  fastify.get('/api/users/me', async (req, reply) => {
+    const uid = req.session.uid;
+    if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
+
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(uid);
+    if (!user) return reply.code(404).send({ error: 'User not found' });
+
+    return toUserSafe(user);
+  });
+
   fastify.put('/api/users/me', async (req, reply)=>{
     const uid = req.session.uid;
     if(!uid) return reply.code(401).send({ error: 'Unauthorized' });

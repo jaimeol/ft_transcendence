@@ -13,7 +13,7 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const friendsRoutes = require('./routes/friends');
 const chatRoutes    = require('./routes/chat');
-require('./db');
+const { db } = require('./db');
 
 const certsDir = path.join(__dirname, '..', 'certs');
 const httpsOptions = {
@@ -28,15 +28,28 @@ app.register(formbody);
 app.register(multipart);
 app.register(cookie);
 app.register(session, {
-  cookieName: 'sessionId',
-  secret: '12345678901234567890123456789012', //esto quiza lo meta en un .env
-  cookie: { httpOnly: true, sameSite: 'lax', secure: false }
+	cookieName: 'sessionId',
+	secret: '12345678901234567890123456789012', //esto quiza lo meta en un .env
+	cookie: { httpOnly: true, sameSite: 'lax', secure: false }
 });
 app.register(websocket);
+
+// Decorar Fastify con la base de datos
+app.decorate('db', db);
+
+// Registrar las rutas de Google Auth
+app.register(require("./routes/auth_google"), { prefix: "/api" });
+// Comentamos auth_google_code ya que requiere CLIENT_SECRET
+// app.register(require("./routes/auth_google_code"), { prefix: "/api" });
+
 
 app.register(fastifyStatic, {
   root: path.join(__dirname, '..', 'public'),
   prefix: '/',
+  cacheControl: false,
+  maxAge: '0',
+  etag: false,
+  lastModified: false,
 });
 
 const uploadsDir = path.join('/app', 'data', 'uploads');
