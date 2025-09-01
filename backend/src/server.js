@@ -13,6 +13,9 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const friendsRoutes = require('./routes/friends');
 const chatRoutes    = require('./routes/chat');
+const matchesRoutes = require('./routes/matches');
+
+
 const { db } = require('./db');
 
 const certsDir = path.join(__dirname, '..', 'certs');
@@ -134,6 +137,8 @@ app.register(authRoutes);
 app.register(usersRoutes);
 app.register(friendsRoutes);
 app.register(chatRoutes);
+app.register(matchesRoutes);
+
 
 const PORT = 1234;
 app.listen({ port: PORT, host: '0.0.0.0' }, (err, address)=>{

@@ -210,6 +210,34 @@ window.addEventListener('DOMContentLoaded', async () => {
 		setInterval(updateAI, 100); // Más reactivo: cada 100ms
 	}
 
+	async function saveMatch() {
+		try {
+		  // Determina el lado del jugador: en tu juego el humano controla izquierda por defecto.
+		  const side = 'left';
+		  const body = {
+			mode: isAI ? 'ai' : 'local',
+			leftScore,
+			rightScore,
+			side
+			// opponentId: en el futuro si juegas PvP real, pásalo aquí
+		  };
+	  
+		  // Usa window.api si existe; si no, fetch con credenciales
+		  const post = (window as any).api
+			? (path: string, opts: any) => (window as any).api(path, opts)
+			: (path: string, opts: RequestInit) =>
+				fetch(path, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...opts })
+				  .then(r => { if(!r.ok) throw new Error(String(r.status)); return r.json(); });
+	  
+		  await post('/api/matches', {
+			method: 'POST',
+			body: JSON.stringify(body),
+		  });
+		} catch (e) {
+		  console.error('No se pudo guardar la partida:', e);
+		}
+	  }
+	  
 
 	function update() {
 		if (!gameRunning) return;
@@ -296,11 +324,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 	}
   
 	function checkGameOver() {
-	  	if (leftScore >= 5 || rightScore >= 5) {
-			gameOver = true;
-			gameRunning = false;
-	  	}
-	}
+		if (leftScore >= 5 || rightScore >= 5) {
+		  gameOver = true;
+		  gameRunning = false;
+		  saveMatch(); // <-- NUEVO
+		}
+	  }
+	  
   
 	function updateScore() {
 	  	const scoreEl = document.getElementById('score');

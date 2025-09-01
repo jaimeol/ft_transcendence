@@ -3,14 +3,10 @@ version: 3
 
 # Whether to use .gitignore
 useGitIgnore: true
-# File types to include (e.g., .py,.js) - use * for all types
+# File types to include (e.g., .py,.js)
 includeFileTypes: *
-# File types to exclude (e.g., .log,.tmp)
+# File types to exclude when includeFileTypes is '*'
 excludeFileTypes: 
-# Advanced: Glob patterns to include (e.g., src/**/*.py,**/*.js) - overrides includeFileTypes if specified
-includePatterns: 
-# Advanced: Glob patterns to exclude (e.g., **/tests/**,**/*.log) - combined with excludeFileTypes
-excludePatterns: 
 # Output file name
 outputFile: gptree_output.txt
 # Whether to output the file locally or relative to the project directory
@@ -28,4 +24,4 @@ showIgnoredInTree: false
 # Whether to show only default ignored files in the directory tree while still respecting gitignore
 showDefaultIgnoredInTree: false
 # Previously selected files (when using the -s or --save flag previously)
-previousFiles: backend/src/routes/friends.js,frontend/Dockerfile,frontend/public/game.html,frontend/public/locales/es.json,backend/certs/server.key,frontend/public/tailwind.css,frontend/src/styles.css,backend/certs/server.crt,backend/src/server.js,frontend/public/default-avatar.png,frontend/public/dist/chat.js,frontend/public/locales/en.json,frontend/package.json,frontend/postcss.config.js,backend/src/routes/auth.js,frontend/public/locales/fr.json,frontend/src/google.ts,data/app.db-wal,frontend/public/user.html,frontend/src/profile.ts,frontend/src/home.ts,backend/Dockerfile,frontend/src/friends.ts,frontend/public/dist/home.js,frontend/public/dist/register.js,frontend/public/dist/main.js,frontend/public/login.html,frontend/public/files/default-avatar.png,frontend/src/chat.ts,frontend/public/js/api.js,frontend/public/home.html,frontend/public/dist/translate.js,frontend/public/index.html,backend/src/routes/users.js,frontend/src/login.ts,backend/src/schema.sql,frontend/src/translate.ts,backend/src/db.js,frontend/public/dist/google.js,frontend/public/default-avatar.png:Zone.Identifier,frontend/public/dist/profile.js,frontend/public/friends.html,frontend/public/dist/pong.js,frontend/tsconfig.json,data/app.db-shm,frontend/public/register.html,data/uploads/default-avatar.png,backend/src/routes/chat.js,frontend/src/register.ts,data/app.db,backend/package.json,docker-compose.yml,frontend/public/dist/friends.js,.gptree_config,frontend/public/profile.html,frontend/public/dist/login.js,backend/src/routes/auth_google.js,frontend/src/pong.ts,Makefile,frontend/tailwind.config.js
+previousFiles: frontend/public/locales/fr.json,backend/src/db.js,backend/package.json,frontend/public/home.html,frontend/tsconfig.json,frontend/public/js/api.js,frontend/src/translate.ts,frontend/src/register.ts,frontend/public/dist/login.js,backend/src/routes/chat.js,frontend/public/dist/register.js,backend/certs/server.key,frontend/package.json,frontend/public/friends.html,frontend/public/tailwind.css,docker-compose.yml,frontend/public/locales/es.json,Makefile,.gptree_config,backend/src/routes/friends.js,backend/src/server.js,data/app.db-wal,backend/src/routes/users.js,data/uploads/default-avatar.png,frontend/public/index.html,frontend/public/locales/en.json,frontend/src/home.ts,backend/Dockerfile,frontend/public/dist/translate.js,frontend/public/dist/google.js,frontend/src/profile.ts,backend/src/routes/auth_google.js,frontend/Dockerfile,frontend/src/login.ts,frontend/src/friends.ts,frontend/src/styles.css,frontend/public/dist/home.js,frontend/public/game.html,frontend/src/google.ts,backend/certs/server.crt,frontend/src/chat.ts,frontend/public/default-avatar.png:Zone.Identifier,frontend/src/pong.ts,backend/src/routes/auth.js,frontend/public/dist/chat.js,frontend/public/dist/profile.js,frontend/tailwind.config.js,data/app.db,frontend/public/default-avatar.png,frontend/public/files/default-avatar.png,frontend/public/login.html,frontend/public/dist/friends.js,data/app.db-shm,frontend/public/register.html,frontend/public/profile.html,frontend/public/dist/pong.js,backend/src/schema.sql,frontend/postcss.config.js,frontend/public/dist/main.js,frontend/public/user.html
