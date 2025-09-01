@@ -56,11 +56,14 @@ async function routes (fastify) {
   });
 
   // Envío offline (fallback si el WS no estuviera)
+  // **CAMBIO**: ahora aceptamos `cid` y lo devolvemos para reconciliar en el cliente
   fastify.post('/api/chat/send', async (req, reply) => {
     const uid = req.session.uid;
     if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
-    const { to, body } = req.body || {};
+
+    const { to, body, cid } = req.body || {};
     const other = Number(to);
+
     if (!other || !body) return reply.code(400).send({ error: 'Missing fields' });
     if (!isFriends(uid, other)) return reply.code(403).send({ error: 'Not friends' });
     if (blocked(uid, other) || blocked(other, uid)) return reply.code(403).send({ error: 'Blocked' });
@@ -72,7 +75,8 @@ async function routes (fastify) {
     // Empujar en vivo si el destinatario está conectado
     fastify.websocketPush?.(other, { type: 'message', message: msg });
 
-    return { message: msg };
+    // Devolvemos también el cid para reconciliar la burbuja optimista
+    return { message: msg, cid };
   });
 
   // Bloquear / Desbloquear
@@ -85,6 +89,7 @@ async function routes (fastify) {
       return { ok: true };
     } catch { return reply.code(500).send({ error: 'Block failed' }); }
   });
+
   fastify.delete('/api/chat/block/:userId', async (req, reply) => {
     const uid = req.session.uid;
     if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
@@ -92,6 +97,7 @@ async function routes (fastify) {
     db.prepare(`DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?`).run(uid, other);
     return { ok: true };
   });
+
   fastify.get('/api/chat/blocked', async (req, reply) => {
     const uid = req.session.uid;
     if (!uid) return reply.code(401).send({ error: 'Unauthorized' });

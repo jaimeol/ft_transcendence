@@ -94,23 +94,33 @@ app.get('/ws/chat', { websocket: true }, (connection, req) => {
     let msg = {};
     try { msg = JSON.parse(String(buf)); } catch { return; }
 
-    // Mensajes enviados por WS (text / invite)
     if (msg.type === 'send') {
-      const { to, body } = msg;
-      if (!to || (!body && msg.kind !== 'invite')) return;
-      // Persistir
-      const k = msg.kind === 'invite' ? 'invite' : 'text';
+      const { to, body, kind, cid } = msg;
+      if (!to || (!body && kind !== 'invite')) return;
+
+      const other = Number(to);
+      // Valida amistad/bloqueos como en la API HTTP
+      const isFriends = !!require('./db').db.prepare(`
+        SELECT 1 FROM friends
+        WHERE ((requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?))
+          AND status = 'accepted'
+      `).get(uid, other, other, uid);
+      const blockedMeToOther = !!require('./db').db.prepare(`SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?`).get(uid, other);
+      const blockedOtherToMe = !!require('./db').db.prepare(`SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?`).get(other, uid);
+      if (!isFriends || blockedMeToOther || blockedOtherToMe) return;
+
+      const k = kind === 'invite' ? 'invite' : 'text';
       const meta = k === 'invite' ? JSON.stringify({ game: 'pong' }) : null;
       const info = require('./db').db.prepare(`
         INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
         VALUES (?, ?, ?, ?, ?)
-      `).run(uid, Number(to), body ?? null, k, meta);
+      `).run(uid, other, body ?? null, k, meta);
       const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
 
-      // Eco al propio cliente
-      try { connection.socket.send(JSON.stringify({ type: 'message', message: saved })); } catch {}
-      // Push al destinatario
-      app.websocketPush(Number(to), { type: k === 'invite' ? 'invite' : 'message', message: saved });
+      // Eco al emisor con el cid para reconciliar
+      try { connection.socket.send(JSON.stringify({ type: 'message', message: saved, cid })); } catch {}
+      // Push al destinatario (sin cid)
+      app.websocketPush(other, { type: k === 'invite' ? 'invite' : 'message', message: saved });
     }
   });
 
