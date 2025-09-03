@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>Pong — ft_transcendence</title>
+	<link rel="stylesheet" href="/tailwind.css"/>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex flex-col">
+
+	<!-- Header -->
+	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+		<div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+			<a href="/home.html" class="flex items-center gap-2">
+				<div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+				<span class="font-semibold">ft_transcendence</span>
+			</a>
+
+			<div class="flex items-center gap-3">
+				<div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+					<button class="hover:underline" onclick="changeLanguage?.('en')">EN</button>
+					<span class="mx-1 text-white/40">|</span>
+					<button class="hover:underline" onclick="changeLanguage?.('es')">ES</button>
+					<span class="mx-1 text-white/40">|</span>
+					<button class="hover:underline" onclick="changeLanguage?.('fr')">FR</button>
+				</div>
+				<button id="logoutBtn"
+          class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
+          data-translate="home.logout">
+          Cerrar sesión
+        </button>
+			</div>
+		</div>
+	</header>
+
+	<!-- Main -->
+	<main class="flex-1">
+		<div class="max-w-5xl mx-auto px-4 py-8">
+			<!-- Cabecera del juego -->
+			<div class="mb-6">
+			<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+				<span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
+				Ft_Transcendence — Pong
+				</span>
+			</h1>
+			<div id="score" class="mt-2 text-white/70 text-lg font-mono">0 : 0</div>
+			</div>
+
+			<!-- Contenedor del canvas -->
+			<section class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-4">
+			<div class="overflow-x-auto">
+				<!-- Contenedor relativo para canvas + overlay -->
+				<div class="relative w-full max-w-[1200px] mx-auto">
+				<canvas
+					id="pong"
+					width="1200"
+					height="800"
+					class="block w-full h-auto bg-gray-900"
+				></canvas>
+				<div
+					id="board-blocker"
+					class="absolute inset-0 bg-black z-40"
+				></div>
+				</div>
+			</div>
+			</section>
+		</div>
+	</main>
+
+	<!-- Overlay de dificultad -->
+	<div id="difficulty-overlay" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in">
+		<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
+			<h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_difficulty">Selecciona dificultad</h2>
+			<div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
+				<button type="button" class="difficulty-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" data-translate="easy" data-level="easy">Fácil</button>
+				<button type="button" class="difficulty-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded" data-translate="medium" data-level="medium">Media</button>
+				<button type="button" class="difficulty-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" data-translate="hard" data-level="hard">Difícil</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Overlay login PVP -->
+	<div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
+		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+			<h2 class="text-xl font-semibold mb-4">Segundo jugador</h2>
+			<form id="pvp-login-form" class="flex flex-col gap-3">
+			<input id="pvp-email" type="email" placeholder="Email"
+					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+			<input id="pvp-password" type="password" placeholder="Contraseña"
+					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+			<button type="submit"
+					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
+				Empezar partida
+			</button>
+			</form>
+			<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
+		</div>
+	</div>
+
+	<!-- Scripts -->
+	<script src="/js/api.js"></script>
+	<script type="module" src="/dist/pong.js"></script>
+	<script type="module">
+	import { initializeLanguages, changeLanguage } from '/dist/translate.js';
+	initializeLanguages();
+	window.changeLanguage = changeLanguage;
+	</script>
+</body>
+</html>

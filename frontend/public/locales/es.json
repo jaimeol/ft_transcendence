@@ -1,0 +1,12 @@
+{
+  "main_title": "Ft_Transcendence",
+  "play_1v1": "Jugar 1v1",
+  "play_ai": "Jugar contra IA",
+  "select_difficulty": "Selecciona Dificultad",
+  "easy": "Fácil",
+  "medium": "Media",
+  "hard": "Difícil",
+  "game_over": "Fin del Juego",
+  "press_space_start": "Pulsa Espacio para Empezar",
+  "press_space_restart": "Pulsa Espacio para Reiniciar"
+}

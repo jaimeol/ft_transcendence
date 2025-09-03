@@ -1,0 +1,11 @@
+{
+  "play_1v1": "Jouer 1v1",
+  "play_ai": "Jouer contre l'IA",
+  "select_difficulty": "Choisissez la difficulté",
+  "easy": "Facile",
+  "medium": "Moyenne",
+  "hard": "Difficile",
+  "game_over": "Fin de partie",
+  "press_space_start": "Appuyez sur la barre d'espace pour démarrer.",
+  "press_space_restart": "Appuyez sur la barre d'espace pour redémarrer."
+}
