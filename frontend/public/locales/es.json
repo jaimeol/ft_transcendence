@@ -8,5 +8,13 @@
   "hard": "Difícil",
   "game_over": "Fin del Juego",
   "press_space_start": "Pulsa Espacio para Empezar",
-  "press_space_restart": "Pulsa Espacio para Reiniciar"
+  "press_space_restart": "Pulsa Espacio para Reiniciar",
+  "ttt_turn": "Turno",
+  "ttt_new_game": "Nueva partida",
+  "ttt_draw": "Empate",
+  "ttt_wins": "gana",
+  "ttt_player1": "jugador 1",
+  "ttt_player2": "jugador 2",
+  "ttt_play_again": "Jugar de nuevo",
+  "ttt_restart": "Reiniciar"
 }

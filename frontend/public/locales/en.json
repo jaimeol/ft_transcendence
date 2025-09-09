@@ -56,5 +56,13 @@
   "profile.avatar": "Avatar",
   "profile.account": "Account",
   "profile.updateEmail": "Update email",
-  "profile.chooseFile": "Choose file"
+  "profile.chooseFile": "Choose file",
+  "ttt_turn": "Turn",
+  "ttt_new_game": "New Game",
+  "ttt_draw": "Draw",
+  "ttt_wins": "wins",
+  "ttt_player1": "player 1",
+  "ttt_player2": "player 2",
+  "ttt_play_again": "Play again",
+  "ttt_restart": "Restart"
 }

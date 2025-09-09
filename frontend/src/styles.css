@@ -38,3 +38,54 @@
   z-index: 50;
 }
 
+/* Animación para dibujar líneas (para la X) */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-line {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw-line 0.25s linear forwards;
+}
+
+/* Animación para dibujar un círculo (para la O) */
+@keyframes draw-circle {
+  from {
+    stroke-dasharray: 0 314; /* 2πr ≈ 314 cuando r≈50px */
+  }
+  to {
+    stroke-dasharray: 314 314;
+  }
+}
+
+@layer utilities {
+  /* Animar trazo (línea o circunferencia) de stroke-dashoffset: L -> 0 */
+  @keyframes ttt-draw {
+    to { stroke-dashoffset: 0; }
+  }
+  .ttt-draw {
+    animation: ttt-draw 0.28s linear forwards;
+  }
+
+  /* Fade suave para overlays (puedes usar la que ya tienes si prefieres) */
+  @keyframes ttt-fade-in {
+    from { opacity: 0 }
+    to   { opacity: 1 }
+  }
+  .ttt-fade-in { animation: ttt-fade-in .25s ease-out forwards }
+}
+
+@layer utilities {
+  @keyframes ttt-draw-line { to { stroke-dashoffset: 0 } }
+  .ttt-draw-line { animation: ttt-draw-line .28s linear forwards }
+
+  @keyframes ttt-draw-circle { to { stroke-dashoffset: 0 } }
+  .ttt-draw-circle { animation: ttt-draw-circle .35s linear forwards }
+}
+
