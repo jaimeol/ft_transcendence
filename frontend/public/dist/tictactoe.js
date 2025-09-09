@@ -7,11 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { currentTranslations, initializeLanguages } from "./translate.js";
+import { changeLanguage, currentTranslations, initializeLanguages } from "./translate.js";
 window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void 0, function* () {
-    // 1) idiomas
     yield initializeLanguages();
-    // 2) util de traducción con fallback
     const t = (k) => { var _a; return (_a = currentTranslations === null || currentTranslations === void 0 ? void 0 : currentTranslations[k]) !== null && _a !== void 0 ? _a : k; };
     const canvas = document.getElementById("ticTacToe");
     if (!canvas)
@@ -19,21 +17,21 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
     const ctx = canvas.getContext("2d");
     if (!ctx)
         throw new Error("No se pudo obtener el contexto 2D");
+    const me = window.user;
+    let secondPlayer = null;
+    let pvpReady = false;
+    let gameStartTs = performance.now();
+    let savedThisGame = false;
+    const blocker = document.getElementById('board-blocker');
+    const pvpOverlay = document.getElementById('pvp-login-overlay');
     const statusEl = document.getElementById("status");
     const resetBtn = document.getElementById("resetBtn");
     const winnerOverlay = document.getElementById("winnerOverlay");
     const winnerText = document.getElementById("winnerText");
     const playAgainBtn = document.getElementById("playAgainBtn");
     const closeOverlayBtn = document.getElementById("closeOverlayBtn");
-    const playerNames = {
-        X: t("ttt_player1"),
-        O: t("ttt_player2"),
-    };
-    // 4) textos estáticos del overlay/botones
-    if (playAgainBtn)
-        playAgainBtn.textContent = t("ttt_play_again");
-    // Si prefieres setear también el de reinicio por JS:
-    // if (resetBtn) resetBtn.textContent = t("ttt_restart");
+    // ⬇️ En vez de const playerNames = {...}, usa función:
+    const playerName = (p) => (p === "X" ? t("ttt_player1") : t("ttt_player2"));
     const svg = document.querySelector("#ttt-anim");
     if (!svg)
         throw new Error("SVG layer not found");
@@ -43,22 +41,79 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
     const offX = (canvas.width - boardSize) / 2;
     const offY = (canvas.height - boardSize) / 2;
     const WIN_COMBOS = [
-        [[0, 0], [1, 0], [2, 0]],
-        [[0, 1], [1, 1], [2, 1]],
-        [[0, 2], [1, 2], [2, 2]],
-        [[0, 0], [0, 1], [0, 2]],
-        [[1, 0], [1, 1], [1, 2]],
-        [[2, 0], [2, 1], [2, 2]],
-        [[0, 0], [1, 1], [2, 2]],
-        [[2, 0], [1, 1], [0, 2]],
+        [[0, 0], [1, 0], [2, 0]], [[0, 1], [1, 1], [2, 1]], [[0, 2], [1, 2], [2, 2]],
+        [[0, 0], [0, 1], [0, 2]], [[1, 0], [1, 1], [1, 2]], [[2, 0], [2, 1], [2, 2]],
+        [[0, 0], [1, 1], [2, 2]], [[2, 0], [1, 1], [0, 2]],
     ];
-    let board = [
-        [null, null, null],
-        [null, null, null],
-        [null, null, null],
-    ];
+    let board = [[null, null, null], [null, null, null], [null, null, null]];
     let currentPlayer = "X";
     let gameOver = false;
+    let lastResult = null;
+    (function requireLocalPVP() {
+        blocker === null || blocker === void 0 ? void 0 : blocker.classList.remove('hidden');
+        pvpOverlay === null || pvpOverlay === void 0 ? void 0 : pvpOverlay.classList.remove('hidden');
+        const form = document.getElementById('pvp-login-form');
+        const errorEl = document.getElementById('pvp-login-error');
+        form === null || form === void 0 ? void 0 : form.addEventListener('submit', (e) => __awaiter(this, void 0, void 0, function* () {
+            e.preventDefault();
+            const email = document.getElementById('pvp-email').value;
+            const password = document.getElementById('pvp-password').value;
+            try {
+                const res = yield fetch('/api/auth/login-second', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password }),
+                });
+                if (!res.ok)
+                    throw new Error(`HTTP ${res.status}`);
+                const data = yield res.json();
+                secondPlayer = data;
+                pvpReady = true;
+                pvpOverlay === null || pvpOverlay === void 0 ? void 0 : pvpOverlay.classList.add('hidden');
+                blocker === null || blocker === void 0 ? void 0 : blocker.classList.add('hidden');
+                gameStartTs = performance.now();
+                savedThisGame = false;
+                statusEl.textContent = t("ttt-turn") + `: ${currentPlayer}`;
+            }
+            catch (err) {
+                if (errorEl) {
+                    errorEl.textContent = t("pvp_invalid_credentials") || "Invalid credentials";
+                    errorEl.classList.remove('hidden');
+                }
+            }
+        }));
+    })();
+    function refreshTexts() {
+        if (playAgainBtn)
+            playAgainBtn.textContent = t("ttt_play_again");
+        if (resetBtn)
+            resetBtn.textContent = t("ttt_restart");
+        if (!gameOver) {
+            statusEl.textContent = `${t("ttt_turn")}: ${currentPlayer}`;
+        }
+        else if (lastResult) {
+            if (lastResult === "draw") {
+                const txt = t("ttt_draw");
+                statusEl.textContent = txt;
+                if (winnerText)
+                    winnerText.textContent = txt;
+            }
+            else {
+                const label = `${playerName(lastResult.player)} (${lastResult.player}) ${t("ttt_wins")}`;
+                statusEl.textContent = label;
+                if (winnerText)
+                    winnerText.textContent = label;
+            }
+        }
+    }
+    // ⬇️ Igual que en pong: cuando se cambia el idioma, actualizamos textos al instante
+    // @ts-ignore – exponemos al header
+    window.changeLanguage = (lang) => {
+        return changeLanguage(lang).then(() => {
+            refreshTexts();
+        });
+    };
     function checkWinner() {
         for (const combo of WIN_COMBOS) {
             const [[x1, y1], [x2, y2], [x3, y3]] = combo;
@@ -67,7 +122,7 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
                 return { player: v, combo };
             }
         }
-        if (board.flat().every((cell) => cell !== null))
+        if (board.flat().every(c => c !== null))
             return "draw";
         return null;
     }
@@ -90,6 +145,24 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
         win.setAttribute("stroke-dashoffset", `${len}`);
         win.classList.add("ttt-draw-line");
         svg === null || svg === void 0 ? void 0 : svg.appendChild(win);
+        setTimeout(() => {
+            if (lastResult && winnerOverlay && winnerText) {
+                if (lastResult === "draw") {
+                    const txt = t("ttt_draw");
+                    statusEl.textContent = txt;
+                    winnerText.textContent = txt;
+                    winnerOverlay.classList.remove("hidden");
+                    winnerOverlay.classList.add("animate-fade-in");
+                }
+                else {
+                    const label = `${playerName(lastResult.player)} (${lastResult.player}) ${t("ttt_wins")}`;
+                    statusEl.textContent = label;
+                    winnerText.textContent = label;
+                    winnerOverlay.classList.remove("hidden");
+                    winnerOverlay.classList.add("animate-fade-in");
+                }
+            }
+        }, 600);
     }
     function drawBoard() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -164,6 +237,11 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
         }
     }
     canvas.addEventListener("click", (e) => {
+        if (!pvpReady) {
+            pvpOverlay === null || pvpOverlay === void 0 ? void 0 : pvpOverlay.classList.remove('hidden');
+            blocker === null || blocker === void 0 ? void 0 : blocker.classList.remove('hidden');
+            return;
+        }
         if (gameOver)
             return;
         const rect = canvas.getBoundingClientRect();
@@ -181,55 +259,45 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
             board[y][x] = currentPlayer;
             addAnimatedMark(x, y, currentPlayer);
             const result = checkWinner();
+            lastResult = result;
             if (result) {
                 gameOver = true;
                 if (result === "draw") {
-                    statusEl.textContent = t("ttt_draw");
-                    if (winnerOverlay && winnerText) {
-                        winnerText.textContent = t("ttt_draw");
-                        winnerOverlay.classList.remove("hidden");
-                        winnerOverlay.classList.add("animate-fade-in");
-                    }
+                    setTimeout(() => {
+                        if (winnerOverlay)
+                            winnerOverlay.classList.remove("hidden");
+                    }, 600);
                 }
                 else {
                     highlightWinningLine(result.combo);
-                    const label = `${playerNames[result.player]} (${result.player}) ${t("ttt_wins")}`;
-                    statusEl.textContent = label;
-                    if (winnerOverlay && winnerText) {
-                        winnerText.textContent = label;
-                        winnerOverlay.classList.remove("hidden");
-                        winnerOverlay.classList.add("ttt-fade-in");
-                    }
                 }
+                refreshTexts(); // ⬅️ mostrar textos finales traducidos
             }
             else {
                 currentPlayer = currentPlayer === "X" ? "O" : "X";
-                statusEl.textContent = `${t("ttt_turn")}: ${currentPlayer}`;
+                refreshTexts();
             }
             drawBoard();
         }
     });
     resetBtn.addEventListener("click", () => {
-        board = [
-            [null, null, null],
-            [null, null, null],
-            [null, null, null],
-        ];
+        board = [[null, null, null], [null, null, null], [null, null, null]];
         currentPlayer = "X";
         gameOver = false;
-        statusEl.textContent = `${t("ttt_new_game")}! ${t("ttt_turn")}: X`;
-        if (svg)
-            svg.innerHTML = "";
+        lastResult = null;
+        svg.innerHTML = "";
         winnerOverlay === null || winnerOverlay === void 0 ? void 0 : winnerOverlay.classList.add("hidden");
         drawBoard();
+        refreshTexts(); // ⬅️ textos iniciales traducidos
     });
     playAgainBtn === null || playAgainBtn === void 0 ? void 0 : playAgainBtn.addEventListener("click", () => {
-        resetBtn === null || resetBtn === void 0 ? void 0 : resetBtn.click();
-        winnerOverlay.classList.add("hidden");
+        resetBtn.click();
+        winnerOverlay === null || winnerOverlay === void 0 ? void 0 : winnerOverlay.classList.add("hidden");
     });
     closeOverlayBtn === null || closeOverlayBtn === void 0 ? void 0 : closeOverlayBtn.addEventListener("click", () => {
-        winnerOverlay.classList.add("hidden");
+        winnerOverlay === null || winnerOverlay === void 0 ? void 0 : winnerOverlay.classList.add("hidden");
     });
+    // Primera pintura
     drawBoard();
-    statusEl.textContent = `${t("ttt_turn")}: X`;
+    refreshTexts();
 }));

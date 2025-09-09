@@ -58,6 +58,10 @@
               height="400"
               class="block w-full h-auto bg-gray-900 rounded-xl"
             ></canvas>
+            <div
+              id="board-blocker"
+              class="absolute inset-0 bg-black z-40"
+            ></div>
 
             <svg
               id="ttt-anim"
@@ -78,6 +82,23 @@
       </section>
     </div>
   </main>
+
+  <div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
+		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+			<h2 class="text-xl font-semibold mb-4" data-translate="">Segundo jugador</h2>
+			<form id="pvp-login-form" class="flex flex-col gap-3">
+			<input id="pvp-email" type="email" placeholder="Email"
+					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+			<input id="pvp-password" type="password" placeholder="Contraseña"
+					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+			<button type="submit"
+					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
+				Empezar partida
+			</button>
+			</form>
+			<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
+		</div>
+	</div>
 
   <!-- Winner Overlay -->
   <div id="winnerOverlay"
