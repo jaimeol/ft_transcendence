@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS friends (
 );
 CREATE TABLE IF NOT EXISTS matches (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  game TEXT NOT NULL CHECK(game IN ('pong', 'tictactoe')),
   player1_id INTEGER NOT NULL,
   player2_id INTEGER NOT NULL,
   winner_id INTEGER,

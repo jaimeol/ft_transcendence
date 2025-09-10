@@ -95,20 +95,40 @@ type Match = {
   const fmtDateTime = (s?: string | null) => (!s ? '—' : new Date(s).toLocaleString());
   
   // Dado un match y mi id, devuelve {res, label} donde res ∈ {'W','L','D'}
-  function resultFor(meId: number, m: Match): 'W'|'L'|'D' {
-	if (!m.winner_id || m.winner_id === 0 || m.winner_id === -1) return 'D';
+  function safeDetails(m: Match): any | null {
+	try {
+		return m.details ? JSON.parse(m.details) : null;
+	} catch {
+		return null;
+	}
+  }
+
+  function is_draw(m: Match): boolean {
+	const d = safeDetails(m);
+
+	return m.winner_id == null || d?.is_draw === true;
+  }
+
+  function resultFor(meId: number, m: Match): 'W' | 'L' | 'D' {
+	if (is_draw(m)) return 'D';
 	return m.winner_id === meId ? 'W' : 'L';
   }
   
-  // Intenta extraer marcador del JSON de details
-  function parseScore(details?: string | null): {left?:number; right?:number} {
-	if (!details) return {};
-	try {
-	  const j = JSON.parse(details);
-	  const left = Number.isFinite(j?.leftScore) ? Number(j.leftScore) : undefined;
-	  const right = Number.isFinite(j?.rightScore) ? Number(j.rightScore) : undefined;
-	  return { left, right };
-	} catch { return {}; }
+  function perspectiveScore(m: Match, myId: number): { you: number; rival: number } | null {
+	const d = safeDetails(m);
+	if (!d?.score) return null;
+
+	if (Number.isFinite(d.score_left) && Number.isFinite(d.score_right)){
+		const leftId = d?.players?.left_id;
+		if (leftId === myId) return { you: d.score_left, rival: d.score_right};
+		if (leftId != null) return { you: d.score_right, rival: d.score_left};
+	}
+
+	if (Number.isFinite(d.score_user) && Number.isFinite(d.score_ai)) {
+		return { you: d.score_user, rival: d.score_ai };
+	}
+
+	return null;
   }
   
   // Trae display_name de un user (para el rival). Si id<=0 devolvemos etiqueta “IA”.
@@ -155,8 +175,8 @@ type Match = {
 	  const rows = await Promise.all(list.map(async (m) => {
 		const res = resultFor(myId, m);
 		const opp = await opponentName(m);
-		const { left, right } = parseScore(m.details);
-		const score = (Number.isFinite(left) && Number.isFinite(right)) ? ` · ${left}-${right}` : '';
+		const sc = perspectiveScore(m, myId);
+		const score = sc ? ` · ${sc.you} - ${sc.rival}` : '';
 		const when = fmtDateTime(m.played_at);
   
 		// Badge por resultado

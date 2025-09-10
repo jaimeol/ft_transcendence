@@ -86,24 +86,39 @@ document.addEventListener('DOMContentLoaded', main);
 // Helper de fecha “bonita”
 const fmtDateTime = (s) => (!s ? '—' : new Date(s).toLocaleString());
 // Dado un match y mi id, devuelve {res, label} donde res ∈ {'W','L','D'}
+function safeDetails(m) {
+    try {
+        return m.details ? JSON.parse(m.details) : null;
+    }
+    catch (_a) {
+        return null;
+    }
+}
+function is_draw(m) {
+    const d = safeDetails(m);
+    return m.winner_id == null || (d === null || d === void 0 ? void 0 : d.is_draw) === true;
+}
 function resultFor(meId, m) {
-    if (!m.winner_id || m.winner_id === 0 || m.winner_id === -1)
+    if (is_draw(m))
         return 'D';
     return m.winner_id === meId ? 'W' : 'L';
 }
-// Intenta extraer marcador del JSON de details
-function parseScore(details) {
-    if (!details)
-        return {};
-    try {
-        const j = JSON.parse(details);
-        const left = Number.isFinite(j === null || j === void 0 ? void 0 : j.leftScore) ? Number(j.leftScore) : undefined;
-        const right = Number.isFinite(j === null || j === void 0 ? void 0 : j.rightScore) ? Number(j.rightScore) : undefined;
-        return { left, right };
+function perspectiveScore(m, myId) {
+    var _a;
+    const d = safeDetails(m);
+    if (!(d === null || d === void 0 ? void 0 : d.score))
+        return null;
+    if (Number.isFinite(d.score_left) && Number.isFinite(d.score_right)) {
+        const leftId = (_a = d === null || d === void 0 ? void 0 : d.players) === null || _a === void 0 ? void 0 : _a.left_id;
+        if (leftId === myId)
+            return { you: d.score_left, rival: d.score_right };
+        if (leftId != null)
+            return { you: d.score_right, rival: d.score_left };
     }
-    catch (_a) {
-        return {};
+    if (Number.isFinite(d.score_user) && Number.isFinite(d.score_ai)) {
+        return { you: d.score_user, rival: d.score_ai };
     }
+    return null;
 }
 // Trae display_name de un user (para el rival). Si id<=0 devolvemos etiqueta “IA”.
 function getUserName(userId) {
@@ -151,8 +166,8 @@ function loadRecentMatches() {
             const rows = yield Promise.all(list.map((m) => __awaiter(this, void 0, void 0, function* () {
                 const res = resultFor(myId, m);
                 const opp = yield opponentName(m);
-                const { left, right } = parseScore(m.details);
-                const score = (Number.isFinite(left) && Number.isFinite(right)) ? ` · ${left}-${right}` : '';
+                const sc = perspectiveScore(m, myId);
+                const score = sc ? ` · ${sc.you} - ${sc.rival}` : '';
                 const when = fmtDateTime(m.played_at);
                 // Badge por resultado
                 const badgeClass = res === 'W' ? 'bg-emerald-600/70' :

@@ -15,8 +15,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const paddleWidth = 10;
   const paddleHeight = 120;
   const ballRadius = 10;
-  const INITIAL_BALL_SPEED = 5;
-  const MAX_BALL_SPEED = 10;
+  const INITIAL_BALL_SPEED = 10;
+  const MAX_BALL_SPEED = 20;
   const paddleSpeed = 5;
 
   const keys: Record<string, boolean> = {};

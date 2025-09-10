@@ -107,8 +107,6 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
             }
         }
     }
-    // ⬇️ Igual que en pong: cuando se cambia el idioma, actualizamos textos al instante
-    // @ts-ignore – exponemos al header
     window.changeLanguage = (lang) => {
         return changeLanguage(lang).then(() => {
             refreshTexts();

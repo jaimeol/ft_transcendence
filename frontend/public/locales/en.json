@@ -64,5 +64,8 @@
   "ttt_player1": "player 1",
   "ttt_player2": "player 2",
   "ttt_play_again": "Play again",
-  "ttt_restart": "Restart"
+  "ttt_restart": "Restart",
+  "ttt_waiting_opponent": "Waiting for second player…",
+  "ttt_ready_press_start": "Ready to play.",
+  "pvp_invalid_credentials": "Invalid credentials"
 }

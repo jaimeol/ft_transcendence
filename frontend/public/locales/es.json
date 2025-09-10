@@ -16,5 +16,8 @@
   "ttt_player1": "jugador 1",
   "ttt_player2": "jugador 2",
   "ttt_play_again": "Jugar de nuevo",
-  "ttt_restart": "Reiniciar"
+  "ttt_restart": "Reiniciar",
+  "ttt_waiting_opponent": "Esperando al segundo jugador…",
+  "ttt_ready_press_start": "Listo para jugar.",
+  "pvp_invalid_credentials": "Credenciales inválidas o jugador no válido"
 }

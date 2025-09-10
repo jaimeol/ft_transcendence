@@ -833,10 +833,6 @@ video {
   width: min(92vw,40rem);
 }
 
-.w-\[min\(92vw\2c 420px\)\] {
-  width: min(92vw,420px);
-}
-
 .w-fit {
   width: -moz-fit-content;
   width: fit-content;
@@ -1127,10 +1123,6 @@ video {
 
 .bg-black\/30 {
   background-color: rgb(0 0 0 / 0.3);
-}
-
-.bg-black\/40 {
-  background-color: rgb(0 0 0 / 0.4);
 }
 
 .bg-black\/60 {

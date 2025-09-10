@@ -122,11 +122,14 @@ function loadMatchesAndStats() {
         let wins = 0, draws = 0, losses = 0;
         const lastResults = [];
         for (const m of state.matches.slice(-12)) {
-            if (m.winner_id === myId) {
+            const w = (m.winner_id === undefined || m.winner_id === null)
+                ? null
+                : Number(m.winner_id);
+            if (w === myId) {
                 wins++;
                 lastResults.push(1);
             }
-            else if (m.is_draw || !m.winner_id || m.winner_id === 0 || m.winner_id === -1) {
+            else if (w === null || m.is_draw === true) {
                 draws++;
                 lastResults.push(0);
             }
