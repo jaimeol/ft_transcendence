@@ -1,11 +1,5 @@
 import { initializeLanguages } from "./translate.js";
 
-declare global {
-	interface Window {
-		api: (url: string, init?: RequestInit) => Promise<any>;
-	}
-}
-
 declare const api: (url: string, init?: RequestInit) => Promise<any>;
 
 function qs<T extends HTMLElement = HTMLElement> (sel: string) {

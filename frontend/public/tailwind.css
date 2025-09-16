@@ -886,10 +886,6 @@ video {
   border-collapse: collapse;
 }
 
-.transform {
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1065,6 +1061,10 @@ video {
 .truncate {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whitespace-nowrap {
   white-space: nowrap;
 }
 
@@ -1684,6 +1684,10 @@ video {
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+
 .backdrop-blur {
   --tw-backdrop-blur: blur(8px);
   backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
@@ -1696,10 +1700,6 @@ video {
 
 .backdrop-blur-xl {
   --tw-backdrop-blur: blur(24px);
-  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
-}
-
-.backdrop-filter {
   backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
 }
 
@@ -1767,6 +1767,86 @@ video {
 
 .ttt-draw-circle {
   animation: ttt-draw-circle .35s linear forwards
+}
+
+.glass {
+  background: rgba(24,24,27,.65);
+  border: 1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(10px);
+}
+
+.ring-neon {
+  box-shadow: 0 0 0 6px rgba(99,102,241,.25), 0 10px 40px rgba(99,102,241,.35);
+}
+
+.badge {
+  border: 1px solid rgba(255,255,255,.10);
+  padding: .38rem .65rem;
+  border-radius: 9999px;
+  font-size: .78rem;
+}
+
+details summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details summary::-webkit-details-marker {
+  display:none;
+}
+
+.chevron {
+  transition: transform .25s ease;
+}
+
+details[open] .chevron {
+  transform: rotate(180deg);
+}
+
+.avatar-xl {
+  width: 168px;
+  height: 168px;
+  border-radius: 9999px;
+  aspect-ratio: 1 / 1;
+  -o-object-fit: cover;
+     object-fit: cover;
+  display: block;
+}
+
+.field {
+  background: rgba(255,255,255,.07);
+}
+
+.grid-card {
+  display:grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .grid-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+.stat-card {
+  padding:.5rem .75rem;
+  min-width:100px
+}
+
+.stat-num {
+  font-size:1.25rem;
+  line-height:1.2;
+  font-weight:800
+}
+
+.stat-lbl {
+  font-size:.7rem;
+  opacity:.75
+}
+
+dl > div dd {
+  margin-top:.25rem
 }
 
 @keyframes fade-in {

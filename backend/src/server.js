@@ -8,7 +8,6 @@ const cookie = require('@fastify/cookie');
 const session = require('@fastify/session');
 const formbody = require('@fastify/formbody');
 const websocket = require('@fastify/websocket');
-
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const friendsRoutes = require('./routes/friends');
@@ -17,6 +16,7 @@ const matchesRoutes = require('./routes/matches');
 
 
 const { db } = require('./db');
+const { error } = require('console');
 
 const certsDir = path.join(__dirname, '..', 'certs');
 const httpsOptions = {
@@ -39,6 +39,10 @@ app.register(websocket);
 
 // Decorar Fastify con la base de datos
 app.decorate('db', db);
+
+app.get('/api/config', async (req, reply) => {
+  return { googleClientId: process.env.GOOGLE_CLIENT_ID || '' };
+});
 
 // Registrar las rutas de Google Auth
 app.register(require("./routes/auth_google"), { prefix: "/api" });
@@ -139,6 +143,21 @@ app.register(friendsRoutes);
 app.register(chatRoutes);
 app.register(matchesRoutes);
 
+const indexPath = path.join(__dirname, '..', 'public', 'index.html');
+
+app.get('/', async (req, reply) => {
+  if (req.session?.uid) {
+    return reply.redirect('/home');
+  }
+  return reply.type('text/html').send(fs.readFileSync(indexPath));
+});
+
+app.setNotFoundHandler((req, reply) => {
+  if (req.url.startsWith('/api')) {
+    return reply.code(404).send({ error: 'Not found' });
+  }
+  reply.type('text/html').send(fs.readFileSync(indexPath));
+})
 
 const PORT = 1234;
 app.listen({ port: PORT, host: '0.0.0.0' }, (err, address)=>{

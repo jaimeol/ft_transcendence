@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 export let currentTranslations = {};
 function normalize(l) {
     if (!l)
@@ -32,7 +23,7 @@ export function getCurrentLanguage() {
     if (savedLang)
         return savedLang;
     const browserLang = normalize(navigator.language.split("-")[0]);
-    return browserLang !== null && browserLang !== void 0 ? browserLang : "en";
+    return browserLang ?? "en";
     // const savedLang = localStorage.getItem('language') as language;
     // if (savedLang && ['es', 'en', 'fr'].includes(savedLang))
     // 	return savedLang;
@@ -41,21 +32,19 @@ export function getCurrentLanguage() {
     // 	return browserLang;
     // return 'en';
 }
-export function loadTranslations(lang) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const response = yield fetch(`/locales/${lang}.json`);
-            if (!response.ok)
-                throw new Error(`Language ${lang} not found.`);
-            currentTranslations = yield response.json();
-            console.log(`Translations for ${lang} loaded`);
-        }
-        catch (error) {
-            console.error(error);
-            const response = yield fetch(`/locales/en.json`);
-            currentTranslations = yield response.json();
-        }
-    });
+export async function loadTranslations(lang) {
+    try {
+        const response = await fetch(`/locales/${lang}.json`);
+        if (!response.ok)
+            throw new Error(`Language ${lang} not found.`);
+        currentTranslations = await response.json();
+        console.log(`Translations for ${lang} loaded`);
+    }
+    catch (error) {
+        console.error(error);
+        const response = await fetch(`/locales/en.json`);
+        currentTranslations = await response.json();
+    }
 }
 export function updateContent() {
     const lang = getCurrentLanguage();
@@ -105,15 +94,13 @@ export function updateContent() {
             el.value = t;
     });
 }
-export function changeLanguage(lang) {
-    return __awaiter(this, void 0, void 0, function* () {
-        localStorage.setItem('language', lang);
-        const url = new URL(location.href);
-        url.searchParams.set('lang', lang);
-        history.replaceState({}, '', url.toString());
-        yield loadTranslations(lang);
-        updateContent();
-    });
+export async function changeLanguage(lang) {
+    localStorage.setItem('language', lang);
+    const url = new URL(location.href);
+    url.searchParams.set('lang', lang);
+    history.replaceState({}, '', url.toString());
+    await loadTranslations(lang);
+    updateContent();
 }
 window.changeLanguage = changeLanguage;
 export function ensureLinksCarryLang(selector = 'a[href]') {
@@ -124,7 +111,7 @@ export function ensureLinksCarryLang(selector = 'a[href]') {
             url.searchParams.set('lang', lang);
             a.href = url.pathname + url.search + url.hash;
         }
-        catch (_a) { }
+        catch { }
     });
 }
 export function initializeAnimations() {
@@ -140,19 +127,16 @@ export function initializeAnimations() {
         });
     });
 }
-export function initializeLanguages() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const initialLang = getCurrentLanguage();
-        localStorage.setItem('language', initialLang);
-        yield loadTranslations(initialLang);
-        updateContent();
-        window.changeLanguage = changeLanguage;
-        ensureLinksCarryLang('a[href^="game.html"], a[href^="/"], a[href^="./"]');
-        window.addEventListener('storage', (e) => {
-            var _a;
-            if (e.key === 'language' && e.newValue) {
-                changeLanguage((_a = normalize(e.newValue)) !== null && _a !== void 0 ? _a : 'en');
-            }
-        });
+export async function initializeLanguages() {
+    const initialLang = getCurrentLanguage();
+    localStorage.setItem('language', initialLang);
+    await loadTranslations(initialLang);
+    updateContent();
+    window.changeLanguage = changeLanguage;
+    ensureLinksCarryLang('a[href^="game.html"], a[href^="/"], a[href^="./"]');
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'language' && e.newValue) {
+            changeLanguage(normalize(e.newValue) ?? 'en');
+        }
     });
 }

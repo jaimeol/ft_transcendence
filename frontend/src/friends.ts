@@ -53,7 +53,7 @@ async function loadFriends() {
       ? friends.map(u => userRow(u)).join("")
       : `<div class="text-white/60">Todavía no tienes amigos 😢</div>`;
   } catch (err: any) {
-    if (err?.status === 401) location.href = "/login.html";
+    if (err?.status === 401) location.href = "/login.h";
     listEl.innerHTML = "";
     errBox.textContent = "❌ Error cargando amigos";
   }

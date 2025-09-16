@@ -1,16 +1,7 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import { changeLanguage, currentTranslations, initializeLanguages } from "./translate.js";
-window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void 0, function* () {
-    yield initializeLanguages();
-    const t = (k) => { var _a; return (_a = currentTranslations === null || currentTranslations === void 0 ? void 0 : currentTranslations[k]) !== null && _a !== void 0 ? _a : k; };
+window.addEventListener("DOMContentLoaded", async () => {
+    await initializeLanguages();
+    const t = (k) => currentTranslations?.[k] ?? k;
     const canvas = document.getElementById("ticTacToe");
     if (!canvas)
         throw new Error("Canvas not found");
@@ -50,16 +41,16 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
     let gameOver = false;
     let lastResult = null;
     (function requireLocalPVP() {
-        blocker === null || blocker === void 0 ? void 0 : blocker.classList.remove('hidden');
-        pvpOverlay === null || pvpOverlay === void 0 ? void 0 : pvpOverlay.classList.remove('hidden');
+        blocker?.classList.remove('hidden');
+        pvpOverlay?.classList.remove('hidden');
         const form = document.getElementById('pvp-login-form');
         const errorEl = document.getElementById('pvp-login-error');
-        form === null || form === void 0 ? void 0 : form.addEventListener('submit', (e) => __awaiter(this, void 0, void 0, function* () {
+        form?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('pvp-email').value;
             const password = document.getElementById('pvp-password').value;
             try {
-                const res = yield fetch('/api/auth/login-second', {
+                const res = await fetch('/api/auth/login-second', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -67,11 +58,11 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
                 });
                 if (!res.ok)
                     throw new Error(`HTTP ${res.status}`);
-                const data = yield res.json();
+                const data = await res.json();
                 secondPlayer = data;
                 pvpReady = true;
-                pvpOverlay === null || pvpOverlay === void 0 ? void 0 : pvpOverlay.classList.add('hidden');
-                blocker === null || blocker === void 0 ? void 0 : blocker.classList.add('hidden');
+                pvpOverlay?.classList.add('hidden');
+                blocker?.classList.add('hidden');
                 gameStartTs = performance.now();
                 savedThisGame = false;
                 statusEl.textContent = t("ttt-turn") + `: ${currentPlayer}`;
@@ -82,7 +73,7 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
                     errorEl.classList.remove('hidden');
                 }
             }
-        }));
+        });
     })();
     function refreshTexts() {
         if (playAgainBtn)
@@ -142,7 +133,7 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
         win.setAttribute("stroke-dasharray", `${len}`);
         win.setAttribute("stroke-dashoffset", `${len}`);
         win.classList.add("ttt-draw-line");
-        svg === null || svg === void 0 ? void 0 : svg.appendChild(win);
+        svg?.appendChild(win);
         setTimeout(() => {
             if (lastResult && winnerOverlay && winnerText) {
                 if (lastResult === "draw") {
@@ -201,7 +192,7 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
             line1.setAttribute("stroke-dasharray", `${len}`);
             line1.setAttribute("stroke-dashoffset", `${len}`);
             line1.classList.add("ttt-draw-line");
-            svg === null || svg === void 0 ? void 0 : svg.appendChild(line1);
+            svg?.appendChild(line1);
             const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line2.setAttribute("x1", `${x2}`);
             line2.setAttribute("y1", `${y1}`);
@@ -214,7 +205,7 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
             line2.setAttribute("stroke-dashoffset", `${len}`);
             line2.classList.add("ttt-draw-line");
             line2.style.animationDelay = "0.15s";
-            svg === null || svg === void 0 ? void 0 : svg.appendChild(line2);
+            svg?.appendChild(line2);
         }
         else {
             const cx = cellLeft + cellSize / 2;
@@ -231,13 +222,13 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
             circle.setAttribute("stroke-dasharray", `${len}`);
             circle.setAttribute("stroke-dashoffset", `${len}`);
             circle.classList.add("ttt-draw-circle");
-            svg === null || svg === void 0 ? void 0 : svg.appendChild(circle);
+            svg?.appendChild(circle);
         }
     }
     canvas.addEventListener("click", (e) => {
         if (!pvpReady) {
-            pvpOverlay === null || pvpOverlay === void 0 ? void 0 : pvpOverlay.classList.remove('hidden');
-            blocker === null || blocker === void 0 ? void 0 : blocker.classList.remove('hidden');
+            pvpOverlay?.classList.remove('hidden');
+            blocker?.classList.remove('hidden');
             return;
         }
         if (gameOver)
@@ -284,18 +275,18 @@ window.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void
         gameOver = false;
         lastResult = null;
         svg.innerHTML = "";
-        winnerOverlay === null || winnerOverlay === void 0 ? void 0 : winnerOverlay.classList.add("hidden");
+        winnerOverlay?.classList.add("hidden");
         drawBoard();
         refreshTexts(); // ⬅️ textos iniciales traducidos
     });
-    playAgainBtn === null || playAgainBtn === void 0 ? void 0 : playAgainBtn.addEventListener("click", () => {
+    playAgainBtn?.addEventListener("click", () => {
         resetBtn.click();
-        winnerOverlay === null || winnerOverlay === void 0 ? void 0 : winnerOverlay.classList.add("hidden");
+        winnerOverlay?.classList.add("hidden");
     });
-    closeOverlayBtn === null || closeOverlayBtn === void 0 ? void 0 : closeOverlayBtn.addEventListener("click", () => {
-        winnerOverlay === null || winnerOverlay === void 0 ? void 0 : winnerOverlay.classList.add("hidden");
+    closeOverlayBtn?.addEventListener("click", () => {
+        winnerOverlay?.classList.add("hidden");
     });
     // Primera pintura
     drawBoard();
     refreshTexts();
-}));
+});

@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+.glass { background: rgba(24,24,27,.65); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(10px); }
+.ring-neon { box-shadow: 0 0 0 6px rgba(99,102,241,.25), 0 10px 40px rgba(99,102,241,.35); }
+.badge { border: 1px solid rgba(255,255,255,.10); padding: .38rem .65rem; border-radius: 9999px; font-size: .78rem; }
+details summary { list-style: none; cursor: pointer; }
+details summary::-webkit-details-marker { display:none; }
+.chevron { transition: transform .25s ease; }
+details[open] .chevron { transform: rotate(180deg); }
+.avatar-xl { width: 168px; height: 168px; border-radius: 9999px; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+.field { background: rgba(255,255,255,.07); }
+.grid-card { display:grid; grid-template-columns: 1fr; }
+@media (min-width: 1024px) { .grid-card { grid-template-columns: 1fr 1fr; gap: 1rem; } }
+.stat-card { padding:.5rem .75rem; min-width:100px }
+.stat-num { font-size:1.25rem; line-height:1.2; font-weight:800 }
+.stat-lbl { font-size:.7rem; opacity:.75 }
+dl > div dd { margin-top:.25rem }
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
