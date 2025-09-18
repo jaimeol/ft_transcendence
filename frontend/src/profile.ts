@@ -247,7 +247,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 
 	await ensureChartsJs();
 	const u = await me(ctx);
-	if (u) await loadMatchesAndStats();
+	if (u) await loadMatchesAndStats(ctx);
 }
 
 async function ensureChartsJs() {
@@ -292,8 +292,6 @@ interface Me {
 	first_name?: string;
 	last_name?: string;
 	birthdate?: string;
-	elo?: number;
-	level?: number;
 }
 interface Match { winner_id?: number | null; is_draw?: boolean; played_at?: string; }
 
@@ -363,8 +361,6 @@ function paintUser(u: Me) {
 	$("#player-name") && ($("#player-name")!.textContent = escapeHTML(u.display_name ?? "Jugador"));
 	$("#player-email") && ($("#player-email")!.textContent = escapeHTML(u.email ?? "email@dominio.com"));
 	$("#member-since") && ($("#member-since")!.textContent = fmtDate(u.created_at));
-	$("#level") && ($("#level")!.textContent = String(u.level ?? 1));
-	$("#elo") && ($("#elo")!.textContent = String(u.elo ?? 1000));
 
 	$("#ov-display") && ($("#ov-display")!.textContent = u.display_name || "—");
 	$("#ov-email") && ($("#ov-email")!.textContent = u.email || "—");
@@ -389,9 +385,9 @@ async function me(ctx: Ctx): Promise<Me | null> {
 	}
 }
 
-async function loadMatchesAndStats() {
+async function loadMatchesAndStats(ctx: Ctx) {
 	try {
-		const r = await window.api("/api/users/me/matches");
+		const r = await ctx.api("/api/users/me/matches");
 		state.matches = r?.matches ?? [];
 	} catch {
 		// demo fallback

@@ -62,7 +62,7 @@ async function routes(fastify){
 
 	fastify.get('/api/auth/me', async (req, reply)=>{
 		const uid = req.session.uid;
-		if(!uid) return reply.code(401).send({ user: null });
+		if(!uid) return { user: null };
 		const user = db.prepare('SELECT * FROM users WHERE id = ?').get(uid);
 		const safe = toUserSafe(user);
 

@@ -116,7 +116,6 @@ export async function mount(el, ctx) {
             $("#userEmail").textContent = u.email || "-";
         }
         catch {
-            // Con router + guard no debería pasar, pero por si acaso:
             ctx.navigate("/login", { replace: true });
         }
     }

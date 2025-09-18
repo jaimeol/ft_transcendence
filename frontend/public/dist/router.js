@@ -1,10 +1,12 @@
 export function createRouter(opts) {
     const { routes, root, ctx } = opts;
     let currentPath = "";
+    const toPathName = (input) => new URL(input, location.origin).pathname;
     function match(pathname) {
         return routes.find(r => r.path === pathname) || routes.find(r => r.path === "/404");
     }
-    async function render(pathname) {
+    async function render(input) {
+        const pathname = toPathName(input);
         if (pathname === currentPath)
             return;
         currentPath = pathname;
@@ -27,17 +29,17 @@ export function createRouter(opts) {
     function navigate(path, opts) {
         // Normaliza: permitir pasar path relativos tipo "./login"
         const url = new URL(path, location.origin);
-        const next = url.pathname + url.search + url.hash;
-        if (next === location.pathname + location.search + location.hash && !opts?.replace)
+        const full = url.pathname + url.search + url.hash;
+        if (full === location.pathname + location.search + location.hash && !opts?.replace)
             return;
         if (opts?.replace)
-            history.replaceState({}, "", next);
+            history.replaceState({}, "", full);
         else
-            history.pushState({}, "", next);
-        render(next);
+            history.pushState({}, "", full);
+        render(url.pathname);
     }
     function onPopState() {
-        render(location.pathname + location.search + location.hash);
+        render(location.pathname);
     }
     // Interceptor global de <a> internos (delegación)
     function installGlobalLinkInterceptor() {

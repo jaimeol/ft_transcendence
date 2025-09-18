@@ -1,8 +1,9 @@
-export function mount(el, { api, t, navigate }) {
+export function mount(el, ctx) {
+    const { api, t, navigate } = ctx;
     el.innerHTML = `
 	<div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white relative overflow-hidden">
-	  <!-- Idioma fijo arriba -->
-	  <div class="fixed top-4 right-4 z-50 text-sm whitespace-nowrap">
+	<!-- Idioma fijo arriba -->
+	<div class="fixed top-4 right-4 z-50 text-sm whitespace-nowrap">
 		<div class="bg-white/5 border border-white/10 backdrop-blur px-3 py-1.5 rounded-full shadow">
 		  <button class="hover:underline" onclick="window.changeLanguage?.('en')">EN</button>
 		  <span class="mx-2 text-white/50">|</span>
@@ -10,32 +11,32 @@ export function mount(el, { api, t, navigate }) {
 		  <span class="mx-2 text-white/50">|</span>
 		  <button class="hover:underline" onclick="window.changeLanguage?.('fr')">FR</button>
 		</div>
-	  </div>
+	</div>
 
-	  <main class="min-h-screen grid place-items-center px-4">
+	<main class="min-h-screen grid place-items-center px-4">
 		<section class="w-full max-w-md p-8 rounded-2xl bg-zinc-900/60 backdrop-blur">
-		  <h1 class="text-3xl font-bold mb-8 text-center">${t("login") ?? "Iniciar sesión"}</h1>
+		<h1 class="text-3xl font-bold mb-8 text-center">${t("login") ?? "Iniciar sesión"}</h1>
 
-		  <div id="error-message" class="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm hidden"></div>
+		<div id="error-message" class="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm hidden"></div>
 
-		  <form id="login-form" class="space-y-6" autocomplete="on">
+		<form id="login-form" class="space-y-6" autocomplete="on">
 			<div class="space-y-2">
-			  <label for="email" class="block text-sm text-white">${t("field-email") ?? "Email"}</label>
-			  <input id="email" name="email" type="email" inputmode="email" autocomplete="username"
-					 autocapitalize="none" spellcheck="false"
-					 class="w-full px-4 py-3 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 outline-none ring-1 ring-zinc-700 focus:ring-2 focus:ring-indigo-500 transition"
-					 placeholder="${t("email-placeholder") ?? "tu@email.com"}" required />
+			<label for="email" class="block text-sm text-white">${t("field-email") ?? "Email"}</label>
+				<input id="email" name="email" type="email" inputmode="email" autocomplete="username"
+					autocapitalize="none" spellcheck="false"
+					class="w-full px-4 py-3 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 outline-none ring-1 ring-zinc-700 focus:ring-2 focus:ring-indigo-500 transition"
+					placeholder="${t("email-placeholder") ?? "tu@email.com"}" required />
 			</div>
 
 			<div class="space-y-2">
 			  <label for="password" class="block text-sm text-zinc-300">${t("field-password") ?? "Contraseña"}</label>
-			  <input id="password" name="password" type="password" autocomplete="current-password"
-					 class="w-full px-4 py-3 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 outline-none ring-1 ring-zinc-700 focus:ring-2 focus:ring-indigo-500 transition"
-					 placeholder="••••••••" required />
+			  	<input id="password" name="password" type="password" autocomplete="current-password"
+					class="w-full px-4 py-3 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 outline-none ring-1 ring-zinc-700 focus:ring-2 focus:ring-indigo-500 transition"
+					placeholder="••••••••" required />
 			</div>
 
 			<button id="submitBtn" type="submit"
-					class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-3 rounded-lg text-lg font-semibold transition">
+				class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-3 rounded-lg text-lg font-semibold transition">
 			  ${t("login") ?? "Entrar"}
 			</button>
 
@@ -94,16 +95,25 @@ export function mount(el, { api, t, navigate }) {
             return setError(t("fill_all_fields") ?? "Por favor, completa todos los campos");
         setLoading(true);
         try {
-            await api("/api/auth/login", {
+            const res = await api("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password })
             });
-            await api("/api/auth/me").catch(() => { });
+            ctx.user = res?.user ?? res ?? null;
             navigate("/home", { replace: true });
         }
         catch (e) {
-            setError(e?.message ?? (t("login_error") ?? "Error al iniciar sesión"));
+            const msg = String(e?.message || "");
+            if (msg === "401")
+                setError(t("invalid_credentials") ?? "Email o contraseña no válidos");
+            else if (msg === "400")
+                setError(t("missing_credentials") ?? "Faltan credenciales");
+            else
+                setError(t("login_error") ?? "Error al iniciar sesión");
+            setLoading(false);
+        }
+        finally {
             setLoading(false);
         }
     });

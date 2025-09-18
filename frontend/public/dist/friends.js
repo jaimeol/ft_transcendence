@@ -1,4 +1,22 @@
-"use strict";
+export function mount(el, ctx) {
+    const t = ctx.t;
+    const $ = (s) => el.querySelector(s);
+    const $$ = (s) => Array.from(el.querySelectorAll(s));
+    const escapeHTML = (s = "") => {
+        s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    };
+    const avatarUrl = (p) => (p && p.trim()) ? p : "/files/defautl-avatar.png";
+    const userRow = (u, actionsHtml = "") => `
+	<div class="flex item-center gap-3 p-2 rounded bg-white/5 border border-white/10">
+		<img src="${avatarUrl(u.avatar_path)}" width="36" height="36"
+			class="avatar object-cover rounded-full"
+			onerror="this.onerror=null; this.src='/default-avatar.png'" alt="Avatar">
+		<div class="flex-1">
+			<div class="font-semibold">${escapeHTML(u.display_name)}</div>
+	
+	`;
+    el.innerHTML = ``;
+}
 // --- Utilidades DOM y red de red ---
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -24,14 +42,14 @@ async function api(url, init) {
 function userRow(u, actionsHtml = "") {
     const avatar = u.avatar_path || "/files/default-avatar.png";
     return `
-    <div class="flex items-center gap-3 p-2 rounded bg-white/5 border border-white/10">
-      <img src="${avatar}" width="36" height="36" class="avatar object-cover" alt="Avatar">
-      <div class="flex-1">
-        <div class="font-semibold">${escapeHTML(u.display_name)}</div>
-        <div class="opacity-70 text-xs">${u.online ? "🟢 Online" : "⚪ Offline"}</div>
-      </div>
-      <div class="text-sm">${actionsHtml}</div>
-    </div>
+	<div class="flex items-center gap-3 p-2 rounded bg-white/5 border border-white/10">
+	  <img src="${avatar}" width="36" height="36" class="avatar object-cover" alt="Avatar">
+	  <div class="flex-1">
+		<div class="font-semibold">${escapeHTML(u.display_name)}</div>
+		<div class="opacity-70 text-xs">${u.online ? "🟢 Online" : "⚪ Offline"}</div>
+	  </div>
+	  <div class="text-sm">${actionsHtml}</div>
+	</div>
   `;
 }
 // --- Cargar amigos aceptados ---
@@ -59,8 +77,8 @@ async function loadPending() {
     try {
         const { incoming = [], outgoing = [] } = await api("/api/friends/pending");
         const incHtml = incoming.map(u => userRow(u, `<button class="px-2 py-1 rounded bg-green-600 hover:bg-green-700" data-accept="${u.id}">
-                    Aceptar
-                  </button>`)).join("");
+					Aceptar
+				  </button>`)).join("");
         const outHtml = outgoing.map(u => userRow(u, `<span class="opacity-70">Solicitado</span>`)).join("");
         box.innerHTML = (incoming.length || outgoing.length)
             ? (incHtml + (outgoing.length ? `<div class="mt-2 opacity-70">Enviadas</div>${outHtml}` : ""))
@@ -82,8 +100,8 @@ async function doSearch(q) {
         const { users } = await api(`/api/users/search?q=${encodeURIComponent(q)}`);
         results.innerHTML = users?.length
             ? users.map(u => userRow(u, `<button class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500" data-add="${u.id}">
-                        Añadir
-                      </button>`)).join("")
+						Añadir
+					  </button>`)).join("")
             : `<div class="text-white/60">Sin resultados.</div>`;
     }
     catch (e) {

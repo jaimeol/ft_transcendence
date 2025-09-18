@@ -242,7 +242,7 @@ export async function mount(el, ctx) {
     await ensureChartsJs();
     const u = await me(ctx);
     if (u)
-        await loadMatchesAndStats();
+        await loadMatchesAndStats(ctx);
 }
 async function ensureChartsJs() {
     if (window.Chart)
@@ -326,8 +326,6 @@ function paintUser(u) {
     $("#player-name") && ($("#player-name").textContent = escapeHTML(u.display_name ?? "Jugador"));
     $("#player-email") && ($("#player-email").textContent = escapeHTML(u.email ?? "email@dominio.com"));
     $("#member-since") && ($("#member-since").textContent = fmtDate(u.created_at));
-    $("#level") && ($("#level").textContent = String(u.level ?? 1));
-    $("#elo") && ($("#elo").textContent = String(u.elo ?? 1000));
     $("#ov-display") && ($("#ov-display").textContent = u.display_name || "—");
     $("#ov-email") && ($("#ov-email").textContent = u.email || "—");
     $("#ov-first") && ($("#ov-first").textContent = u.first_name || "—");
@@ -350,9 +348,9 @@ async function me(ctx) {
         return null;
     }
 }
-async function loadMatchesAndStats() {
+async function loadMatchesAndStats(ctx) {
     try {
-        const r = await window.api("/api/users/me/matches");
+        const r = await ctx.api("/api/users/me/matches");
         state.matches = r?.matches ?? [];
     }
     catch {

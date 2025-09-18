@@ -19,11 +19,14 @@ export function createRouter(opts: { routes: Route[]; root: HTMLElement; ctx: Ct
   const { routes, root, ctx } = opts;
   let currentPath = "";
 
+  const toPathName = (input: string) => new URL(input, location.origin).pathname;
+
   function match(pathname: string): Route | undefined {
     return routes.find(r => r.path === pathname) || routes.find(r => r.path === "/404");
   }
 
-  async function render(pathname: string) {
+  async function render(input: string){
+    const pathname = toPathName(input);
     if (pathname === currentPath) return;
     currentPath = pathname;
 
@@ -47,15 +50,15 @@ export function createRouter(opts: { routes: Route[]; root: HTMLElement; ctx: Ct
   function navigate(path: string, opts?: { replace?: boolean }) {
     // Normaliza: permitir pasar path relativos tipo "./login"
     const url = new URL(path, location.origin);
-    const next = url.pathname + url.search + url.hash;
-    if (next === location.pathname + location.search + location.hash && !opts?.replace) return;
-    if (opts?.replace) history.replaceState({}, "", next);
-    else history.pushState({}, "", next);
-    render(next);
+    const full = url.pathname + url.search + url.hash;
+    if (full === location.pathname + location.search + location.hash && !opts?.replace) return;
+    if (opts?.replace) history.replaceState({}, "", full);
+    else history.pushState({}, "", full);
+    render(url.pathname);
   }
 
   function onPopState() {
-    render(location.pathname + location.search + location.hash);
+    render(location.pathname);
   }
 
   // Interceptor global de <a> internos (delegación)

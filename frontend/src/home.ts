@@ -136,7 +136,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
       $("#userName")!.textContent = u.display_name || "-";
       $("#userEmail")!.textContent = u.email || "-";
     } catch {
-      // Con router + guard no debería pasar, pero por si acaso:
       ctx.navigate("/login", { replace: true });
     }
   }

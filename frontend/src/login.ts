@@ -100,14 +100,15 @@ export function mount(el: HTMLElement, ctx: Ctx) {
 			body: JSON.stringify({ email, password })
 		});
 
-		ctx.user = (res && (res.user ?? res)) || null;
+		ctx.user = res?.user ?? res ?? null;
 		navigate("/home", { replace: true});
-
 		} catch (e: any) {
 			const msg = String(e?.message || "");
 			if (msg === "401") setError(t("invalid_credentials") ?? "Email o contraseña no válidos");
     		else if (msg === "400") setError(t("missing_credentials") ?? "Faltan credenciales");
     		else setError(t("login_error") ?? "Error al iniciar sesión");
+			setLoading(false);
+		} finally {
 			setLoading(false);
 		}
 	});
