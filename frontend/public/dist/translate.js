@@ -24,13 +24,6 @@ export function getCurrentLanguage() {
         return savedLang;
     const browserLang = normalize(navigator.language.split("-")[0]);
     return browserLang ?? "en";
-    // const savedLang = localStorage.getItem('language') as language;
-    // if (savedLang && ['es', 'en', 'fr'].includes(savedLang))
-    // 	return savedLang;
-    // const browserLang = navigator.language.split('-')[0] as language;
-    // if (['es', 'en', 'fr'].includes(browserLang))
-    // 	return browserLang;
-    // return 'en';
 }
 export async function loadTranslations(lang) {
     try {

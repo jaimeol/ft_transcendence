@@ -6,6 +6,8 @@
   "medium": "medium",
   "hard": "hard",
   "game_over": "Game Over",
+  "loading": "Loading",
+  "home": "Home",
   "press_space_start": "Press space to start",
   "press_space_restart": "Press space to restart",
   "field-email": "Email",
@@ -40,6 +42,7 @@
   "home.cards.matches.desc": "History and upcoming",
   "home.editProfile": "Edit Profile",
   "home.logout": "Log out",
+  "profile.title": "Profile",
   "profile.memberSince": "Member since",
   "profile.level": "Level",
   "profile.wins": "Wins",
@@ -67,5 +70,12 @@
   "ttt_restart": "Restart",
   "ttt_waiting_opponent": "Waiting for second player…",
   "ttt_ready_press_start": "Ready to play.",
-  "pvp_invalid_credentials": "Invalid credentials"
+  "pvp_invalid_credentials": "Invalid credentials",
+  "friends.title": "Friends",
+  "friends.pending": "Pending requests",
+  "friends.your_friends": "Your friends",
+  "friends.search_placeholder": "Search by name or email...",
+  "friends.accept_error": "Error accepting request",
+  "friends.none": "You do not have friends yet 😢",
+  "friends.no_pending": "No pending requests"
 }
