@@ -1,4 +1,6 @@
 {
+  "play_pong": "Play Pong",
+  "game_select_mode": "Select mode inside",
   "play_1v1": "Play 1v1",
   "play_ai": "Play vs AI",
   "select_difficulty": "Select Difficulty",
@@ -8,6 +10,10 @@
   "game_over": "Game Over",
   "loading": "Loading",
   "home": "Home",
+  "win": "Win",
+  "lose": "Defeat",
+  "draw": "Draw",
+  "AI": "AI",
   "press_space_start": "Press space to start",
   "press_space_restart": "Press space to restart",
   "field-email": "Email",
@@ -28,6 +34,7 @@
   "bithdate-placeholder": "dd/mm/yyyy",
   "pass-placeholder": "Password (min. 8)",
   "action-back": "Back",
+  "google.register": "Register with Google",
   "no-account": "Don't have an account?",
   "Profile-text": "My profile",
   "data-update": "Update Data",
@@ -60,6 +67,7 @@
   "profile.account": "Account",
   "profile.updateEmail": "Update email",
   "profile.chooseFile": "Choose file",
+  "play_ttt": "Play Tic Tac Toe",
   "ttt_turn": "Turn",
   "ttt_new_game": "New Game",
   "ttt_draw": "Draw",
@@ -77,5 +85,8 @@
   "friends.search_placeholder": "Search by name or email...",
   "friends.accept_error": "Error accepting request",
   "friends.none": "You do not have friends yet 😢",
-  "friends.no_pending": "No pending requests"
+  "friends.no_pending": "No pending requests",
+  "friends.no_results": "User not found",
+  "friends.badge.one": "friend",
+  "friends.badge.other": "friends"
 }

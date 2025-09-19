@@ -14,9 +14,10 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	const $ = <T extends HTMLElement = HTMLElement>(s: string) => el.querySelector(s) as T | null;
 	const $$ = <T extends HTMLElement = HTMLElement>(s: string) => Array.from(el.querySelectorAll(s)) as T[];
 
-	const escapeHTML = (s: string = "") => {
-		s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]!));
-	}
+	const escapeHTML = (s: string = "") =>
+  		s.replace(/[&<>"']/g, c =>
+    	({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as any)[c]!
+  	);
 	const avatarUrl = (p?: string | null) => (p && p.trim()) ? p : "/files/defautl-avatar.png";
 
 	const userRow = (u: UserLite, actionsHtml = "") => `

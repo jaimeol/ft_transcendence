@@ -2,9 +2,7 @@ export async function mount(el, ctx) {
     const t = ctx.t;
     const $ = (s) => el.querySelector(s);
     const $$ = (s) => Array.from(el.querySelectorAll(s));
-    const escapeHTML = (s = "") => {
-        s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    };
+    const escapeHTML = (s = "") => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const avatarUrl = (p) => (p && p.trim()) ? p : "/files/defautl-avatar.png";
     const userRow = (u, actionsHtml = "") => `
 	<div class="flex item-center gap-3 p-2 rounded bg-white/5 border border-white/10">

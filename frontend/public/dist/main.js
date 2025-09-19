@@ -52,7 +52,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         routes: [
             { path: "/", loader: () => import("./landing.js") },
             { path: "/login", loader: () => import("./login.js") },
-            // { path: "/register", loader: () => import("./register.js") },
+            { path: "/register", loader: () => import("./register.js") },
             { path: "/home", loader: () => import("./home.js"), requiresAuth: true },
             { path: "/profile", loader: () => import("./profile.js"), requiresAuth: true },
             { path: "/friends", loader: () => import("./friends.js"), requiresAuth: true },
