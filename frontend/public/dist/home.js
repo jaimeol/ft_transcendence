@@ -1,3 +1,4 @@
+import { mountChat } from "./chat.js";
 // ==== Helper fecha ====
 const fmtDateTime = (s) => (!s ? "—" : new Date(s).toLocaleString());
 // ==== Componente de página ====
@@ -95,6 +96,8 @@ export async function mount(el, ctx) {
 			</div>
 			<div id="matches" class="text-sm text-white/60">—</div>
 		</section>
+
+		<section id="chat-host" class="mt-6"></section>
 	</main>
 	`;
     // ---- Helpers locales (scoped al contenedor de la página) ----
@@ -239,4 +242,8 @@ export async function mount(el, ctx) {
     await loadUser();
     await loadFriendsCount();
     await loadRecentMatches();
+    const chatHost = el.querySelector('#chat-host');
+    if (chatHost) {
+        mountChat(chatHost, ctx);
+    }
 }

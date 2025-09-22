@@ -1,6 +1,6 @@
 // home.ts
 import type { Ctx } from "./router.js";
-
+import { mountChat } from "./chat.js";
 // ==== Tipos ====
 type User = { display_name?: string; email?: string; avatar_path?: string | null };
 type FriendsResp = { friends: Array<any> };
@@ -112,6 +112,8 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 			</div>
 			<div id="matches" class="text-sm text-white/60">—</div>
 		</section>
+
+		<section id="chat-host" class="mt-6"></section>
 	</main>
 	`;
 
@@ -255,4 +257,9 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	await loadUser();
 	await loadFriendsCount();
 	await loadRecentMatches();
+
+	const chatHost = el.querySelector<HTMLElement>('#chat-host');
+	if (chatHost) {
+		mountChat(chatHost, ctx);
+	}
 }

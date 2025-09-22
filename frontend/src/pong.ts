@@ -125,7 +125,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	if (!ctx2d)
 		throw new Error("Could not obtain 2dcontext");
 	const paddleWidth = 10, paddleHeight = 120, ballRadius = 10;
-	const INITIAL_BALL_SPEED = 5, MAX_BALL_SPEED = 10, paddleSpeed = 5;
+	const INITIAL_BALL_SPEED = 10, MAX_BALL_SPEED = 20, paddleSpeed = 8;
 	const keys: Record<string, boolean> = {};
 	let leftPaddleY = (canvas.height - paddleHeight) / 2;
 	let rightPaddleY = (canvas.height - paddleHeight) / 2;
