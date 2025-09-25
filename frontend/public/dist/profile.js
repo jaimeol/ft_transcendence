@@ -1,5 +1,4 @@
 export async function mount(el, ctx) {
-    const prevBody = document.body.className;
     document.body.className = "min-h-screen bg-black text-white";
     el.innerHTML = `
 	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
@@ -283,7 +282,14 @@ function renderCharts({ wins, draws, losses, lastResults }) {
     lastChart?.destroy();
     pieChart = new Chart(ctxPie, {
         type: "doughnut",
-        data: { labels: ["Victorias", "Empates", "Derrotas"], datasets: [{ data: [wins, draws, losses], borderWidth: 0 }] },
+        data: {
+            labels: ["Victorias", "Empates", "Derrotas"],
+            datasets: [{
+                    data: [wins, draws, losses],
+                    backgroundColor: ["#6071d0ff", "#e38f11ff", "#ef4444"],
+                    borderWidth: 0
+                }]
+        },
         options: { plugins: { legend: { labels: { color: "#D4D4D8" } } }, cutout: "60%" }
     });
     const labels = lastResults.map((_, i) => `#${i + 1}`);
@@ -334,6 +340,18 @@ function paintUser(u) {
     $("#ov-created") && ($("#ov-created").textContent = fmtDate(u.created_at));
     $("#ov-updated") && ($("#ov-updated").textContent = fmtDate(u.updated_at));
 }
+function safeDetailsProfile(m) {
+    try {
+        return m.details ? JSON.parse(m.details) : null;
+    }
+    catch {
+        return null;
+    }
+}
+function isDrawProfile(m) {
+    const d = safeDetailsProfile(m);
+    return m.winner_id == null || d?.is_draw === true;
+}
 // ========= Data =========
 async function me(ctx) {
     try {
@@ -354,48 +372,50 @@ async function loadMatchesAndStats(ctx) {
         state.matches = r?.matches ?? [];
     }
     catch {
-        // demo fallback
-        state.matches = [
-            { winner_id: 1 }, {}, { winner_id: -1 }, { winner_id: 1 },
-            { winner_id: 1 }, {}, { winner_id: -1 }, { winner_id: 1 }
-        ];
+        state.matches = [];
     }
     const myId = state.me.id;
+    const all = state.matches;
     let wins = 0, draws = 0, losses = 0;
-    const lastResults = [];
-    for (const m of state.matches.slice(-12)) {
-        const w = (m.winner_id === undefined || m.winner_id === null)
-            ? null
-            : Number(m.winner_id);
-        if (w === myId) {
-            wins++;
-            lastResults.push(1);
-        }
-        else if (w === null || m.is_draw === true) {
+    let totalMs = 0;
+    for (const m of all) {
+        const d = safeDetailsProfile(m);
+        if (isDrawProfile(m)) {
             draws++;
-            lastResults.push(0);
+        }
+        else if (m.winner_id === myId) {
+            wins++;
         }
         else {
             losses++;
-            lastResults.push(-1);
         }
+        const ms = Number(d?.duration_ms) || 0;
+        totalMs += ms;
     }
     const total = wins + draws + losses;
     const winrate = total ? Math.round((wins / total) * 100) : 0;
+    const byDateDesc = [...all].sort((a, b) => {
+        const ta = a.played_at ? Date.parse(a.played_at) : 0;
+        const tb = b.played_at ? Date.parse(b.played_at) : 0;
+        return tb - ta;
+    });
     let streak = 0;
-    for (let i = lastResults.length - 1; i >= 0; i--) {
-        if (lastResults[i] === 1)
+    for (const m of byDateDesc) {
+        if (!isDrawProfile(m) && m.winner_id === myId)
             streak++;
         else
             break;
     }
+    const recent = byDateDesc.slice(0, 12);
+    const lastResults = recent.map(m => isDrawProfile(m) ? 0 : (m.winner_id === myId ? 1 : -1));
     $("#stat-wins") && ($("#stat-wins").textContent = String(wins));
     $("#stat-draws") && ($("#stat-draws").textContent = String(draws));
     $("#stat-losses") && ($("#stat-losses").textContent = String(losses));
     $("#stat-total") && ($("#stat-total").textContent = String(total));
     $("#stat-winrate") && ($("#stat-winrate").textContent = `${winrate}%`);
     $("#stat-streak") && ($("#stat-streak").textContent = String(streak));
-    $("#stat-time") && ($("#stat-time").textContent = total ? `${total * 5} min` : "—");
+    const mins = totalMs ? Math.max(1, Math.round(totalMs / 60000)) : 0;
+    $("#stat-time").textContent = total ? (mins ? `${mins} min` : `${total * 5} min`) : "-";
     renderCharts({ wins, draws, losses, lastResults });
 }
 // ========= Formularios/acciones =========

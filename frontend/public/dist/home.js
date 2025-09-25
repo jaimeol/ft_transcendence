@@ -107,9 +107,6 @@ export async function mount(el, ctx) {
         const data = await ctx.api(url, init);
         return data;
     }
-    function escapeHtml(s = "") {
-        return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    }
     async function loadUser() {
         try {
             const j = await apiFetch("/api/auth/me");
@@ -183,49 +180,69 @@ export async function mount(el, ctx) {
         const box = $("#matches");
         if (!box)
             return;
-        box.textContent = "Cargando…";
+        box.innerHTML = `
+			<div class="flex items-center gap-2 text-white/60">
+				<span class="inline-block w-3 h-3 rounded-full animate-pulse bg-white/30"></span>
+				${ctx.t("loading") ?? "Cargando..."}
+			</div>
+		`;
         try {
             const me = await apiFetch("/api/auth/me");
             const myId = me.user.id;
             const r = await apiFetch("/api/users/me/matches");
             const list = (r.matches || []).slice(0, limit);
             if (list.length === 0) {
-                box.innerHTML = `<div class="text-white/50">Aún no hay partidas</div>`;
+                box.innerHTML = `<div class="text-white/50">${ctx.t("no_matches") ?? "Aún no hay partidas"}</div>`;
                 return;
             }
             const namesCache = new Map();
-            async function opponentName(m) {
-                const opp = m.player1_id === myId ? m.player2_id : m.player1_id;
-                if (namesCache.has(opp))
-                    return namesCache.get(opp);
-                const name = await getUserName(opp);
-                namesCache.set(opp, name);
-                return name;
+            async function getName(id) {
+                if (!id || id <= 0)
+                    return ctx.t("AI") ?? "IA";
+                if (namesCache.has(id))
+                    return namesCache.get(id);
+                try {
+                    const { user } = await apiFetch(`/api/users/${id}`);
+                    const name = user?.display_name || `Usuarios ${id}`;
+                    namesCache.set(id, name);
+                    return name;
+                }
+                catch {
+                    return `Usuario #${id}`;
+                }
             }
+            const gameIcon = (g) => g === "tictactoe" ? "❌⭘" : "🏓";
+            const labelFor = (t, res) => res === "W" ? (t("win") ?? "Victoria") :
+                res === "L" ? (t("lose") ?? "Derrota") :
+                    (t("draw") ?? "Empate");
             const rows = await Promise.all(list.map(async (m) => {
                 const res = resultFor(myId, m);
-                const opp = await opponentName(m);
+                const oppId = m.player1_id === myId ? m.player2_id : m.player1_id;
+                const opp = await getName(oppId);
                 const sc = perspectiveScore(m, myId);
                 const score = sc ? ` · ${sc.you} - ${sc.rival}` : "";
                 const when = fmtDateTime(m.played_at);
+                const icon = gameIcon(m.game);
                 const badgeClass = res === "W" ? "bg-emerald-600/70" :
                     res === "L" ? "bg-rose-600/70" :
                         "bg-zinc-600/70";
-                const label = res === "W" ? ctx.t("win") :
-                    res === "L" ? ctx.t("lose") :
-                        ctx.t("draw");
+                const label = labelFor(ctx.t, res);
                 return `
 						<li class="flex items-center justify-between py-1.5">
-							<div class="min-w-0">
-								<div class="text-white truncate">${opp}<span class="opacity-60">${score}</span></div>
-								<div class="text-xs text-white/50">${when}</div>
+							<div class="min-w-0 flex items-center gap-2">
+								<span class="text-lg">${icon}</span>
+								<div class="min-w-0">
+									<div class="text-white truncate">${opp}<span class="opacity-60">${score}</span></div>
+									<div class="text-xs text-white/50">${when}</div>
+								</div>
 							</div>
 							<span class="ml-3 inline-flex text-xs px-2 py-0.5 rounded ${badgeClass}">${label}</span>
 						</li>`;
             }));
             box.innerHTML = `<ul class="divide-y divide-white/10">${rows.join("")}</ul>`;
         }
-        catch {
+        catch (e) {
+            console.error(e);
             box.innerHTML = `<div class="text-rose-400 text-sm">No se pudieron cargar las partidas.</div>`;
         }
     }

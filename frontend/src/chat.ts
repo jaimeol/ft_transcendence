@@ -1,7 +1,6 @@
 // frontend/src/chat.ts
 
 import type { Ctx } from "./router.js";
-import { currentTranslations } from "./translate.js";
 
 // ===== Tipos =====
 type Peer = { id:number; display_name:string; avatar_path?:string|null };
@@ -56,7 +55,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 	let isFetchingOlder = false;  // evita cargas simultáneas
 
 	const subs = new AbortController();
-	const on = <K extends keyof WindowEventMap>(type: K, handler: (ev: WindowEventMap[]) => any) =>
+	const on = <K extends keyof WindowEventMap>(type: K, handler: (ev: WindowEventMap[K]) => any) =>
 		window.addEventListener(type, handler as any, { signal: subs.signal });
 
 	// ===== API (expuesta por tu app en window.api) =====
@@ -193,7 +192,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 			const row = h('button', { class:'flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-white/10' });
 			const img = h('img', { src: p.avatar_path || '/uploads/default-avatar.png', class:'w-7 h-7 rounded-full', alt:'avatar'});
 			const name = h('span', { class:'text-sm' }, p.display_name);
-			const link = h('a', { href:`/profile?user=${p.id}`, class:'ml-auto underline text-xs opacity-80 hover:opacity-100' }, 'ver perfil');
+			const link = h('a', { href:`/profile?user=${p.id}`, class:'ml-auto underline text-xs opacity-80 hover:opacity-100' }, 'Ver perfil');
 			row.append(img, name, link);
 			row.onclick = async () => { currentPeer = p; await loadHistory(p.id); updateHeader(p); };
 			list.append(row);
@@ -217,7 +216,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 	}
 
 	async function loadHistory(peerId:number) {
-		const { messages } = await api<{messages:Msg[]}>(`/api/chat/history/${peerId}?limite=50`);
+		const { messages } = await api<{messages:Msg[]}>(`/api/chat/history/${peerId}?limit=50`);
 		const box = $('#chat-messages', host) as HTMLDivElement;
 		box.innerHTML = '';
 

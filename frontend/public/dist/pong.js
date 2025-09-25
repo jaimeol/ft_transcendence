@@ -152,6 +152,7 @@ export async function mount(el, ctx) {
             if (isAI) {
                 const body = {
                     mode: 'ai',
+                    game: "pong",
                     level: difficulty || null,
                     score_user: leftScore,
                     score_ai: rightScore,
@@ -167,6 +168,7 @@ export async function mount(el, ctx) {
             else if (isPVP && secondPlayer) {
                 const body = {
                     mode: 'pvp',
+                    game: "pong",
                     opponent_id: secondPlayer.id,
                     score_left: leftScore,
                     score_right: rightScore,

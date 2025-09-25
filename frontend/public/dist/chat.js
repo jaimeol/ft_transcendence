@@ -163,7 +163,7 @@ export function mountChat(host, ctx) {
             const row = h('button', { class: 'flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-white/10' });
             const img = h('img', { src: p.avatar_path || '/uploads/default-avatar.png', class: 'w-7 h-7 rounded-full', alt: 'avatar' });
             const name = h('span', { class: 'text-sm' }, p.display_name);
-            const link = h('a', { href: `/profile?user=${p.id}`, class: 'ml-auto underline text-xs opacity-80 hover:opacity-100' }, 'ver perfil');
+            const link = h('a', { href: `/profile?user=${p.id}`, class: 'ml-auto underline text-xs opacity-80 hover:opacity-100' }, 'Ver perfil');
             row.append(img, name, link);
             row.onclick = async () => { currentPeer = p; await loadHistory(p.id); updateHeader(p); };
             list.append(row);
@@ -193,7 +193,7 @@ export function mountChat(host, ctx) {
         $('#chat-input', host)?.removeAttribute('disabled');
     }
     async function loadHistory(peerId) {
-        const { messages } = await api(`/api/chat/history/${peerId}?limite=50`);
+        const { messages } = await api(`/api/chat/history/${peerId}?limit=50`);
         const box = $('#chat-messages', host);
         box.innerHTML = '';
         const existingSpacer = $('#chat-bottom-spacer', host);

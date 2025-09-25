@@ -1,108 +1,254 @@
-import { changeLanguage, currentTranslations, initializeLanguages } from "./translate.js";
-window.addEventListener("DOMContentLoaded", async () => {
-    await initializeLanguages();
-    const t = (k) => currentTranslations?.[k] ?? k;
-    const canvas = document.getElementById("ticTacToe");
+const WIN_COMBOS = [
+    [
+        [0, 0],
+        [1, 0],
+        [2, 0],
+    ],
+    [
+        [0, 1],
+        [1, 1],
+        [2, 1],
+    ],
+    [
+        [0, 2],
+        [1, 2],
+        [2, 2],
+    ],
+    [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+    ],
+    [
+        [1, 0],
+        [1, 1],
+        [1, 2],
+    ],
+    [
+        [2, 0],
+        [2, 1],
+        [2, 2],
+    ],
+    [
+        [0, 0],
+        [1, 1],
+        [2, 2],
+    ],
+    [
+        [2, 0],
+        [1, 1],
+        [0, 2],
+    ],
+];
+export async function mount(el, { t, api, navigate }) {
+    el.innerHTML = `
+	<div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex flex-col">
+
+	<!-- Header -->
+	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+		<div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+		<a href="/home" data-nav="home" class="flex items-center gap-2">
+			<div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+			<span class="font-semibold">ft_transcendence</span>
+		</a>
+
+		<div class="flex items-center gap-3">
+			<div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+			<button class="hover:underline" data-lang="en">EN</button>
+			<span class="mx-1 text-white/40">|</span>
+			<button class="hover:underline" data-lang="es">ES</button>
+			<span class="mx-1 text-white/40">|</span>
+			<button class="hover:underline" data-lang="fr">FR</button>
+			</div>
+			<button id="logoutBtn"
+					class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
+					data-translate="home.logout">
+			${t("home.logout") ?? "Cerrar sesión"}
+			</button>
+		</div>
+		</div>
+	</header>
+
+	<!-- Main -->
+	<main class="flex-1">
+		<div class="max-w-5xl mx-auto px-4 py-8">
+		<!-- Cabecera del juego -->
+		<div class="mb-6">
+			<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+			<span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent" data-translate="ttt.title">
+				${t("ttt.title") ?? "Ft_Transcendence — Tres en raya"}
+			</span>
+			</h1>
+			<div id="status" class="mt-2 text-white/70 text-lg font-mono"></div>
+		</div>
+
+		<!-- Contenedor del canvas -->
+		<section class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-4">
+			<div class="overflow-x-auto">
+			<div class="relative w-full max-w-[600px] mx-auto">
+				<canvas id="ticTacToe" width="400" height="400" class="block w-full h-auto bg-gray-900 rounded-xl"></canvas>
+
+				<div id="board-blocker" class="absolute inset-0 bg-black z-40"></div>
+
+				<svg id="ttt-anim" viewBox="0 0 400 400"
+					 class="absolute inset-0 w-full h-full pointer-events-none"></svg>
+			</div>
+			</div>
+
+			<!-- Controles -->
+			<div class="mt-4 flex items-center justify-center">
+			<button id="resetBtn"
+					class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 font-semibold"
+					data-translate="ttt.restart">
+				${t("ttt.restart") ?? "Reiniciar"}
+			</button>
+			</div>
+		</section>
+		</div>
+	</main>
+
+	<!-- Overlay login segundo jugador -->
+	<div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
+		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+		<h2 class="text-xl font-semibold mb-4" data-translate="ttt.second_player">${t("ttt.second_player") ?? "Segundo jugador"}</h2>
+		<form id="pvp-login-form" class="flex flex-col gap-3">
+			<input id="pvp-email" type="email" placeholder="Email"
+				 class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+			<input id="pvp-password" type="password" placeholder="${t("auth.password") ?? "Contraseña"}"
+				 class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+			<button type="submit"
+					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
+			${t("ttt.start_match") ?? "Empezar partida"}
+			</button>
+		</form>
+		<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
+		</div>
+	</div>
+
+	<!-- Winner Overlay -->
+	<div id="winnerOverlay"
+		class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xl">
+		<div class="bg-white/10 border border-white/20 rounded-2xl shadow-2xl px-8 sm:px-10 py-8 text-center w-[min(92vw,40rem)]">
+		<h2 id="winnerText" class="text-3xl sm:text-4xl font-extrabold mb-6 text-emerald-300"></h2>
+		<div class="flex gap-3 justify-center">
+			<button id="playAgainBtn"
+					class="px-5 py-2.5 rounded-xl font-semibold bg-emerald-500/90 hover:bg-emerald-500 text-black/90 transition"
+					data-translate="ttt.play_again">
+			${t("ttt.play_again") ?? "Jugar de nuevo"}
+			</button>
+			<button id="closeOverlayBtn"
+					class="px-5 py-2.5 rounded-xl font-semibold bg-white/10 hover:bg-white/15 border border-white/15 transition"
+					data-translate="ttt.close">
+			${t("ttt.close") ?? "Cerrar"}
+			</button>
+		</div>
+				</div>
+		</div>
+		</div>
+	`;
+    const canvas = el.querySelector("#ticTacToe");
+    const svg = el.querySelector("#ttt-anim");
+    const statusEl = el.querySelector("#status");
+    const resetBtn = el.querySelector("#resetBtn");
+    const playAgainBtn = el.querySelector("#playAgainBtn");
+    const closeOverlayBtn = el.querySelector("#closeOverlayBtn");
+    const winnerOverlay = el.querySelector("#winnerOverlay");
+    const winnerText = el.querySelector("#winnerText");
+    const blocker = el.querySelector("#board-blocker");
+    const pvpOverlay = el.querySelector("#pvp-login-overlay");
+    const form = el.querySelector("#pvp-login-form");
+    const errorEl = el.querySelector("#pvp-login-error");
     if (!canvas)
         throw new Error("Canvas not found");
+    if (!svg)
+        throw new Error("SVG layer not found");
     const ctx = canvas.getContext("2d");
     if (!ctx)
-        throw new Error("No se pudo obtener el contexto 2D");
-    const me = window.user;
+        throw new Error("Could not obtain 2D context");
+    // const me = (window as any).user as { id: number } | undefined;
+    const { user: me } = await api("/api/auth/me");
     let secondPlayer = null;
     let pvpReady = false;
     let gameStartTs = performance.now();
     let savedThisGame = false;
-    const blocker = document.getElementById('board-blocker');
-    const pvpOverlay = document.getElementById('pvp-login-overlay');
-    const statusEl = document.getElementById("status");
-    const resetBtn = document.getElementById("resetBtn");
-    const winnerOverlay = document.getElementById("winnerOverlay");
-    const winnerText = document.getElementById("winnerText");
-    const playAgainBtn = document.getElementById("playAgainBtn");
-    const closeOverlayBtn = document.getElementById("closeOverlayBtn");
-    // ⬇️ En vez de const playerNames = {...}, usa función:
-    const playerName = (p) => (p === "X" ? t("ttt_player1") : t("ttt_player2"));
-    const svg = document.querySelector("#ttt-anim");
-    if (!svg)
-        throw new Error("SVG layer not found");
-    svg.setAttribute("viewBox", `0 0 ${canvas.width} ${canvas.height}`);
     const boardSize = Math.min(canvas.width, canvas.height);
     let cellSize = boardSize / 3;
     const offX = (canvas.width - boardSize) / 2;
     const offY = (canvas.height - boardSize) / 2;
-    const WIN_COMBOS = [
-        [[0, 0], [1, 0], [2, 0]], [[0, 1], [1, 1], [2, 1]], [[0, 2], [1, 2], [2, 2]],
-        [[0, 0], [0, 1], [0, 2]], [[1, 0], [1, 1], [1, 2]], [[2, 0], [2, 1], [2, 2]],
-        [[0, 0], [1, 1], [2, 2]], [[2, 0], [1, 1], [0, 2]],
-    ];
     let board = [[null, null, null], [null, null, null], [null, null, null]];
     let currentPlayer = "X";
     let gameOver = false;
     let lastResult = null;
-    (function requireLocalPVP() {
-        blocker?.classList.remove('hidden');
-        pvpOverlay?.classList.remove('hidden');
-        const form = document.getElementById('pvp-login-form');
-        const errorEl = document.getElementById('pvp-login-error');
-        form?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('pvp-email').value;
-            const password = document.getElementById('pvp-password').value;
-            try {
-                const res = await fetch('/api/auth/login-second', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, password }),
-                });
-                if (!res.ok)
-                    throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                secondPlayer = data;
-                pvpReady = true;
-                pvpOverlay?.classList.add('hidden');
-                blocker?.classList.add('hidden');
-                gameStartTs = performance.now();
-                savedThisGame = false;
-                statusEl.textContent = t("ttt-turn") + `: ${currentPlayer}`;
-            }
-            catch (err) {
-                if (errorEl) {
-                    errorEl.textContent = t("pvp_invalid_credentials") || "Invalid credentials";
-                    errorEl.classList.remove('hidden');
-                }
-            }
-        });
-    })();
+    const playerName = (p) => (p === "X" ? (t?.("ttt_player1") ?? "Jugador 1") : (t?.("ttt_player2") ?? "Jugador 2"));
     function refreshTexts() {
-        if (playAgainBtn)
-            playAgainBtn.textContent = t("ttt_play_again");
-        if (resetBtn)
-            resetBtn.textContent = t("ttt_restart");
+        if (!statusEl)
+            return;
         if (!gameOver) {
-            statusEl.textContent = `${t("ttt_turn")}: ${currentPlayer}`;
+            statusEl.textContent = `${t?.("ttt_turn") ?? "Turno"}: ${currentPlayer}`;
         }
         else if (lastResult) {
             if (lastResult === "draw") {
-                const txt = t("ttt_draw");
+                const txt = t?.("ttt_draw") ?? "Empate";
                 statusEl.textContent = txt;
                 if (winnerText)
                     winnerText.textContent = txt;
             }
             else {
-                const label = `${playerName(lastResult.player)} (${lastResult.player}) ${t("ttt_wins")}`;
+                const label = `${playerName(lastResult.player)} (${lastResult.player}) ${t?.("ttt_wins") ?? "gana"}`;
                 statusEl.textContent = label;
                 if (winnerText)
                     winnerText.textContent = label;
             }
         }
+        if (resetBtn)
+            resetBtn.textContent = t?.("ttt_restart") ?? "Reiniciar";
+        if (playAgainBtn)
+            playAgainBtn.textContent = t?.("ttt_play_again") ?? "Jugar de nuevo";
     }
-    window.changeLanguage = (lang) => {
-        return changeLanguage(lang).then(() => {
-            refreshTexts();
-        });
-    };
+    function winnerUserId(result) {
+        if (!result || result === "draw" || !me || !secondPlayer)
+            return null;
+        return result.player === "X" ? me.id : secondPlayer.id;
+    }
+    async function saveMatchIfNeeded() {
+        if (savedThisGame)
+            return;
+        if (!me || !secondPlayer || !lastResult)
+            return;
+        savedThisGame = true;
+        const duration_ms = Math.round(performance.now() - gameStartTs);
+        const base = {
+            mode: "pvp",
+            game: "tictactoe",
+            opponent_id: secondPlayer.id,
+            duration_ms,
+        };
+        try {
+            if (lastResult === "draw") {
+                await api("/api/matches", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ ...base, is_draw: true }),
+                });
+            }
+            else {
+                const w = winnerUserId(lastResult);
+                if (w === null)
+                    throw new Error("No se pudo deducir winner_id");
+                await api("/api/matches", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ ...base, is_draw: false, winner_id: w }),
+                });
+            }
+        }
+        catch (err) {
+            console.error("Error al guardar la partida: ", err);
+            savedThisGame = false;
+        }
+    }
     function checkWinner() {
         for (const combo of WIN_COMBOS) {
             const [[x1, y1], [x2, y2], [x3, y3]] = combo;
@@ -114,6 +260,78 @@ window.addEventListener("DOMContentLoaded", async () => {
         if (board.flat().every(c => c !== null))
             return "draw";
         return null;
+    }
+    function drawBoard() {
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        for (let i = 1; i < 3; i++) {
+            const x = Math.round(offX + i * cellSize) + 0.5;
+            ctx?.beginPath();
+            ctx?.moveTo(x, offY);
+            ctx?.lineTo(x, offY + boardSize);
+            ctx?.stroke();
+            const y = Math.round(offY + i * cellSize) + 0.5;
+            ctx?.beginPath();
+            ctx?.moveTo(offX, y);
+            ctx?.lineTo(offX + boardSize, y);
+            ctx?.stroke();
+        }
+    }
+    function addAnimatedMark(x, y, player) {
+        const pad = cellSize * 0.2;
+        const cellLeft = offX + x * cellSize;
+        const cellTop = offY + y * cellSize;
+        const cellRight = cellLeft + cellSize;
+        const cellBottom = cellTop + cellSize;
+        if (player === "X") {
+            const x1 = cellLeft + pad, y1 = cellTop + pad;
+            const x2 = cellRight - pad, y2 = cellBottom - pad;
+            const len = Math.hypot(x2 - x1, y2 - y1);
+            const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line1.setAttribute("x1", `${x1}`);
+            line1.setAttribute("y1", `${y1}`);
+            line1.setAttribute("x2", `${x2}`);
+            line1.setAttribute("y2", `${y2}`);
+            line1.setAttribute("stroke", "#f87171");
+            line1.setAttribute("stroke-width", "6");
+            line1.setAttribute("stroke-linecap", "round");
+            line1.setAttribute("stroke-dasharray", `${len}`);
+            line1.setAttribute("stroke-dashoffset", `${len}`);
+            line1.classList.add("ttt-draw-line");
+            svg.appendChild(line1);
+            const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line2.setAttribute("x1", `${x2}`);
+            line2.setAttribute("y1", `${y1}`);
+            line2.setAttribute("x2", `${x1}`);
+            line2.setAttribute("y2", `${y2}`);
+            line2.setAttribute("stroke", "#f87171");
+            line2.setAttribute("stroke-width", "6");
+            line2.setAttribute("stroke-linecap", "round");
+            line2.setAttribute("stroke-dasharray", `${len}`);
+            line2.setAttribute("stroke-dashoffset", `${len}`);
+            line2.classList.add("ttt-draw-line");
+            line2.style.animationDelay = "0.15s";
+            svg.appendChild(line2);
+        }
+        else {
+            const cx = cellLeft + cellSize / 2;
+            const cy = cellTop + cellSize / 2;
+            const r = cellSize / 2 - pad;
+            const len = 2 * Math.PI * r;
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", `${cx}`);
+            circle.setAttribute("cy", `${cy}`);
+            circle.setAttribute("r", `${r}`);
+            circle.setAttribute("fill", "transparent");
+            circle.setAttribute("stroke", "#60a5fa");
+            circle.setAttribute("stroke-width", "6");
+            circle.setAttribute("stroke-dasharray", `${len}`);
+            circle.setAttribute("stroke-dashoffset", `${len}`);
+            circle.classList.add("ttt-draw-circle");
+            svg.appendChild(circle);
+        }
     }
     function highlightWinningLine(cells) {
         const [[x0, y0], , [x1, y1]] = cells;
@@ -153,82 +371,10 @@ window.addEventListener("DOMContentLoaded", async () => {
             }
         }, 600);
     }
-    function drawBoard() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        for (let i = 1; i < 3; i++) {
-            const x = Math.round(offX + i * cellSize) + 0.5;
-            ctx.beginPath();
-            ctx.moveTo(x, offY);
-            ctx.lineTo(x, offY + boardSize);
-            ctx.stroke();
-            const y = Math.round(offY + i * cellSize) + 0.5;
-            ctx.beginPath();
-            ctx.moveTo(offX, y);
-            ctx.lineTo(offX + boardSize, y);
-            ctx.stroke();
-        }
-    }
-    function addAnimatedMark(x, y, player) {
-        const pad = cellSize * 0.2;
-        const cellLeft = offX + x * cellSize;
-        const cellTop = offY + y * cellSize;
-        const cellRight = cellLeft + cellSize;
-        const cellBottom = cellTop + cellSize;
-        if (player === "X") {
-            const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            const x1 = cellLeft + pad, y1 = cellTop + pad;
-            const x2 = cellRight - pad, y2 = cellBottom - pad;
-            line1.setAttribute("x1", `${x1}`);
-            line1.setAttribute("y1", `${y1}`);
-            line1.setAttribute("x2", `${x2}`);
-            line1.setAttribute("y2", `${y2}`);
-            line1.setAttribute("stroke", "#f87171");
-            line1.setAttribute("stroke-width", "6");
-            line1.setAttribute("stroke-linecap", "round");
-            const len = Math.hypot(x2 - x1, y2 - y1);
-            line1.setAttribute("stroke-dasharray", `${len}`);
-            line1.setAttribute("stroke-dashoffset", `${len}`);
-            line1.classList.add("ttt-draw-line");
-            svg?.appendChild(line1);
-            const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line2.setAttribute("x1", `${x2}`);
-            line2.setAttribute("y1", `${y1}`);
-            line2.setAttribute("x2", `${x1}`);
-            line2.setAttribute("y2", `${y2}`);
-            line2.setAttribute("stroke", "#f87171");
-            line2.setAttribute("stroke-width", "6");
-            line2.setAttribute("stroke-linecap", "round");
-            line2.setAttribute("stroke-dasharray", `${len}`);
-            line2.setAttribute("stroke-dashoffset", `${len}`);
-            line2.classList.add("ttt-draw-line");
-            line2.style.animationDelay = "0.15s";
-            svg?.appendChild(line2);
-        }
-        else {
-            const cx = cellLeft + cellSize / 2;
-            const cy = cellTop + cellSize / 2;
-            const r = cellSize / 2 - pad;
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", `${cx}`);
-            circle.setAttribute("cy", `${cy}`);
-            circle.setAttribute("r", `${r}`);
-            circle.setAttribute("fill", "transparent");
-            circle.setAttribute("stroke", "#60a5fa");
-            circle.setAttribute("stroke-width", "6");
-            const len = 2 * Math.PI * r;
-            circle.setAttribute("stroke-dasharray", `${len}`);
-            circle.setAttribute("stroke-dashoffset", `${len}`);
-            circle.classList.add("ttt-draw-circle");
-            svg?.appendChild(circle);
-        }
-    }
-    canvas.addEventListener("click", (e) => {
+    canvas.addEventListener("click", async (e) => {
         if (!pvpReady) {
-            pvpOverlay?.classList.remove('hidden');
-            blocker?.classList.remove('hidden');
+            pvpOverlay?.classList.remove("hidden");
+            blocker?.classList.remove("hidden");
             return;
         }
         if (gameOver)
@@ -251,16 +397,14 @@ window.addEventListener("DOMContentLoaded", async () => {
             lastResult = result;
             if (result) {
                 gameOver = true;
+                await saveMatchIfNeeded();
                 if (result === "draw") {
-                    setTimeout(() => {
-                        if (winnerOverlay)
-                            winnerOverlay.classList.remove("hidden");
-                    }, 600);
+                    setTimeout(() => winnerOverlay?.classList.remove("hidden"), 600);
                 }
                 else {
                     highlightWinningLine(result.combo);
                 }
-                refreshTexts(); // ⬅️ mostrar textos finales traducidos
+                refreshTexts();
             }
             else {
                 currentPlayer = currentPlayer === "X" ? "O" : "X";
@@ -269,7 +413,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             drawBoard();
         }
     });
-    resetBtn.addEventListener("click", () => {
+    resetBtn?.addEventListener("click", () => {
         board = [[null, null, null], [null, null, null], [null, null, null]];
         currentPlayer = "X";
         gameOver = false;
@@ -277,16 +421,43 @@ window.addEventListener("DOMContentLoaded", async () => {
         svg.innerHTML = "";
         winnerOverlay?.classList.add("hidden");
         drawBoard();
-        refreshTexts(); // ⬅️ textos iniciales traducidos
+        refreshTexts();
+        savedThisGame = false;
+        gameStartTs = performance.now();
     });
     playAgainBtn?.addEventListener("click", () => {
-        resetBtn.click();
+        resetBtn?.click();
         winnerOverlay?.classList.add("hidden");
     });
     closeOverlayBtn?.addEventListener("click", () => {
         winnerOverlay?.classList.add("hidden");
     });
-    // Primera pintura
+    blocker?.classList.remove("hidden");
+    pvpOverlay?.classList.remove("hidden");
+    form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = el.querySelector("#pvp-email")?.value;
+        const password = el.querySelector("#pvp-password")?.value;
+        try {
+            const data = await api("/api/auth/login-second", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ email, password }),
+            });
+            secondPlayer = data;
+            pvpReady = true;
+            pvpOverlay?.classList.add("hidden");
+            blocker?.classList.add("hidden");
+            gameStartTs = performance.now();
+            savedThisGame = false;
+            refreshTexts();
+        }
+        catch (err) {
+            errorEl.textContent = t?.("pvp_invalid_credentials") ?? "Credenciales inválidas";
+            errorEl?.classList.remove("hidden");
+        }
+    });
     drawBoard();
     refreshTexts();
-});
+}

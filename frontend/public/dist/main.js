@@ -56,8 +56,8 @@ window.addEventListener("DOMContentLoaded", async () => {
             { path: "/home", loader: () => import("./home.js"), requiresAuth: true },
             { path: "/profile", loader: () => import("./profile.js"), requiresAuth: true },
             { path: "/friends", loader: () => import("./friends.js"), requiresAuth: true },
-            // { path: "/matches", loader: () => import("./matches.js"), requiresAuth: true },
-            // { path: "/tictactoe", loader: () => import("./tictactoe.js"), requiresAuth: true },
+            { path: "/matches", loader: () => import("./matches.js"), requiresAuth: true },
+            { path: "/tictactoe", loader: () => import("./tictactoe.js"), requiresAuth: true },
             { path: "/pong", loader: () => import("./pong.js"), requiresAuth: true },
         ],
     });
