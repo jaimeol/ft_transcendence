@@ -71,7 +71,7 @@
   "play_ttt": "Play Tic Tac Toe",
   "ttt.title": "Tic Tac Toe",
   "ttt.close": "Close",
-  "ttt.second_player": "Second Player",
+  "pvp.second_player": "Second Player",
   "ttt_turn": "Turn",
   "ttt_new_game": "New Game",
   "ttt_draw": "Draw",
@@ -83,9 +83,12 @@
   "ttt_waiting_opponent": "Waiting for second player…",
   "ttt_ready_press_start": "Ready to play.",
   "ttt.play_again": "Play again",
+  "pvp.start_match": "Start match",
   "pvp_invalid_credentials": "Invalid credentials",
   "friends.title": "Friends",
   "friends.pending": "Pending requests",
+  "friends.sent": "Requests sent",
+  "friends.requested": "Requested",
   "friends.your_friends": "Your friends",
   "friends.search_placeholder": "Search by name or email...",
   "friends.accept_error": "Error accepting request",
@@ -93,5 +96,9 @@
   "friends.no_pending": "No pending requests",
   "friends.no_results": "User not found",
   "friends.badge.one": "friend",
-  "friends.badge.other": "friends"
+  "friends.badge.other": "friends",
+  "auth.password": "Password",
+  "load_more": "Load more",
+  "pong": "🏓 Pong",
+  "ttt": "❌⭘ Tic-Tac-Toe"
 }

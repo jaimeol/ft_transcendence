@@ -230,6 +230,9 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
   	</main>
   	`;
 
+	const params = new URLSearchParams(location.search);
+	const viewedId = Number(params.get("user")) || null;
+
   	wireAccordion();
 	wireUpdateForm(ctx, el);
 	wireAvatarForm(ctx, el);
@@ -245,8 +248,35 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
   	});
 
 	await ensureChartsJs();
-	const u = await me(ctx);
-	if (u) await loadMatchesAndStats(ctx);
+
+	const meUser = await me(ctx);
+	let viewedUser: Me | null = meUser;
+
+	if (viewedId && (!meUser || viewedUser !== meUser.id)) {
+		viewedUser = await fetchUserById(ctx, viewedId);
+		if (!viewedUser) {
+			$("#player-name")!.textContent = ctx.t("User_not_found");
+		} else {
+			paintUser(viewedUser);
+		}
+	}
+
+	if (!viewedUser?.id) return;
+
+	const isMe = !!meUser && viewedUser.id === meUser.id;
+	if (!isMe) {
+		$("#form-edit")?.closest("details")?.setAttribute("hidden", "true");
+		$("#form-avatar")?.closest("details")?.setAttribute("hidden", "true");
+		$("form-email")?.closest("details")?.setAttribute("hidden", "true");
+
+		document.querySelectorAll<HTMLElement>("#btn-logout").forEach(b => b.style.display = "none");
+
+		const name = viewedUser.display_name || 'Perfil';
+		const h1 = $("#player-name");
+		if (h1) h1.textContent = name;
+	}
+
+	await loadMatchesAndStats(ctx, viewedUser.id!);
 }
 
 async function ensureChartsJs() {
@@ -401,32 +431,37 @@ async function me(ctx: Ctx): Promise<Me | null> {
 	}
 }
 
-async function loadMatchesAndStats(ctx: Ctx) {
+async function fetchUserById(ctx: Ctx, id: number): Promise<Me | null> {
 	try {
-		const r = await ctx.api("/api/users/me/matches");
+		const r = await ctx.api(`/api/users/${id}`);
+		return (r && (r.user ?? r)) || null;
+	} catch {
+		return null;
+	}
+}
+
+async function loadMatchesAndStats(ctx: Ctx, userId: number) {
+	try {
+		const r = await ctx.api(`/api/users/${userId}/matches`);
 		state.matches = r?.matches ?? [];
 	} catch {
 		state.matches = [];
 	}
 
-	const myId = state.me.id!;
+	const myId = userId;
 	type M = { winner_id?: number | null; played_at?: string | null; details?: string | null };
 	const all: M[] = state.matches;
+
 	let wins = 0, draws = 0, losses = 0;
 	let totalMs = 0;
 	
 	for (const m of all) {
 		const d = safeDetailsProfile(m);
-		if (isDrawProfile(m)) {
-			draws++;
-		} else if (m.winner_id === myId) {
-			wins++;
-		} else {
-			losses++;
-		}
+		if (isDrawProfile(m)) draws++;
+		else if (m.winner_id === myId) wins++;
+		else losses++;
 
-		const ms = Number(d?.duration_ms) || 0;
-		totalMs += ms;
+		totalMs += Number(d?.duration_ms) || 0;
 	}
 
 	const total = wins + draws + losses;

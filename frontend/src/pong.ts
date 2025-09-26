@@ -78,15 +78,17 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	<!-- Overlay login PVP -->
 	<div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
 		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
-			<h2 class="text-xl font-semibold mb-4">Segundo jugador</h2>
+			<h2 class="text-xl font-semibold mb-4">${ctx.t("pvp.second_player")}</h2>
 			<form id="pvp-login-form" class="flex flex-col gap-3">
 			<input id="pvp-email" type="email" placeholder="Email"
 					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-			<input id="pvp-password" type="password" placeholder="Contraseña"
+			<input id="pvp-password" type="password" placeholder="${
+				ctx.t("auth.password") ?? "Constraseña"
+			}"
 					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
 			<button type="submit"
 					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
-				Empezar partida
+				${ctx.t("pvp.start_match") ?? "Empezar partida"}
 			</button>
 			</form>
 			<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
@@ -293,7 +295,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 				pvpOverlay.classList.add('hidden');
 				blocker?.classList.add('hidden');
 			} catch {
-				errorEl.textContent = 'Credenciales invalidas o jugador no válido';
+				errorEl.textContent = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";	
 				errorEl.classList.remove('hidden');
 			}
 		});

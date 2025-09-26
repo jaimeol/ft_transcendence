@@ -94,7 +94,7 @@ async function routes(fastify){
     return { users: rows};
   });
 
-    fastify.get('/api/users/me/matches', async (req, reply) => {
+  fastify.get('/api/users/me/matches', async (req, reply) => {
     const uid = req.session.uid;
     if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
 
@@ -105,6 +105,27 @@ async function routes(fastify){
       ORDER BY datetime(played_at) DESC
       LIMIT 100
     `).all(uid, uid);
+
+    return { matches: rows };
+  });
+
+  fastify.get('/api/users/:id/matches', async (req, reply) => {
+    const uid = req.session.uid;
+    if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
+
+    const { id } = req.params;
+    const userId = Number(id);
+    if (!Number.isFinite(userId) || userId <= 0) {
+      return reply.code(400).send({ error: 'Bad user id' });
+    }
+
+    const rows = db.prepare(`
+      SELECT id, player1_id, player2_id, winner_id, played_at, details
+      FROM matches
+      WHERE player1_id = ? OR player2_id = ?
+      ORDER BY datetime(played_at) DESC
+      LIMIT 100
+    `).all(userId, userId);
 
     return { matches: rows };
   });

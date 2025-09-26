@@ -120,7 +120,7 @@ export async function mount(el: HTMLElement, { t, api, navigate }: Ctx) {
 	<div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
 		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
 		<h2 class="text-xl font-semibold mb-4" data-translate="ttt.second_player">${
-			t("ttt.second_player") ?? "Segundo jugador"
+			t("pvp.second_player") ?? "Segundo jugador"
 		}</h2>
 		<form id="pvp-login-form" class="flex flex-col gap-3">
 			<input id="pvp-email" type="email" placeholder="Email"
@@ -131,7 +131,7 @@ export async function mount(el: HTMLElement, { t, api, navigate }: Ctx) {
 				 class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
 			<button type="submit"
 					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
-			${t("ttt.start_match") ?? "Empezar partida"}
+			${t("pvp.start_match") ?? "Empezar partida"}
 			</button>
 		</form>
 		<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>

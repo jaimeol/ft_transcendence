@@ -39,12 +39,12 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 
 			<!-- Controles -->
 	  		<div class="flex flex-wrap items-center gap-2 mb-4">
-				<select id="filter-game" class="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+				<select id="filter-game" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-white/80 [color-scheme:dark]">
 		  			<option value="all">${t("all") ?? "Todos"}</option>
-		  			<option value="pong">🏓 Pong</option>
-		  			<option value="tictactoe">❌⭘ Tic-Tac-Toe</option>
+		  			<option value="pong">${t("pong") ?? "🏓 Pong"}</option>
+		  			<option value="tictactoe">${t("ttt") ?? "❌⭘ Tic-Tac-Toe"}</option>
 				</select>
-				<select id="filter-result" class="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+				<select id="filter-result" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-white/80 ">
 					<option value="all">${t("all") ?? "Todos"}</option>
 					<option value="W">${t("win") ?? "Victoria"}</option>
 					<option value="D">${t("draw") ?? "Empate"}</option>
