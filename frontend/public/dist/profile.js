@@ -50,8 +50,6 @@ export async function mount(el, ctx) {
 			<p id="player-email" class="opacity-80 mt-1">email@dominio.com</p>
 			<div class="mt-3.5 flex flex-wrap items-center gap-3">
 			  <span class="badge"><span data-translate="profile.memberSince">Miembro desde</span> <span id="member-since">—</span></span>
-			  <span class="badge"><span data-translate="profile.level">Nivel</span> <span id="level">1</span></span>
-			  <span class="badge">ELO <span id="elo">1000</span></span>
 			</div>
 		  </div>
 		  <!-- Compact stats -->
@@ -102,13 +100,13 @@ export async function mount(el, ctx) {
 	<!-- CHARTS -->
 	<section class="mt-6 grid-card">
 	  <div class="glass rounded-2xl p-5">
-		<h2 class="text-lg font-semibold mb-3" data-translate="profile.resultDistribution">Distribución de resultados</h2>
-		<canvas id="chart-pie" height="220"></canvas>
+		<h2 class="text-lg font-semibold mb-3">Distribución (Pong)</h2>
+		<canvas id="chart-pie-pong" height="220"></canvas>
 	  </div>
 	  <div class="glass rounded-2xl p-5">
-		<h2 class="text-lg font-semibold mb-3" data-translate="profile.lastMatches">Últimas partidas</h2>
-		<canvas id="chart-last" height="220"></canvas>
-	  </div>
+		<h2 class="text-lg font-semibold mb-3"> Distribución (Tres en raya)</h2>
+		<canvas id="chart-pie-ttt" height="220"></canvas>
+	  </div>	
 	</section>
 
 	<!-- ACCORDION -->
@@ -243,7 +241,7 @@ export async function mount(el, ctx) {
     await ensureChartsJs();
     const meUser = await me(ctx);
     let viewedUser = meUser;
-    if (viewedId && (!meUser || viewedUser !== meUser.id)) {
+    if (viewedId && (!meUser || viewedId !== meUser.id)) {
         viewedUser = await fetchUserById(ctx, viewedId);
         if (!viewedUser) {
             $("#player-name").textContent = ctx.t("User_not_found");
@@ -258,7 +256,7 @@ export async function mount(el, ctx) {
     if (!isMe) {
         $("#form-edit")?.closest("details")?.setAttribute("hidden", "true");
         $("#form-avatar")?.closest("details")?.setAttribute("hidden", "true");
-        $("form-email")?.closest("details")?.setAttribute("hidden", "true");
+        $("#form-email")?.closest("details")?.setAttribute("hidden", "true");
         document.querySelectorAll("#btn-logout").forEach(b => b.style.display = "none");
         const name = viewedUser.display_name || 'Perfil';
         const h1 = $("#player-name");
@@ -296,38 +294,21 @@ const state = {
     me: { id: null },
     matches: []
 };
-let pieChart, lastChart;
-function renderCharts({ wins, draws, losses, lastResults }) {
-    const ctxPie = document.getElementById("chart-pie");
-    const ctxLast = document.getElementById("chart-last");
-    if (!ctxPie || !ctxLast || typeof Chart === "undefined")
+let piePong, pieTTT;
+function renderCharts({ pong, ttt }) {
+    const ctxPiePong = document.getElementById("chart-pie-pong");
+    const ctxPieTTT = document.getElementById("chart-pie-ttt");
+    if (!ctxPiePong || !ctxPieTTT || typeof Chart === "undefined")
         return;
-    pieChart?.destroy();
-    lastChart?.destroy();
-    pieChart = new Chart(ctxPie, {
-        type: "doughnut",
-        data: {
-            labels: ["Victorias", "Empates", "Derrotas"],
-            datasets: [{
-                    data: [wins, draws, losses],
-                    backgroundColor: ["#6071d0ff", "#e38f11ff", "#ef4444"],
-                    borderWidth: 0
-                }]
-        },
-        options: { plugins: { legend: { labels: { color: "#D4D4D8" } } }, cutout: "60%" }
+    piePong?.destroy();
+    pieTTT?.destroy();
+    const commonOpts = { plugins: { legend: { labels: { colors: "#D4D4D8" } } }, cutout: "60%" };
+    const commonData = (w, d, l) => ({
+        labels: ["Victorias", "Empates", "Derrotas"],
+        datasets: [{ data: [w, d, l], backgrounColor: ["#6071d0ff", "#e38f11ff", "#ef4444"], borderWith: 0 }]
     });
-    const labels = lastResults.map((_, i) => `#${i + 1}`);
-    lastChart = new Chart(ctxLast, {
-        type: "bar",
-        data: { labels, datasets: [{ label: "Resultado (1=Win, 0=Draw, -1=Loss)", data: lastResults, borderWidth: 1 }] },
-        options: {
-            plugins: { legend: { labels: { color: "#D4D4D8" } } },
-            scales: {
-                x: { ticks: { color: "#D4D4D8" } },
-                y: { ticks: { color: "#D4D4D8" }, suggestedMin: -1, suggestedMax: 1 }
-            }
-        }
-    });
+    piePong = new Chart(ctxPiePong, { type: "doughnut", data: commonData(pong.wins, pong.draws, pong.losses), options: commonOpts });
+    pieTTT = new Chart(ctxPieTTT, { type: "doughnut", data: commonData(ttt.wins, ttt.draws, ttt.losses), options: commonOpts });
 }
 // ========= Pintado UI (soporta tus ids y los nuevos) =========
 function paintUser(u) {
@@ -376,6 +357,19 @@ function isDrawProfile(m) {
     const d = safeDetailsProfile(m);
     return m.winner_id == null || d?.is_draw === true;
 }
+function gameOfProfile(m) {
+    // Prefer explicit column, fallback to details JSON
+    let raw = (m.game || "").toString().toLowerCase();
+    if (!raw) {
+        const d = safeDetailsProfile(m);
+        raw = (d?.game || "").toString().toLowerCase();
+    }
+    if (raw.includes("tictactoe") || raw === "ttt")
+        return "tictactoe";
+    if (raw.includes("pong") || raw === "pong")
+        return "pong";
+    return "unknown";
+}
 // ========= Data =========
 async function me(ctx) {
     try {
@@ -409,20 +403,51 @@ async function loadMatchesAndStats(ctx, userId) {
     }
     const myId = userId;
     const all = state.matches;
+    // ---- GLOBAL ----
     let wins = 0, draws = 0, losses = 0;
     let totalMs = 0;
+    // ---- POR JUEGO ----
+    let winsPong = 0, drawsPong = 0, lossesPong = 0;
+    let winsTTT = 0, drawsTTT = 0, lossesTTT = 0;
+    let unknownGames = 0;
     for (const m of all) {
         const d = safeDetailsProfile(m);
-        if (isDrawProfile(m))
+        const g = gameOfProfile(m); // <- usa tu helper que ya tienes
+        const isDraw = isDrawProfile(m);
+        const iWon = !isDraw && m.winner_id === myId;
+        // global
+        if (isDraw)
             draws++;
-        else if (m.winner_id === myId)
+        else if (iWon)
             wins++;
         else
             losses++;
         totalMs += Number(d?.duration_ms) || 0;
+        // por juego
+        if (g === "pong") {
+            if (isDraw)
+                drawsPong++;
+            else if (iWon)
+                winsPong++;
+            else
+                lossesPong++;
+        }
+        else if (g === "tictactoe") {
+            if (isDraw)
+                drawsTTT++;
+            else if (iWon)
+                winsTTT++;
+            else
+                lossesTTT++;
+        }
+        else {
+            unknownGames++;
+        }
     }
+    // métricas globales
     const total = wins + draws + losses;
     const winrate = total ? Math.round((wins / total) * 100) : 0;
+    // racha global (ordenado por fecha desc)
     const byDateDesc = [...all].sort((a, b) => {
         const ta = a.played_at ? Date.parse(a.played_at) : 0;
         const tb = b.played_at ? Date.parse(b.played_at) : 0;
@@ -435,17 +460,24 @@ async function loadMatchesAndStats(ctx, userId) {
         else
             break;
     }
-    const recent = byDateDesc.slice(0, 12);
-    const lastResults = recent.map(m => isDrawProfile(m) ? 0 : (m.winner_id === myId ? 1 : -1));
-    $("#stat-wins") && ($("#stat-wins").textContent = String(wins));
-    $("#stat-draws") && ($("#stat-draws").textContent = String(draws));
-    $("#stat-losses") && ($("#stat-losses").textContent = String(losses));
-    $("#stat-total") && ($("#stat-total").textContent = String(total));
-    $("#stat-winrate") && ($("#stat-winrate").textContent = `${winrate}%`);
-    $("#stat-streak") && ($("#stat-streak").textContent = String(streak));
+    // pintar tarjetas
+    $("#stat-wins").textContent = String(wins);
+    $("#stat-draws").textContent = String(draws);
+    $("#stat-losses").textContent = String(losses);
+    $("#stat-total").textContent = String(total);
+    $("#stat-winrate").textContent = `${winrate}%`;
+    $("#stat-streak").textContent = String(streak);
     const mins = totalMs ? Math.max(1, Math.round(totalMs / 60000)) : 0;
     $("#stat-time").textContent = total ? (mins ? `${mins} min` : `${total * 5} min`) : "-";
-    renderCharts({ wins, draws, losses, lastResults });
+    // donuts por juego
+    renderCharts({
+        pong: { wins: winsPong, draws: drawsPong, losses: lossesPong },
+        ttt: { wins: winsTTT, draws: drawsTTT, losses: lossesTTT }
+    });
+    // Debug visible en consola si hay partidas sin clasificar
+    if (unknownGames) {
+        console.warn(`[profile] Partidas sin juego reconocido: ${unknownGames}`);
+    }
 }
 // ========= Formularios/acciones =========
 function wireUpdateForm(ctx, el) {

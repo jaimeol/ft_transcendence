@@ -192,7 +192,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 			const row = h('button', { class:'flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-white/10' });
 			const img = h('img', { src: p.avatar_path || '/uploads/default-avatar.png', class:'w-7 h-7 rounded-full', alt:'avatar'});
 			const name = h('span', { class:'text-sm' }, p.display_name);
-			const link = h('a', { href:`/profile?user=${p.id}`, class:'ml-auto underline text-xs opacity-80 hover:opacity-100' }, 'Ver perfil');
+			const link = h('a', { href:`/profile?user=${p.id}`, class:'ml-auto underline text-xs opacity-80 hover:opacity-100' }, `${ctx.t("chat.profile") ?? "Ver Perfil"}`);
 			row.append(img, name, link);
 			row.onclick = async () => { currentPeer = p; await loadHistory(p.id); updateHeader(p); };
 			list.append(row);
@@ -202,10 +202,10 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 	function updateHeader(p:Peer) {
 		const hname = $('#chat-peer-name', host)!; hname.textContent = p.display_name;
 		const act = $('#chat-actions', host)!; act.innerHTML = '';
-		const btnInvite = h('button', { class:'px-2 py-1 rounded bg-emerald-600/70 text-sm' }, 'Invitar a Pong');
+		const btnInvite = h('button', { class:'px-2 py-1 rounded bg-emerald-600/70 text-sm' }, `${ctx.t("chat.invite") ?? "Invitar a pong"}`);
 		btnInvite.onclick = () => sendInvite(p.id);
 		const isBlocked = blockedIds.has(p.id);
-		const btnBlock = h('button', { class:'px-2 py-1 rounded bg-red-600/70 text-sm' }, isBlocked ? 'Desbloquear' : 'Bloquear');
+		const btnBlock = h('button', { class:'px-2 py-1 rounded bg-red-600/70 text-sm' }, isBlocked ? `${ctx.t("chat.unblock") ?? "Desbloquear"}` : `${ctx.t("chat.block") ?? "Bloquear"}`);
 		btnBlock.onclick = async () => {
 			if (isBlocked) { await api(`/api/chat/block/${p.id}`, { method:'DELETE' }); blockedIds.delete(p.id); }
 			else { await api(`/api/chat/block/${p.id}`, { method:'POST' }); blockedIds.add(p.id); }
@@ -348,8 +348,8 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
     	const peersCard = h('aside', {
 			class: 'bg-zinc-900/90 text-white rounded-2xl border border-white/10 shadow-2xl overflow-hidden'
     	},
-			h('div', { class:'px-4 py-3 border-b border-white/10 font-semibold' }, 'Amigos'),
-			h('div', { id:'chat-peers', class:'p-2 overflow-y-auto space-y-1' }, 'Cargando…')
+			h('div', { class:'px-4 py-3 border-b border-white/10 font-semibold' }, `${ctx.t("chat.friends") ?? "Amigos"}`),
+			h('div', { id:'chat-peers', class:'p-2 overflow-y-auto space-y-1' }, `${ctx.t("loading") ?? "Cargando..."}`)
 		);
 		const chatCard = h('div', {
 			class: 'bg-zinc-900/90 text-white rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col'
@@ -369,11 +369,11 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 				h('input', {
 					id:'chat-input',
 					class:'flex-1 bg-zinc-800 text-white placeholder-white/60 rounded p-2',
-					placeholder:'Escribe un mensaje…',
+					placeholder: `${ctx.t("chat.write") ?? "Escribe un mensaje..."}`,
 					disabled:'true',
 					onkeydown:(e:KeyboardEvent)=>{ if(e.key==='Enter'){ e.preventDefault(); sendText(); } }
 	    		}),
-				h('button', { class:'px-3 rounded bg-indigo-600/70', onclick: sendText }, 'Enviar')
+				h('button', { class:'px-3 rounded bg-indigo-600/70', onclick: sendText }, `${ctx.t("chat.send") ?? "Enviar"}`)
 			)
 		);
 		wrapper.append(peersCard, chatCard);

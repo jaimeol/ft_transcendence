@@ -99,7 +99,7 @@ async function routes(fastify){
     if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
 
     const rows = db.prepare(`
-      SELECT id, player1_id, player2_id, winner_id, played_at, details
+      SELECT id, game, player1_id, player2_id, winner_id, played_at, details
       FROM matches
       WHERE player1_id = ? OR player2_id = ?
       ORDER BY datetime(played_at) DESC
@@ -120,7 +120,7 @@ async function routes(fastify){
     }
 
     const rows = db.prepare(`
-      SELECT id, player1_id, player2_id, winner_id, played_at, details
+      SELECT id, game, player1_id, player2_id, winner_id, played_at, details
       FROM matches
       WHERE player1_id = ? OR player2_id = ?
       ORDER BY datetime(played_at) DESC

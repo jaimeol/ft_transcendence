@@ -54,8 +54,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 			<p id="player-email" class="opacity-80 mt-1">email@dominio.com</p>
 			<div class="mt-3.5 flex flex-wrap items-center gap-3">
 			  <span class="badge"><span data-translate="profile.memberSince">Miembro desde</span> <span id="member-since">—</span></span>
-			  <span class="badge"><span data-translate="profile.level">Nivel</span> <span id="level">1</span></span>
-			  <span class="badge">ELO <span id="elo">1000</span></span>
 			</div>
 		  </div>
 		  <!-- Compact stats -->
@@ -106,13 +104,13 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	<!-- CHARTS -->
 	<section class="mt-6 grid-card">
 	  <div class="glass rounded-2xl p-5">
-		<h2 class="text-lg font-semibold mb-3" data-translate="profile.resultDistribution">Distribución de resultados</h2>
-		<canvas id="chart-pie" height="220"></canvas>
+		<h2 class="text-lg font-semibold mb-3">Distribución (Pong)</h2>
+		<canvas id="chart-pie-pong" height="220"></canvas>
 	  </div>
 	  <div class="glass rounded-2xl p-5">
-		<h2 class="text-lg font-semibold mb-3" data-translate="profile.lastMatches">Últimas partidas</h2>
-		<canvas id="chart-last" height="220"></canvas>
-	  </div>
+		<h2 class="text-lg font-semibold mb-3"> Distribución (Tres en raya)</h2>
+		<canvas id="chart-pie-ttt" height="220"></canvas>
+	  </div>	
 	</section>
 
 	<!-- ACCORDION -->
@@ -252,7 +250,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	const meUser = await me(ctx);
 	let viewedUser: Me | null = meUser;
 
-	if (viewedId && (!meUser || viewedUser !== meUser.id)) {
+	if (viewedId && (!meUser || viewedId !== meUser.id)) {
 		viewedUser = await fetchUserById(ctx, viewedId);
 		if (!viewedUser) {
 			$("#player-name")!.textContent = ctx.t("User_not_found");
@@ -267,7 +265,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	if (!isMe) {
 		$("#form-edit")?.closest("details")?.setAttribute("hidden", "true");
 		$("#form-avatar")?.closest("details")?.setAttribute("hidden", "true");
-		$("form-email")?.closest("details")?.setAttribute("hidden", "true");
+		$("#form-email")?.closest("details")?.setAttribute("hidden", "true");
 
 		document.querySelectorAll<HTMLElement>("#btn-logout").forEach(b => b.style.display = "none");
 
@@ -322,7 +320,7 @@ interface Me {
 	last_name?: string;
 	birthdate?: string;
 }
-interface Match { winner_id?: number | null; is_draw?: boolean; played_at?: string; }
+interface Match { winner_id?: number | null; is_draw?: boolean; played_at?: string; game?: string; details?: string | null }
 
 // ========= Estado =========
 const state: { me: Me; matches: Match[] } = {
@@ -332,41 +330,27 @@ const state: { me: Me; matches: Match[] } = {
 
 // ========= Charts (CDN) =========
 declare const Chart: any;
-let pieChart: any, lastChart: any;
+let piePong: any, pieTTT: any;
 
-function renderCharts({ wins, draws, losses, lastResults }: { wins: number; draws: number; losses: number; lastResults: number[] }) {
-	const ctxPie = document.getElementById("chart-pie") as HTMLCanvasElement | null;
-	const ctxLast = document.getElementById("chart-last") as HTMLCanvasElement | null;
-	if (!ctxPie || !ctxLast || typeof Chart === "undefined") return;
+function renderCharts({ pong, ttt }: {
+	pong: { wins: number; draws: number; losses: number };
+	ttt: { wins: number; draws: number; losses: number };
+}) {
+	const ctxPiePong = document.getElementById("chart-pie-pong") as HTMLCanvasElement | null;
+	const ctxPieTTT = document.getElementById("chart-pie-ttt") as HTMLCanvasElement | null;
+	if (!ctxPiePong || !ctxPieTTT || typeof Chart === "undefined") return;
 
-	pieChart?.destroy();
-	lastChart?.destroy();
+	piePong?.destroy();
+	pieTTT?.destroy();
 
-	pieChart = new Chart(ctxPie, {
-		type: "doughnut",
-		data: {
-			labels: ["Victorias", "Empates", "Derrotas"],
-			datasets: [{
-				data: [wins, draws, losses],
-				backgroundColor: ["#6071d0ff", "#e38f11ff", "#ef4444"],
-				borderWidth: 0
-			}]
-		},
-		options: { plugins: { legend: { labels: { color: "#D4D4D8" } } }, cutout: "60%" }
+	const commonOpts = { plugins: { legend: { labels: { colors: "#D4D4D8" } } }, cutout: "60%" };
+	const commonData = (w: number, d: number, l: number) => ({
+		labels: ["Victorias", "Empates", "Derrotas"],
+		datasets: [{ data: [w, d, l], backgrounColor: ["#6071d0ff", "#e38f11ff", "#ef4444"], borderWith: 0 }]
 	});
-
-	const labels = lastResults.map((_, i) => `#${i + 1}`);
-	lastChart = new Chart(ctxLast, {
-		type: "bar",
-		data: { labels, datasets: [{ label: "Resultado (1=Win, 0=Draw, -1=Loss)", data: lastResults, borderWidth: 1 }] },
-		options: {
-			plugins: { legend: { labels: { color: "#D4D4D8" } } },
-			scales: {
-				x: { ticks: { color: "#D4D4D8" } },
-				y: { ticks: { color: "#D4D4D8" }, suggestedMin: -1, suggestedMax: 1 }
-			}
-		}
-	});
+	
+	piePong = new Chart(ctxPiePong, { type: "doughnut", data: commonData(pong.wins, pong.draws, pong.losses), options: commonOpts });
+	pieTTT = new Chart(ctxPieTTT, { type: "doughnut", data: commonData(ttt.wins, ttt.draws, ttt.losses), options: commonOpts});
 }
 
 // ========= Pintado UI (soporta tus ids y los nuevos) =========
@@ -417,6 +401,18 @@ function isDrawProfile(m: { winner_id?: number | null; details?: string | null }
 	return m.winner_id == null || d?.is_draw === true;
 }
 
+function gameOfProfile(m: { game?: string; details?: string | null }): "pong" | "tictactoe" | "unknown" {
+	// Prefer explicit column, fallback to details JSON
+	let raw = (m.game || "").toString().toLowerCase();
+	if (!raw) {
+		const d = safeDetailsProfile(m);
+		raw = (d?.game || "").toString().toLowerCase();
+	}
+	if (raw.includes("tictactoe") || raw === "ttt") return "tictactoe";
+	if (raw.includes("pong") || raw === "pong") return "pong";
+	return "unknown";
+}
+
 // ========= Data =========
 async function me(ctx: Ctx): Promise<Me | null> {
 	try {
@@ -441,60 +437,85 @@ async function fetchUserById(ctx: Ctx, id: number): Promise<Me | null> {
 }
 
 async function loadMatchesAndStats(ctx: Ctx, userId: number) {
-	try {
-		const r = await ctx.api(`/api/users/${userId}/matches`);
-		state.matches = r?.matches ?? [];
-	} catch {
-		state.matches = [];
-	}
+  try {
+    const r = await ctx.api(`/api/users/${userId}/matches`);
+    state.matches = r?.matches ?? [];
+  } catch {
+    state.matches = [];
+  }
 
-	const myId = userId;
-	type M = { winner_id?: number | null; played_at?: string | null; details?: string | null };
-	const all: M[] = state.matches;
+  const myId = userId;
+  type M = { winner_id?: number | null; played_at?: string | null; details?: string | null };
+  const all: M[] = state.matches;
 
-	let wins = 0, draws = 0, losses = 0;
-	let totalMs = 0;
-	
+  // ---- GLOBAL ----
+  let wins = 0, draws = 0, losses = 0;
+  let totalMs = 0;
+
+  // ---- POR JUEGO ----
+  let winsPong = 0, drawsPong = 0, lossesPong = 0;
+  let winsTTT  = 0, drawsTTT  = 0, lossesTTT  = 0;
+
+	let unknownGames = 0;
 	for (const m of all) {
-		const d = safeDetailsProfile(m);
-		if (isDrawProfile(m)) draws++;
-		else if (m.winner_id === myId) wins++;
-		else losses++;
+    const d = safeDetailsProfile(m);
+    const g = gameOfProfile(m);              // <- usa tu helper que ya tienes
+    const isDraw = isDrawProfile(m);
+    const iWon   = !isDraw && m.winner_id === myId;
 
-		totalMs += Number(d?.duration_ms) || 0;
+    // global
+    if (isDraw) draws++; else if (iWon) wins++; else losses++;
+    totalMs += Number(d?.duration_ms) || 0;
+
+    // por juego
+		if (g === "pong") {
+      if (isDraw) drawsPong++; else if (iWon) winsPong++; else lossesPong++;
+    } else if (g === "tictactoe") {
+      if (isDraw) drawsTTT++; else if (iWon) winsTTT++; else lossesTTT++;
+		} else {
+			unknownGames++;
+    }
+  }
+
+  // métricas globales
+  const total = wins + draws + losses;
+  const winrate = total ? Math.round((wins / total) * 100) : 0;
+
+  // racha global (ordenado por fecha desc)
+  const byDateDesc = [...all].sort((a, b) => {
+    const ta = a.played_at ? Date.parse(a.played_at) : 0;
+    const tb = b.played_at ? Date.parse(b.played_at) : 0;
+    return tb - ta;
+  });
+  let streak = 0;
+  for (const m of byDateDesc) {
+    if (!isDrawProfile(m) && m.winner_id === myId) streak++;
+    else break;
+  }
+
+  // pintar tarjetas
+  $("#stat-wins")!.textContent    = String(wins);
+  $("#stat-draws")!.textContent   = String(draws);
+  $("#stat-losses")!.textContent  = String(losses);
+  $("#stat-total")!.textContent   = String(total);
+  $("#stat-winrate")!.textContent = `${winrate}%`;
+  $("#stat-streak")!.textContent  = String(streak);
+
+  const mins = totalMs ? Math.max(1, Math.round(totalMs / 60000)) : 0;
+  $("#stat-time")!.textContent = total ? (mins ? `${mins} min` : `${total * 5} min`) : "-";
+
+  // donuts por juego
+	renderCharts({
+    pong: { wins: winsPong, draws: drawsPong, losses: lossesPong },
+    ttt:  { wins: winsTTT,  draws: drawsTTT,  losses: lossesTTT  }
+  });
+
+	// Debug visible en consola si hay partidas sin clasificar
+	if (unknownGames) {
+		console.warn(`[profile] Partidas sin juego reconocido: ${unknownGames}`);
 	}
-
-	const total = wins + draws + losses;
-	const winrate = total ? Math.round((wins / total) * 100) : 0;
-	const byDateDesc = [...all].sort((a, b) => {
-		const ta = a.played_at ? Date.parse(a.played_at) : 0;
-		const tb = b.played_at ? Date.parse(b.played_at) : 0;
-		return tb - ta;
-	});
-
-	let streak = 0;
-	for (const m of byDateDesc) {
-		if (!isDrawProfile(m) && m.winner_id === myId) streak++;
-		else break;
-	}
-
-	const recent = byDateDesc.slice(0, 12);
-	const lastResults = recent.map(m => 
-		isDrawProfile(m) ? 0 : (m.winner_id === myId ? 1 : -1)
-	);
-
-	$("#stat-wins") && ($("#stat-wins")!.textContent = String(wins));
-	$("#stat-draws") && ($("#stat-draws")!.textContent = String(draws));
-	$("#stat-losses") && ($("#stat-losses")!.textContent = String(losses));
-	$("#stat-total") && ($("#stat-total")!.textContent = String(total));
-	$("#stat-winrate") && ($("#stat-winrate")!.textContent = `${winrate}%`);
-	$("#stat-streak") && ($("#stat-streak")!.textContent = String(streak));
-
-	const mins = totalMs ? Math.max(1, Math.round(totalMs / 60000)) : 0;
-	$("#stat-time")!.textContent = total ? (mins ? `${mins} min` : `${total * 5} min`): "-";
-
-	renderCharts({ wins, draws, losses, lastResults });
 }
+
 
 // ========= Formularios/acciones =========
 function wireUpdateForm(ctx: Ctx, el: HTMLElement) {
