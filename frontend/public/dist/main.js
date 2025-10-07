@@ -59,6 +59,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             { path: "/matches", loader: () => import("./matches.js"), requiresAuth: true },
             { path: "/tictactoe", loader: () => import("./tictactoe.js"), requiresAuth: true },
             { path: "/pong", loader: () => import("./pong.js"), requiresAuth: true },
+            { path: "/tournament", loader: () => import("./tournament.js"), requiresAuth: true },
         ],
     });
 });

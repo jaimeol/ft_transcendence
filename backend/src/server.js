@@ -13,6 +13,7 @@ const usersRoutes = require('./routes/users');
 const friendsRoutes = require('./routes/friends');
 const chatRoutes    = require('./routes/chat');
 const matchesRoutes = require('./routes/matches');
+const tournamentsRoutes = require('./routes/tournaments');
 
 
 const { db } = require('./db');
@@ -142,6 +143,10 @@ app.register(usersRoutes);
 app.register(friendsRoutes);
 app.register(chatRoutes);
 app.register(matchesRoutes);
+app.register(tournamentsRoutes);
+
+const { setupTournamentNotifications } = require('./routes/tournaments');
+setupTournamentNotifications(app);
 
 const indexPath = path.join(__dirname, '..', 'public', 'index.html');
 

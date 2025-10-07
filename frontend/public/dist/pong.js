@@ -190,6 +190,14 @@ export async function mount(el, ctx) {
             if (savedThisGame)
                 return;
             const duration = Math.max(0, Math.floor(performance.now() - gameStartTs));
+            const post = async (body) => {
+                await fetch('/api/matches', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body)
+                });
+            };
             // duoAI: guardar las dos subpartidas (horizontal + vertical)
             if (duoAI && secondPlayer) {
                 // Partida horizontal (jugador "principal" vs IA)
@@ -197,17 +205,15 @@ export async function mount(el, ctx) {
                     mode: isPVP ? 'pvp' : 'ai',
                     game: 'pong',
                     level: difficulty || null,
-                    opponent_id: secondPlayer?.id ?? undefined,
                     score_left: leftScore,
                     score_right: rightScore,
+                    score_user: leftScore,
+                    score_ai: rightScore,
+                    score_user_role: 'left',
+                    opponent_id: secondPlayer?.id ?? undefined,
                     duration_ms: duration
                 };
-                await fetch('/api/matches', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(bodyH)
-                });
+                await post(bodyH);
                 // Partida vertical (segundo jugador contra IA / otra pareja)
                 const bodyV = {
                     mode: isPVP ? 'pvp' : 'ai',
@@ -216,14 +222,11 @@ export async function mount(el, ctx) {
                     user_id: secondPlayer?.id ?? undefined,
                     score_left: bottomScore,
                     score_right: topScore,
+                    score_user: bottomScore,
+                    score_ai: topScore,
                     duration_ms: duration
                 };
-                await fetch('/api/matches', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(bodyV)
-                });
+                await post(bodyV);
             }
             else if (isAI) {
                 // simple 1v1 AI
@@ -233,14 +236,11 @@ export async function mount(el, ctx) {
                     level: difficulty || null,
                     score_user: leftScore,
                     score_ai: rightScore,
+                    score_left: leftScore,
+                    score_right: rightScore,
                     duration_ms: duration
                 };
-                await fetch('/api/matches', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(body)
-                });
+                await post(body);
             }
             else if (isPVP2v2 && pvpReady && secondPlayer && thirdPlayer && fourthPlayer) {
                 // PVP 2v2 -> guardar 2 matches: (left vs right) y (bottom vs top)
@@ -250,14 +250,11 @@ export async function mount(el, ctx) {
                     opponent_id: secondPlayer.id,
                     score_left: leftScore,
                     score_right: rightScore,
+                    score_user: leftScore,
+                    score_opponent: rightScore,
                     duration_ms: duration
                 };
-                await fetch('/api/matches', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(bodyH)
-                });
+                await post(bodyH);
                 const bodyV = {
                     mode: 'pvp',
                     game: 'pong',
@@ -265,14 +262,11 @@ export async function mount(el, ctx) {
                     opponent_id: fourthPlayer.id,
                     score_left: bottomScore,
                     score_right: topScore,
+                    score_user: bottomScore,
+                    score_opponent: topScore,
                     duration_ms: duration
                 };
-                await fetch('/api/matches', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(bodyV)
-                });
+                await post(bodyV);
             }
             else if (isPVP && secondPlayer) {
                 const body = {
@@ -281,14 +275,11 @@ export async function mount(el, ctx) {
                     opponent_id: secondPlayer.id,
                     score_left: leftScore,
                     score_right: rightScore,
+                    score_user: leftScore,
+                    score_opponent: rightScore,
                     duration_ms: duration
                 };
-                await fetch('/api/matches', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(body)
-                });
+                await post(body);
             }
             savedThisGame = true;
         }

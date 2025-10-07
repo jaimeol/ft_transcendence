@@ -62,3 +62,51 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TEXT DEFAULT (datetime('now')),
   read_at TEXT
 );
+
+-- Tournaments
+CREATE TABLE IF NOT EXISTS tournaments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  max_players INTEGER NOT NULL,
+  is_public INTEGER DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration','active','completed','finished')),
+  creator_id INTEGER NOT NULL,
+  winner_id INTEGER,
+  current_round INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now')),
+  started_at TEXT,
+  completed_at TEXT,
+  FOREIGN KEY (creator_id) REFERENCES users(id),
+  FOREIGN KEY (winner_id) REFERENCES users(id)
+);
+
+-- Tournament participants
+CREATE TABLE IF NOT EXISTS tournament_participants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tournament_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  alias TEXT NOT NULL,
+  joined_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(tournament_id, user_id),
+  UNIQUE(tournament_id, alias),
+  FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Tournament matches
+CREATE TABLE IF NOT EXISTS tournament_matches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tournament_id INTEGER NOT NULL,
+  round INTEGER NOT NULL,
+  position INTEGER NOT NULL,
+  player1_id INTEGER,
+  player2_id INTEGER,
+  winner_id INTEGER,
+  score_player1 INTEGER DEFAULT 0,
+  score_player2 INTEGER DEFAULT 0,
+  played_at TEXT,
+  FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+  FOREIGN KEY (player1_id) REFERENCES tournament_participants(id),
+  FOREIGN KEY (player2_id) REFERENCES tournament_participants(id),
+  FOREIGN KEY (winner_id) REFERENCES tournament_participants(id)
+);
