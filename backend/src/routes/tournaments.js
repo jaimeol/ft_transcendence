@@ -134,83 +134,86 @@ async function tournamentsRoutes(app, opts) {
 
 	// GET /api/tournaments/:id - Get tournament details
 	app.get('/api/tournaments/:id', async (req, reply) => {
-		const uid = req.session.uid;
-		console.log('=== GET TOURNAMENT DETAILS ===');
-		console.log('User ID:', uid);
-		console.log('Tournament ID:', req.params.id);
+  const uid = req.session.uid;
+  console.log('=== GET TOURNAMENT DETAILS ===');
+  console.log('User ID:', uid);
+  console.log('Tournament ID:', req.params.id);
 
-		if (!uid) {
-			return reply.code(401).send({ error: 'Not authenticated' });
-		}
+  if (!uid) {
+    return reply.code(401).send({ error: 'Not authenticated' });
+  }
 
-		const tournamentId = parseInt(req.params.id);
-		console.log('Parsed tournament ID:', tournamentId);
+  const tournamentId = parseInt(req.params.id);
+  console.log('Parsed tournament ID:', tournamentId);
 
-		try {
-	    	// Get tournament with is_joined and is_creator flags
-	    	console.log('Executing tournament query...');
-	    	const tournament = db.prepare(`
-				SELECT t.*,
-	        		u.display_name as creator_name,
-	        		COUNT(DISTINCT tp.id) as current_players,
-	        		CASE WHEN tp_user.user_id IS NOT NULL THEN 1 ELSE 0 END as is_joined,
-	        		CASE WHEN t.creator_id = ? THEN 1 ELSE 0 END as is_creator
-	    		FROM tournaments t
-	    		LEFT JOIN users u ON t.creator_id = u.id
-	    		LEFT JOIN tournament_participants tp ON t.id = tp.tournament_id
-	    		LEFT JOIN tournament_participants tp_user ON t.id = tp_user.tournament_id AND tp_user.user_id = ?
-	    		WHERE t.id = ?
-	    		GROUP BY t.id
-			`).get(uid, uid, tournamentId);
-		
-			console.log('Tournament query result:', tournament);
-			if (!tournament) {
-				console.log('Tournament not found');
-	    		return reply.code(404).send({ error: 'Tournament not found' }); // Cambié 400 por 404
-	    	}
+  try {
+    // Get tournament with is_joined and is_creator flags
+    console.log('Executing tournament query...');
+    const tournament = db.prepare(`
+      SELECT t.*,
+        u.display_name as creator_name,
+        COUNT(DISTINCT tp.id) as current_players,
+        CASE WHEN tp_user.user_id IS NOT NULL THEN 1 ELSE 0 END as is_joined,
+        CASE WHEN t.creator_id = ? THEN 1 ELSE 0 END as is_creator
+      FROM tournaments t
+      LEFT JOIN users u ON t.creator_id = u.id
+      LEFT JOIN tournament_participants tp ON t.id = tp.tournament_id
+      LEFT JOIN tournament_participants tp_user ON t.id = tp_user.tournament_id AND tp_user.user_id = ?
+      WHERE t.id = ?
+      GROUP BY t.id
+    `).get(uid, uid, tournamentId);
 
-	    	console.log('Getting participants...');
-	    	const participants = db.prepare(`
-	    		SELECT tp.*, u.display_name, u.email
-	    		FROM tournament_participants tp
-	    		LEFT JOIN users u ON tp.user_id = u.id
-	    		WHERE tp.tournament_id = ?
-	    		ORDER BY tp.joined_at ASC
-	    	`).all(tournamentId);
+    console.log('Tournament query result:', tournament);
+    if (!tournament) {
+      console.log('Tournament not found');
+      return reply.code(404).send({ error: 'Tournament not found' });
+    }
 
-	    	console.log('Participants:', participants);
+    console.log('Getting participants...');
+    const participants = db.prepare(`
+      SELECT tp.*, u.display_name, u.email
+      FROM tournament_participants tp
+      LEFT JOIN users u ON tp.user_id = u.id
+      WHERE tp.tournament_id = ?
+      ORDER BY tp.joined_at ASC
+    `).all(tournamentId);
 
-	    	let matches = [];
-	    	if (tournament.status === 'active' || tournament.status === 'completed' || tournament.status === 'finished') {
-				console.log('Getting matches...');
-	    		matches = db.prepare(`
-					SELECT tm.*,
-						p1.alias as player1_alias, p2.alias as player2_alias,
-	    	      		winner.alias as winner_alias
-	    			FROM tournament_matches tm
-	    	    	LEFT JOIN tournament_participants p1 ON tm.player1_id = p1.id
-	    	    	LEFT JOIN tournament_participants p2 ON tm.player2_id = p2.id
-	    	    	LEFT JOIN tournament_participants winner ON tm.winner_id = winner.id
-	    	    	WHERE tm.tournament_id = ?
-	    	    	ORDER BY tm.round ASC, tm.position ASC
-	    	  	`).all(tournamentId);
-				
-	    		console.log('Matches:', matches);
-	    	}
+    console.log('Participants:', participants);
 
-	    	tournament.participants = participants;
-	    	tournament.matches = matches;
-	    	console.log('Final tournament object:', tournament);
-			console.log('=== END GET TOURNAMENT DETAILS ===');
+    let matches = [];
+    if (tournament.status === 'active' || tournament.status === 'completed' || tournament.status === 'finished') {
+      console.log('Getting matches...');
+      
+      // CORREGIR LA CONSULTA PARA INCLUIR LOS PARTICIPANT IDs
+	  matches = db.prepare(`
+        SELECT tm.*,
+          p1.alias as player1_alias, p1.id as player1_participant_id, p1.user_id as player1_user_id,
+          p2.alias as player2_alias, p2.id as player2_participant_id, p2.user_id as player2_user_id,
+          winner.alias as winner_alias, winner.id as winner_participant_id
+        FROM tournament_matches tm
+        LEFT JOIN tournament_participants p1 ON tm.player1_id = p1.id
+        LEFT JOIN tournament_participants p2 ON tm.player2_id = p2.id
+        LEFT JOIN tournament_participants winner ON tm.winner_id = winner.id
+        WHERE tm.tournament_id = ?
+        ORDER BY tm.round ASC, tm.position ASC
+      `).all(tournamentId);
+      
+      console.log('Matches with participant IDs:', matches);
+    }
 
-			reply.send(tournament);
-		} catch (error) {
-			console.error('Error fetching tournament details:', error);
-			return reply.code(500).send({ error: 'Error fetching tournament details', details: error.message });
-		}
-	});
+    tournament.participants = participants;
+    tournament.matches = matches;
+    console.log('Final tournament object:', tournament);
+    console.log('=== END GET TOURNAMENT DETAILS ===');
 
-	// POST /api/tournaments/:id/start - Manually start a tournament
+    reply.send(tournament);
+  } catch (error) {
+    console.error('Error fetching tournament details:', error);
+    return reply.code(500).send({ error: 'Error fetching tournament details', details: error.message });
+  }
+});
+
+// POST /api/tournaments/:id/start - Manually start a tournament
 	app.post('/api/tournaments/:id/start', async (req, reply) => {
 		const { id } = req.params;
 		const uid = req.session?.uid;

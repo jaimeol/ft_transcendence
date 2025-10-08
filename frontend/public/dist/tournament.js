@@ -202,8 +202,6 @@ export async function mount(el, ctx) {
         $('#createTournamentBtn')?.addEventListener('click', () => showCreateTournamentModal());
         $('#cancelTournamentBtn')?.addEventListener('click', () => hideCreateTournamentModal());
         $('#createTournamentForm')?.addEventListener('submit', (ev) => handleCreateTournament(ev));
-        // start match placeholder (we keep as an action)
-        $('#startMatchBtn')?.addEventListener('click', () => alert('Match starting — SPA redirect to game should go here'));
     }
     function switchTab(tab) {
         activeTab = tab;
@@ -451,11 +449,27 @@ export async function mount(el, ctx) {
         $('#nextPlayer1').textContent = next.player1_alias || 'TBD';
         $('#nextPlayer2').textContent = next.player2_alias || 'TBD';
         section?.classList.remove('hidden');
-        // Start Match button -> redirect to game with params
-        $('#startMatchBtn')?.addEventListener('click', () => {
-            const params = new URLSearchParams({ mode: 'tournament', matchId: String(next.id), tournamentId: String(currentTournament.id) });
-            window.location.href = `/game.html?${params.toString()}`;
-        }, { once: true });
+        const startBtn = $('#startMatchBtn');
+        if (startBtn) {
+            startBtn.replaceWith(startBtn.cloneNode(true));
+            const newStartBtn = $('#startMatchBtn');
+            newStartBtn?.addEventListener('click', () => {
+                // DEBUG MEJORADO
+                console.log('Next match object:', next);
+                console.log('player1_participant_id:', next.player1_participant_id);
+                console.log('player2_participant_id:', next.player2_participant_id);
+                const params = new URLSearchParams({
+                    matchId: String(next.id),
+                    tournamentId: String(currentTournament.id),
+                    player1: next.player1_alias || 'Player 1',
+                    player2: next.player2_alias || 'Player 2',
+                    player1Id: String(next.player1_participant_id || ''), // USAR participant_id
+                    player2Id: String(next.player2_participant_id || '') // USAR participant_id
+                });
+                console.log('All params:', params.toString());
+                ctx.navigate(`/tournament-pong?${params.toString()}`);
+            });
+        }
     }
     function showTournamentDetailsModal(t) {
         // create modal HTML similar to original; keep it simple
