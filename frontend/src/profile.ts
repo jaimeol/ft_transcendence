@@ -40,191 +40,215 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
   <div class="pointer-events-none fixed -top-24 -left-24 w-[36rem] h-[36rem] rounded-full bg-indigo-600/20 blur-3xl"></div>
   <div class="pointer-events-none fixed -bottom-32 -right-24 w-[30rem] h-[30rem] rounded-full bg-emerald-500/20 blur-3xl"></div>
 
-  <main class="max-w-6xl mx-auto px-4 py-8">
-	<!-- HERO -->
-	<section class="relative overflow-hidden rounded-2xl">
-	  <div class="h-40 sm:h-52 bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400"></div>
-	  <div class="glass rounded-2xl -mt-16 sm:-mt-20 px-4 sm:px-8 pt-20 pb-6">
-		<div class="flex flex-col sm:flex-row sm:items-end gap-6">
-		  <div class="-mt-24 sm:-mt-28">
-			<img id="avatar" class="avatar-xl ring-neon" src="/default-avatar.png" alt="Avatar">
+  <main class="max-w-4xl mx-auto px-4 py-6">
+	<!-- PROFILE HEADER -->
+	<div class="glass rounded-2xl p-6 mb-6">
+	  <div class="flex flex-col sm:flex-row items-center gap-6">
+		<div class="relative flex-shrink-0">
+		  <img id="avatar" class="w-20 h-20 rounded-full object-cover border-2 border-white/20" src="/default-avatar.png" alt="Avatar">
+		  <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-gray-900"></div>
+		</div>
+		
+		<div class="flex-1 text-center sm:text-left">
+		  <h1 id="player-name" class="text-2xl font-bold mb-1">Mi perfil</h1>
+		  <p id="player-email" class="text-white/60 text-sm mb-2">email@dominio.com</p>
+		  <div class="flex flex-wrap justify-center sm:justify-start gap-4 text-xs text-white/50">
+			<span>📅 Miembro desde <span id="member-since" class="text-white/70">—</span></span>
+			<span>🎮 Nivel <span id="player-level" class="text-white/70">1</span></span>
 		  </div>
-		  <div class="flex-1">
-			<h1 id="player-name" class="text-3xl md:text-4xl font-extrabold tracking-tight" data-translate="Profile-text">Mi perfil</h1>
-			<p id="player-email" class="opacity-80 mt-1">email@dominio.com</p>
-			<div class="mt-3.5 flex flex-wrap items-center gap-3">
-			  <span class="badge"><span data-translate="profile.memberSince">Miembro desde</span> <span id="member-since">—</span></span>
+		</div>
+		
+		<div class="flex gap-2">
+		  <a href="/friends" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
+			👥 Amigos
+		  </a>
+		  <a href="/chat" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm transition-colors">
+			💬 Chat
+		  </a>
+		</div>
+	  </div>
+	</div>
+
+	<!-- QUICK STATS -->
+	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+	  <div class="glass rounded-lg p-3 text-center">
+		<div class="text-xl font-bold text-blue-400" id="stat-total">0</div>
+		<div class="text-xs text-white/60">Partidas</div>
+	  </div>
+	  <div class="glass rounded-lg p-3 text-center">
+		<div class="text-xl font-bold text-green-400" id="stat-winrate">0%</div>
+		<div class="text-xs text-white/60">Tasa Victoria</div>
+	  </div>
+	  <div class="glass rounded-lg p-3 text-center">
+		<div class="text-xl font-bold text-yellow-400" id="stat-streak">0</div>
+		<div class="text-xs text-white/60">Racha</div>
+	  </div>
+	  <div class="glass rounded-lg p-3 text-center">
+		<div class="text-xl font-bold text-purple-400" id="stat-time">0 min</div>
+		<div class="text-xs text-white/60">Tiempo</div>
+	  </div>
+	</div>
+
+	<!-- DETAILED STATS -->
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+	  <div class="glass rounded-lg p-4">
+		<h3 class="font-medium mb-3 text-center">📊 Estadísticas Generales</h3>
+		<div class="space-y-2">
+		  <div class="flex justify-between items-center py-1 border-b border-white/10">
+			<span class="text-white/70 text-sm">Victorias</span>
+			<span id="stat-wins" class="text-green-400 font-medium">0</span>
+		  </div>
+		  <div class="flex justify-between items-center py-1 border-b border-white/10">
+			<span class="text-white/70 text-sm">Empates</span>
+			<span id="stat-draws" class="text-yellow-400 font-medium">0</span>
+		  </div>
+		  <div class="flex justify-between items-center py-1 border-b border-white/10">
+			<span class="text-white/70 text-sm">Derrotas</span>
+			<span id="stat-losses" class="text-red-400 font-medium">0</span>
+		  </div>
+		  <div class="flex justify-between items-center py-1">
+			<span class="text-white/70 text-sm">Ranking</span>
+			<span id="player-rank" class="text-indigo-400 font-medium">#—</span>
+		  </div>
+		</div>
+	  </div>
+	  
+	  <div class="glass rounded-lg p-4">
+		<h3 class="font-medium mb-3 text-center">🎯 Por Juego</h3>
+		<div class="grid grid-cols-2 gap-3">
+		  <div class="text-center">
+			<h4 class="text-blue-400 font-medium mb-2 text-sm">🏓 Pong</h4>
+			<div class="space-y-1 text-xs">
+			  <div class="flex justify-between">
+				<span class="text-white/60">V:</span>
+				<span id="pong-wins" class="text-green-400">0</span>
+			  </div>
+			  <div class="flex justify-between">
+				<span class="text-white/60">E:</span>
+				<span id="pong-draws" class="text-yellow-400">0</span>
+			  </div>
+			  <div class="flex justify-between">
+				<span class="text-white/60">D:</span>
+				<span id="pong-losses" class="text-red-400">0</span>
+			  </div>
 			</div>
 		  </div>
-		  <!-- Compact stats -->
-		  <div class="grid grid-cols-3 gap-2 self-start sm:self-auto">
-			<div class="glass rounded-2xl text-center stat-card">
-			  <div id="stat-wins" class="stat-num">0</div>
-			  <div class="stat-lbl" data-translate="profile.wins">Victorias</div>
-			</div>
-			<div class="glass rounded-2xl text-center stat-card">
-			  <div id="stat-draws" class="stat-num">0</div>
-			  <div class="stat-lbl" data-translate="profile.draws">Empates</div>
-			</div>
-			<div class="glass rounded-2xl text-center stat-card">
-			  <div id="stat-losses" class="stat-num">0</div>
-			  <div class="stat-lbl" data-translate="profile.losses">Derrotas</div>
+		  
+		  <div class="text-center">
+			<h4 class="text-emerald-400 font-medium mb-2 text-sm">⭕ Tres en Raya</h4>
+			<div class="space-y-1 text-xs">
+			  <div class="flex justify-between">
+				<span class="text-white/60">V:</span>
+				<span id="ttt-wins" class="text-green-400">0</span>
+			  </div>
+			  <div class="flex justify-between">
+				<span class="text-white/60">E:</span>
+				<span id="ttt-draws" class="text-yellow-400">0</span>
+			  </div>
+			  <div class="flex justify-between">
+				<span class="text-white/60">D:</span>
+				<span id="ttt-losses" class="text-red-400">0</span>
+			  </div>
 			</div>
 		  </div>
 		</div>
+	  </div>
+	</div>
 
-		<!-- Quick actions -->
-		<div class="mt-5 flex flex-wrap gap-2 justify-end">
-		  <a href="/home" class="badge hover:bg-white/10" data-translate="action-back">← Volver</a>
-		  <a href="/friends" class="badge hover:bg-white/10">👥 <span data-translate="home.cards.friends.title">Amigos</span></a>
-		</div>
-	  </div>
-	</section>
-
-	<!-- SUMMARY STRIP -->
-	<section class="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
-	  <div class="glass rounded-2xl p-4 text-center">
-		<div class="text-sm opacity-70" data-translate="profile.matches">Partidas</div>
-		<div id="stat-total" class="text-2xl font-bold">0</div>
-	  </div>
-	  <div class="glass rounded-2xl p-4 text-center">
-		<div class="text-sm opacity-70" data-translate="profile.winrate">Winrate</div>
-		<div id="stat-winrate" class="text-2xl font-bold">0%</div>
-	  </div>
-	  <div class="glass rounded-2xl p-4 text-center">
-		<div class="text-sm opacity-70" data-translate="profile.streak">Racha</div>
-		<div id="stat-streak" class="text-2xl font-bold">0</div>
-	  </div>
-	  <div class="glass rounded-2xl p-4 text-center">
-		<div class="text-sm opacity-70" data-translate="profile.timePlayed">Tiempo jugado</div>
-		<div id="stat-time" class="text-2xl font-bold">—</div>
-	  </div>
-	</section>
-
-	<!-- CHARTS -->
-	<section class="mt-6 grid-card">
-	  <div class="glass rounded-2xl p-5">
-		<h2 class="text-lg font-semibold mb-3">Distribución (Pong)</h2>
-		<canvas id="chart-pie-pong" height="220"></canvas>
-	  </div>
-	  <div class="glass rounded-2xl p-5">
-		<h2 class="text-lg font-semibold mb-3"> Distribución (Tres en raya)</h2>
-		<canvas id="chart-pie-ttt" height="220"></canvas>
-	  </div>	
-	</section>
-
-	<!-- ACCORDION -->
-	<section class="space-y-4 mt-6">
+	<!-- SETTINGS -->
+	<div class="space-y-3">
 	  <!-- Información personal -->
-	  <details class="glass rounded-2xl overflow-hidden">
-		<summary class="px-6 py-4 flex items-center justify-between">
-		  <div class="text-lg font-semibold" data-translate="profile.personalInfo">Información personal</div>
-		  <svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+	  <details class="glass rounded-xl overflow-hidden">
+		<summary class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-white/5">
+		  <div class="font-medium">📋 Información personal</div>
+		  <svg class="chevron w-5 h-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
 		  </svg>
 		</summary>
-		<div class="px-6 pb-6 border-t border-white/10">
-		  <dl class="grid sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-			<div><dt class="opacity-70" data-translate="field-display_name">Nombre público</dt><dd id="ov-display" class="font-medium">—</dd></div>
-			<div><dt class="opacity-70" data-translate="field-email">Email</dt><dd id="ov-email" class="font-medium">—</dd></div>
-			<div><dt class="opacity-70" data-translate="field-first_name">Nombre</dt><dd id="ov-first" class="font-medium">—</dd></div>
-			<div><dt class="opacity-70" data-translate="field-last_name">Apellidos</dt><dd id="ov-last" class="font-medium">—</dd></div>
-			<div><dt class="opacity-70" data-translate="field-birthdate">Fecha de nacimiento</dt><dd id="ov-birth" class="font-medium">—</dd></div>
-			<div><dt class="opacity-70" data-translate="profile.memberSince">Miembro desde</dt><dd id="ov-created" class="font-medium">—</dd></div>
-			<div><dt class="opacity-70" data-translate="profile.updated">Actualizado</dt><dd id="ov-updated" class="font-medium">—</dd></div>
-		  </dl>
+		<div class="px-4 pb-4 border-t border-white/10">
+		  <div class="grid sm:grid-cols-2 gap-3 text-sm mt-3">
+			<div class="flex justify-between"><span class="text-white/60">Nombre:</span><span id="ov-display" class="text-white/90">—</span></div>
+			<div class="flex justify-between"><span class="text-white/60">Email:</span><span id="ov-email" class="text-white/90">—</span></div>
+			<div class="flex justify-between"><span class="text-white/60">Nombre:</span><span id="ov-first" class="text-white/90">—</span></div>
+			<div class="flex justify-between"><span class="text-white/60">Apellidos:</span><span id="ov-last" class="text-white/90">—</span></div>
+			<div class="flex justify-between"><span class="text-white/60">Nacimiento:</span><span id="ov-birth" class="text-white/90">—</span></div>
+			<div class="flex justify-between"><span class="text-white/60">Registro:</span><span id="ov-created" class="text-white/90">—</span></div>
+		  </div>
 		</div>
 	  </details>
 
 	  <!-- Editar perfil -->
-	  <details class="glass rounded-2xl overflow-hidden">
-		<summary class="px-6 py-4 flex items-center justify-between">
-		  <div class="text-lg font-semibold" data-translate="home.editProfile">Editar perfil</div>
-		  <svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+	  <details class="glass rounded-xl overflow-hidden">
+		<summary class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-white/5">
+		  <div class="font-medium">✏️ Editar perfil</div>
+		  <svg class="chevron w-5 h-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
 		  </svg>
 		</summary>
-		<div class="px-6 pb-6 border-t border-white/10">
-		  <form id="form-edit" class="grid md:grid-cols-2 gap-4 max-w-3xl">
-			<label class="grid gap-1">
-			  <span class="text-sm opacity-80" data-translate="field-display_name">Nombre público</span>
-			  <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-					 name="display_name" required data-translate-placeholder="username-placeholder" placeholder="Tu nick"/>
-			</label>
-			<label class="grid gap-1">
-			  <span class="text-sm opacity-80" data-translate="field-birthdate">Fecha de nacimiento</span>
-			  <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-					 type="date" name="birthdate" data-translate-placeholder="bithdate-placeholder"/>
-			</label>
-			<label class="grid gap-1">
-			  <span class="text-sm opacity-80" data-translate="field-first_name">Nombre</span>
-			  <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-					 name="first_name" data-translate-placeholder="name-placeholder" placeholder="Nombre"/>
-			</label>
-			<label class="grid gap-1">
-			  <span class="text-sm opacity-80" data-translate="field-last_name">Apellidos</span>
-			  <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-					 name="last_name" data-translate-placeholder="last_name-placeholder" placeholder="Apellidos"/>
-			</label>
-			<div class="md:col-span-2 flex gap-2">
-			  <button class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 px-5 py-2 rounded-xl font-semibold"
-					  data-translate="submit">Guardar cambios</button>
-			  <span id="msg-edit" class="text-sm min-h-[1.25rem] self-center"></span>
+		<div class="px-4 pb-4 border-t border-white/10">
+		  <form id="form-edit" class="grid sm:grid-cols-2 gap-3 mt-3">
+			<input class="field p-2 rounded-lg text-sm" name="display_name" placeholder="Nombre público" />
+			<input class="field p-2 rounded-lg text-sm" type="date" name="birthdate" />
+			<input class="field p-2 rounded-lg text-sm" name="first_name" placeholder="Nombre" />
+			<input class="field p-2 rounded-lg text-sm" name="last_name" placeholder="Apellidos" />
+			<div class="sm:col-span-2 flex gap-2 items-center">
+			  <button class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium">
+				Guardar cambios
+			  </button>
+			  <span id="msg-edit" class="text-sm"></span>
 			</div>
 		  </form>
 		</div>
 	  </details>
 
 	  <!-- Avatar -->
-	  <details class="glass rounded-2xl overflow-hidden">
-		<summary class="px-6 py-4 flex items-center justify-between">
-		  <div class="text-lg font-semibold" data-translate="profile.avatar">Avatar</div>
-		  <svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+	  <details class="glass rounded-xl overflow-hidden">
+		<summary class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-white/5">
+		  <div class="font-medium">🖼️ Cambiar avatar</div>
+		  <svg class="chevron w-5 h-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
 		  </svg>
 		</summary>
-		<div class="px-6 pb-6 border-t border-white/10">
-		  <form id="form-avatar" class="grid gap-4 md:grid-cols-[auto,1fr] items-center max-w-3xl" enctype="multipart/form-data">
-			<img id="preview-avatar" class="avatar-xl ring-neon" src="/default-avatar.png" alt="Previsualización">
-			<div class="grid gap-3">
-			  <input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-					 type="file" name="avatar" accept="image/*" id="avatar-file"/>
+		<div class="px-4 pb-4 border-t border-white/10">
+		  <form id="form-avatar" class="flex items-center gap-4 mt-3" enctype="multipart/form-data">
+			<img id="preview-avatar" class="w-16 h-16 rounded-full object-cover border-2 border-white/20" src="/default-avatar.png" alt="Preview">
+			<div class="flex-1">
+			  <input class="field p-2 rounded-lg text-sm w-full mb-2" type="file" name="avatar" accept="image/*" id="avatar-file"/>
 			  <div class="flex gap-2">
-				<label for="avatar-file" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-xl font-semibold cursor-pointer"
-					   data-translate="profile.chooseFile">Elegir archivo</label>
-				<button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-xl font-semibold" type="submit"
-						data-translate="upload-avatar">Subir</button>
+				<button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-lg text-sm" type="submit">
+				  Subir
+				</button>
+				<span id="msg-avatar" class="text-sm self-center"></span>
 			  </div>
-			  <p id="msg-avatar" class="text-sm min-h-[1.25rem]"></p>
 			</div>
-		  	</form>
+		  </form>
 		</div>
-	  	</details>
+	  </details>
 
 	  <!-- Cuenta -->
-	  	<details class="glass rounded-2xl overflow-hidden">
-		<summary class="px-6 py-4 flex items-center justify-between">
-		  	<div class="text-lg font-semibold" data-translate="profile.account">Cuenta</div>
-		  	<svg class="chevron size-10 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
-		  	</svg>
+	  <details class="glass rounded-xl overflow-hidden">
+		<summary class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-white/5">
+		  <div class="font-medium">⚙️ Configuración de cuenta</div>
+		  <svg class="chevron w-5 h-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/>
+		  </svg>
 		</summary>
-		<div class="px-6 pb-6 border-t border-white/10">
-		  	<form id="form-email" class="grid md:grid-cols-[1fr_auto] gap-3 max-w-md">
-				<input class="field p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-				   type="email" name="email"
-				   data-translate-placeholder="email-placeholder" placeholder="tu@email.com"/>
-				<button class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-xl font-semibold"
-					data-translate="profile.updateEmail">Actualizar email</button>
-				<p id="msg-email" class="text-sm md:col-span-2"></p>
-		  	</form>
-		  	<div class="mt-4">
-				<button id="btn-logout" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl font-semibold"
-					data-translate="home.logout">Cerrar sesión</button>
-			</div>
+		<div class="px-4 pb-4 border-t border-white/10">
+		  <form id="form-email" class="flex gap-2 mt-3">
+			<input class="field p-2 rounded-lg text-sm flex-1" type="email" name="email" placeholder="nuevo@email.com"/>
+			<button class="bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm">
+			  Actualizar
+			</button>
+		  </form>
+		  <p id="msg-email" class="text-sm mt-2"></p>
+		  <div class="mt-4 pt-3 border-t border-white/10">
+			<button id="btn-logout" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium">
+			  🚪 Cerrar sesión
+			</button>
+		  </div>
 		</div>
-	  	</details>
-		</section>
+	  </details>
+	</div>
   	</main>
   	`;
 
@@ -245,7 +269,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 		}
   	});
 
-	await ensureChartsJs();
+	// Charts.js ya no es necesario
 
 	const meUser = await me(ctx);
 	let viewedUser: Me | null = meUser;
@@ -277,17 +301,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	await loadMatchesAndStats(ctx, viewedUser.id!);
 }
 
-async function ensureChartsJs() {
-	if ((window as any).Chart) return;
-	await new Promise<void>((resolve, reject) => {
-		const s = document.createElement("script");
-		s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.4";
-		s.async = true;
-		s.onload = () => resolve();
-		s.onerror = () => reject(new Error("No se pudo cargar chart.js"));
-		document.head.appendChild(s);
-	});
-}
+// Función de Charts.js eliminada - ya no se necesita
 
 // ========= Utilidades =========
 const $ = <T extends HTMLElement = HTMLElement>(s: string, p: Document | HTMLElement = document) =>
@@ -328,30 +342,7 @@ const state: { me: Me; matches: Match[] } = {
 	matches: []
 };
 
-// ========= Charts (CDN) =========
-declare const Chart: any;
-let piePong: any, pieTTT: any;
-
-function renderCharts({ pong, ttt }: {
-	pong: { wins: number; draws: number; losses: number };
-	ttt: { wins: number; draws: number; losses: number };
-}) {
-	const ctxPiePong = document.getElementById("chart-pie-pong") as HTMLCanvasElement | null;
-	const ctxPieTTT = document.getElementById("chart-pie-ttt") as HTMLCanvasElement | null;
-	if (!ctxPiePong || !ctxPieTTT || typeof Chart === "undefined") return;
-
-	piePong?.destroy();
-	pieTTT?.destroy();
-
-	const commonOpts = { plugins: { legend: { labels: { colors: "#D4D4D8" } } }, cutout: "60%" };
-	const commonData = (w: number, d: number, l: number) => ({
-		labels: ["Victorias", "Empates", "Derrotas"],
-		datasets: [{ data: [w, d, l], backgrounColor: ["#6071d0ff", "#e38f11ff", "#ef4444"], borderWith: 0 }]
-	});
-	
-	piePong = new Chart(ctxPiePong, { type: "doughnut", data: commonData(pong.wins, pong.draws, pong.losses), options: commonOpts });
-	pieTTT = new Chart(ctxPieTTT, { type: "doughnut", data: commonData(ttt.wins, ttt.draws, ttt.losses), options: commonOpts});
-}
+// ========= Charts eliminados =========
 
 // ========= Pintado UI (soporta tus ids y los nuevos) =========
 function paintUser(u: Me) {
@@ -493,7 +484,7 @@ async function loadMatchesAndStats(ctx: Ctx, userId: number) {
     else break;
   }
 
-  // pintar tarjetas
+  // pintar tarjetas principales
   $("#stat-wins")!.textContent    = String(wins);
   $("#stat-draws")!.textContent   = String(draws);
   $("#stat-losses")!.textContent  = String(losses);
@@ -502,16 +493,29 @@ async function loadMatchesAndStats(ctx: Ctx, userId: number) {
   $("#stat-streak")!.textContent  = String(streak);
 
   const mins = totalMs ? Math.max(1, Math.round(totalMs / 60000)) : 0;
-  $("#stat-time")!.textContent = total ? (mins ? `${mins} min` : `${total * 5} min`) : "-";
+  $("#stat-time")!.textContent = total ? (mins ? `${mins} min` : `${total * 5} min`) : "0 min";
 
-  // donuts por juego
-	renderCharts({
-    pong: { wins: winsPong, draws: drawsPong, losses: lossesPong },
-    ttt:  { wins: winsTTT,  draws: drawsTTT,  losses: lossesTTT  }
-  });
+  // pintar estadísticas por juego
+  $("#pong-wins")!.textContent = String(winsPong);
+  $("#pong-draws")!.textContent = String(drawsPong);
+  $("#pong-losses")!.textContent = String(lossesPong);
+  
+  $("#ttt-wins")!.textContent = String(winsTTT);
+  $("#ttt-draws")!.textContent = String(drawsTTT);
+  $("#ttt-losses")!.textContent = String(lossesTTT);
 
-	// Debug visible en consola si hay partidas sin clasificar
-	if (unknownGames) {
+  // calcular nivel basado en partidas jugadas
+  const level = Math.floor(total / 10) + 1;
+  $("#player-level")!.textContent = String(level);
+  
+  // calcular ranking aproximado (simulado)
+  const rank = Math.max(1, 1000 - (wins * 10) - (total * 2));
+  $("#player-rank")!.textContent = `#${rank}`;
+
+  // Los gráficos han sido eliminados del diseño
+
+	// Debug info for development only
+	if (unknownGames && process.env.NODE_ENV === 'development') {
 		console.warn(`[profile] Partidas sin juego reconocido: ${unknownGames}`);
 	}
 }

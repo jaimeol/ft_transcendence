@@ -14,6 +14,7 @@ export async function mount(el, ctx) {
 			<div class="opacity-70 text-xs">${u.online ? "🟢 Online" : "⚪ Offline"}</div>
 		</div>
 		<div class="text-sm">${actionsHtml}</div>
+	</div>
 	`;
     el.innerHTML = `
 	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
@@ -74,20 +75,31 @@ export async function mount(el, ctx) {
         const errBox = $("#err");
         if (!errBox)
             throw new Error("Could not find errBox");
-        listEl.textContent = t("loading") || "Cargando...";
+        listEl.innerHTML = `<div class="text-white/60 text-center py-2">${t("loading") || "Cargando..."}</div>`;
         errBox.textContent = "";
         try {
             const resp = await ctx.api("/api/friends");
             const { friends } = resp;
-            listEl.innerHTML = friends?.length
-                ? friends.map(u => userRow(u)).join("")
-                : `<div class="text-white/60">${t("friends.none") || "Todavía no tienes amigos 😢"}</div>`;
+            if (!friends?.length) {
+                listEl.innerHTML = `<div class="text-white/60 text-center py-8">
+					<div class="text-4xl mb-3">👥</div>
+					<div class="text-lg mb-2">${t("friends.none") || "Todavía no tienes amigos"}</div>
+					<div class="text-sm opacity-60">Busca usuarios arriba para añadir amigos</div>
+				</div>`;
+                return;
+            }
+            listEl.innerHTML = friends.map(u => userRow(u, `<a href="/profile?user=${u.id}" class="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-sm transition-colors">
+					👤 Ver Perfil
+				</a>`)).join("");
         }
         catch (err) {
             if (String(err?.message) === '401')
                 ctx.navigate("/login", { replace: true });
-            listEl.innerHTML = "";
-            errBox.textContent = t("friends.load_error") || "❌ Error cargando amigos";
+            listEl.innerHTML = `<div class="text-red-400 text-center py-4">
+				<div class="text-2xl mb-2">❌</div>
+				<div>${t("friends.load_error") || "Error cargando amigos"}</div>
+			</div>`;
+            errBox.textContent = "";
         }
     }
     async function loadPending() {
@@ -95,16 +107,50 @@ export async function mount(el, ctx) {
         try {
             const resp = await ctx.api("/api/friends/pending");
             const { incoming = [], outgoing = [] } = resp;
-            const incHtml = incoming.map(u => userRow(u, `<button class="px-2 py-1 rounded bg-green-600 hover:bg-green-700" data-accept="${u.id}">
-						${t("friends.accept") || "Aceptar"}
-					</button>`)).join("");
-            const outHtml = outgoing.map(u => userRow(u, `<span class="opacity-70">${t("friends.requested") || "Solicitado"}</span>`)).join("");
-            box.innerHTML = (incoming.length || outgoing.length)
-                ? (incHtml + (outgoing.length ? `<div class="mt-2 opacity-70">${t("friends.sent") || "Enviadas"}</div>${outHtml}` : ""))
-                : `<div class="text-white/60">${t("friends.no_pending") || "No hay solicitudes pendientes."}</div>`;
+            if (!incoming.length && !outgoing.length) {
+                box.innerHTML = `<div class="text-white/60 text-center py-4">
+					<div class="text-2xl mb-2">📭</div>
+					<div>${t("friends.no_pending") || "No hay solicitudes pendientes"}</div>
+				</div>`;
+                return;
+            }
+            let html = "";
+            if (incoming.length) {
+                html += `<div class="mb-4">
+					<h3 class="text-sm font-semibold text-green-400 mb-2">
+						📥 ${t("friends.incoming") || "Solicitudes recibidas"} (${incoming.length})
+					</h3>
+					<div class="space-y-2">
+						${incoming.map(u => userRow(u, `<div class="flex gap-2">
+								<button class="px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-sm" data-accept="${u.id}">
+									✓ ${t("friends.accept") || "Aceptar"}
+								</button>
+								<button class="px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-sm" data-reject="${u.id}">
+									✗ ${t("friends.reject") || "Rechazar"}
+								</button>
+							</div>`)).join("")}
+					</div>
+				</div>`;
+            }
+            if (outgoing.length) {
+                html += `<div>
+					<h3 class="text-sm font-semibold text-yellow-400 mb-2">
+						📤 ${t("friends.outgoing") || "Solicitudes enviadas"} (${outgoing.length})
+					</h3>
+					<div class="space-y-2">
+						${outgoing.map(u => userRow(u, `<span class="px-3 py-1 rounded bg-yellow-600/20 text-yellow-400 text-sm">
+								⏳ ${t("friends.requested") || "Pendiente"}
+							</span>`)).join("")}
+					</div>
+				</div>`;
+            }
+            box.innerHTML = html;
         }
         catch {
-            box.innerHTML = `<div class="text-white/60">${t("friends.no_pending") || "No hay solicitudes pendientes."}</div>`;
+            box.innerHTML = `<div class="text-white/60 text-center py-4">
+				<div class="text-2xl mb-2">❌</div>
+				<div>Error cargando solicitudes</div>
+			</div>`;
         }
     }
     async function doSearch(q) {
@@ -113,17 +159,56 @@ export async function mount(el, ctx) {
             results.innerHTML = "";
             return;
         }
+        // Mostrar loading
+        results.innerHTML = `<div class="text-white/60 text-center py-2">${t("loading") || "Buscando..."}</div>`;
         try {
             const resp = await ctx.api(`/api/users/search?q=${encodeURIComponent(q)}`);
             const { users } = resp;
-            results.innerHTML = users?.length
-                ? users.map(u => userRow(u, `<button class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500" data-add="${u.id}">
-							${t("friends.add") || "Añadir"}
-						</button>`)).join("")
-                : `<div class="text-white/60">${t("friends.no_results") || "Sin resultados."}</div>`;
+            if (!users?.length) {
+                results.innerHTML = `<div class="text-white/60 text-center py-4">
+					<div class="text-2xl mb-2">🔍</div>
+					<div>${t("friends.no_results") || "Sin resultados."}</div>
+					<div class="text-xs opacity-60 mt-1">Prueba con otro término de búsqueda</div>
+				</div>`;
+                return;
+            }
+            // Obtener estado de amistad para cada usuario
+            const friendsResp = await ctx.api("/api/friends");
+            const pendingResp = await ctx.api("/api/friends/pending");
+            const friendIds = new Set(friendsResp.friends?.map(f => f.id) || []);
+            const pendingOutIds = new Set(pendingResp.outgoing?.map(f => f.id) || []);
+            const pendingInIds = new Set(pendingResp.incoming?.map(f => f.id) || []);
+            results.innerHTML = users.map(u => {
+                let actionHtml = "";
+                if (friendIds.has(u.id)) {
+                    actionHtml = `<span class="px-3 py-1 rounded bg-green-600/20 text-green-400 text-sm">
+						✓ ${t("friends.already_friends") || "Amigos"}
+					</span>`;
+                }
+                else if (pendingOutIds.has(u.id)) {
+                    actionHtml = `<span class="px-3 py-1 rounded bg-yellow-600/20 text-yellow-400 text-sm">
+						⏳ ${t("friends.requested") || "Solicitado"}
+					</span>`;
+                }
+                else if (pendingInIds.has(u.id)) {
+                    actionHtml = `<button class="px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-sm" data-accept="${u.id}">
+						${t("friends.accept") || "Aceptar"}
+					</button>`;
+                }
+                else {
+                    actionHtml = `<button class="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-sm transition-colors" data-add="${u.id}">
+						${t("friends.add") || "Añadir"}
+					</button>`;
+                }
+                return userRow(u, actionHtml);
+            }).join("");
         }
         catch (err) {
-            results.innerHTML = `<div class="text-red-400">${t("friends.search_error") || "Error buscando amigos"} : ${escapeHTML(err?.message || "Desconocido")}</div>`;
+            results.innerHTML = `<div class="text-red-400 text-center py-4">
+				<div class="text-2xl mb-2">❌</div>
+				<div>${t("friends.search_error") || "Error buscando amigos"}</div>
+				<div class="text-xs opacity-60 mt-1">${escapeHTML(err?.message || "Error desconocido")}</div>
+			</div>`;
         }
     }
     async function sendFriendRequest(userId) {
@@ -131,6 +216,9 @@ export async function mount(el, ctx) {
     }
     async function acceptFriendRequest(userId) {
         await ctx.api(`/api/friends/${userId}/accept`, { method: "POST" });
+    }
+    async function rejectFriendRequest(userId) {
+        await ctx.api(`/api/friends/${userId}/reject`, { method: "POST" });
     }
     const subs = new AbortController();
     const on = (node, type, handler) => node.addEventListener(type, handler, { signal: subs.signal });
@@ -164,11 +252,11 @@ export async function mount(el, ctx) {
             try {
                 addBtn?.setAttribute("disabled", "true");
                 await sendFriendRequest(id);
-                addBtn.textContent = t("friends.add") || "Solicitado";
+                addBtn.textContent = t("friends.requested") || "Solicitado";
                 await loadPending();
             }
             catch (e) {
-                alert("❌ " + (e?.message || (t("friends.accept_error") || "Error aceptando solicitud")));
+                alert("❌ " + (e?.message || (t("friends.request_error") || "Error enviando solicitud")));
             }
             finally {
                 addBtn?.removeAttribute("disabled");
@@ -183,13 +271,33 @@ export async function mount(el, ctx) {
             try {
                 accBtn.setAttribute("disabled", "true");
                 await acceptFriendRequest(id);
+                // Recargar las listas para mostrar los cambios
                 await Promise.all([loadPending(), loadFriends()]);
             }
             catch (e) {
-                alert("❌ " + (e?.message || (t("friends.accept_error") || "Error aceptando solicitud")));
+                // Si el error es 404, probablemente ya se aceptó, así que recargamos igual
+                if (String(e?.message) === '404') {
+                    await Promise.all([loadPending(), loadFriends()]);
+                }
+                else {
+                    alert("❌ " + (e?.message || (t("friends.accept_error") || "Error aceptando solicitud")));
+                    accBtn.removeAttribute("disabled");
+                }
             }
-            finally {
-                accBtn.removeAttribute("disabled");
+        }
+        const rejBtn = tEl.closest("[data-reject]");
+        if (rejBtn) {
+            const id = Number(rejBtn.getAttribute("data-reject"));
+            if (!Number.isFinite(id))
+                return;
+            try {
+                rejBtn.setAttribute("disabled", "true");
+                await rejectFriendRequest(id);
+                await loadPending();
+            }
+            catch (e) {
+                alert("❌ " + (e?.message || "Error rechazando solicitud"));
+                rejBtn.removeAttribute("disabled");
             }
         }
     });

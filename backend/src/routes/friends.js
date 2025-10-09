@@ -111,6 +111,20 @@ async function routes(fastify) {
     return { ok: true };
   });
 
+  // Rechazar solicitud de amistad
+  fastify.post('/api/friends/:userId/reject', async (req, reply) => {
+    const uid = req.session.uid;
+    if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
+    const other = Number(req.params.userId);
+    const res = db.prepare(`
+      DELETE FROM friends
+      WHERE requester_id = ? AND addressee_id = ? AND status = 'pending'
+    `).run(other, uid);
+    if (res.changes === 0) return reply.code(404).send({ error: 'Request not found' });
+
+    return { ok: true };
+  });
+
   // Listado de amigos (igual que antes)
   fastify.get('/api/friends', async (req, reply) => {
     const uid = req.session.uid;

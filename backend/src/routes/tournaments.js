@@ -135,20 +135,15 @@ async function tournamentsRoutes(app, opts) {
 	// GET /api/tournaments/:id - Get tournament details
 	app.get('/api/tournaments/:id', async (req, reply) => {
   const uid = req.session.uid;
-  console.log('=== GET TOURNAMENT DETAILS ===');
-  console.log('User ID:', uid);
-  console.log('Tournament ID:', req.params.id);
+  // Debug logs removed for production
 
   if (!uid) {
     return reply.code(401).send({ error: 'Not authenticated' });
   }
 
   const tournamentId = parseInt(req.params.id);
-  console.log('Parsed tournament ID:', tournamentId);
-
   try {
     // Get tournament with is_joined and is_creator flags
-    console.log('Executing tournament query...');
     const tournament = db.prepare(`
       SELECT t.*,
         u.display_name as creator_name,

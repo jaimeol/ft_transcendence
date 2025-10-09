@@ -25,16 +25,23 @@ const httpsOptions = {
   cert: fs.readFileSync(path.join(certsDir, 'server.crt'))
 };
 
-const app = Fastify({ https: httpsOptions, logger: true });
+const app = Fastify({ 
+  https: httpsOptions, 
+  logger: process.env.NODE_ENV !== 'production',
+  trustProxy: true
+});
 
-app.register(cors, { origin: true, credentials: true });
+app.register(cors, { 
+  origin: process.env.FRONTEND_URL || ['http://localhost:3000', 'https://localhost:1234'], 
+  credentials: true 
+});
 app.register(formbody);
 app.register(multipart);
 app.register(cookie);
 app.register(session, {
 	cookieName: 'sessionId',
-	secret: '12345678901234567890123456789012', //esto quiza lo meta en un .env
-	cookie: { httpOnly: true, sameSite: 'lax', secure: false }
+	secret: process.env.SESSION_SECRET || require('crypto').randomBytes(32).toString('hex'),
+	cookie: { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' }
 });
 app.register(websocket);
 
@@ -81,14 +88,25 @@ app.decorate('websocketPush', (userId, payload) => {
   const set = socketsByUser.get(Number(userId));
   if (!set) return;
   for (const sock of set) {
-    try { sock.send(JSON.stringify(payload)); } catch {}
+      try { 
+        sock.send(JSON.stringify(payload)); 
+      } catch (err) {
+        app.log.warn('Failed to send WebSocket message:', err.message);
+      }
   }
 });
 
 // Endpoint WS autenticado por sesión
 app.get('/ws/chat', { websocket: true }, (connection, req) => {
   const uid = req.session.uid; // <- autenticado vía cookie de sesión
-  if (!uid) { try { connection.socket.close(); } catch {} ; return; }
+  if (!uid) { 
+    try { 
+      connection.socket.close(); 
+    } catch (err) {
+      app.log.warn('Failed to close unauthorized WebSocket:', err.message);
+    }
+    return; 
+  }
 
   // Registrar
   const set = socketsByUser.get(uid) || new Set();
@@ -119,14 +137,16 @@ app.get('/ws/chat', { websocket: true }, (connection, req) => {
 
       const k = kind === 'invite' ? 'invite' : 'text';
       const meta = k === 'invite' ? JSON.stringify({ game: 'pong' }) : null;
+      const finalBody = k === 'invite' ? (body || '🎮 ¡Te reto a jugar a Pong! Ven a mi ordenador para jugar.') : body;
+      
       const info = require('./db').db.prepare(`
         INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
         VALUES (?, ?, ?, ?, ?)
-      `).run(uid, other, body ?? null, k, meta);
+      `).run(uid, other, finalBody, k, meta);
       const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
 
       // Eco al emisor con el cid para reconciliar
-      try { connection.socket.send(JSON.stringify({ type: 'message', message: saved, cid })); } catch {}
+      try { connection.socket.send(JSON.stringify({ type: k === 'invite' ? 'invite' : 'message', message: saved, cid })); } catch {}
       // Push al destinatario (sin cid)
       app.websocketPush(other, { type: k === 'invite' ? 'invite' : 'message', message: saved });
     }

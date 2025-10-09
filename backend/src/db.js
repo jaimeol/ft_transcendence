@@ -21,6 +21,12 @@ try {
 try {
   // Crear índice único para google_id (solo cuando no es NULL)
   db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;`);
+  
+  // Índices adicionales para performance
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_matches_players ON matches(player1_id, player2_id);`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_matches_winner ON matches(winner_id);`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at);`);
 } catch {}
 
 module.exports = { db };

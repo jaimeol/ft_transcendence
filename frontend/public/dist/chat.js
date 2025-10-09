@@ -140,7 +140,10 @@ export function mountChat(host, ctx) {
             class: `max-w-[80%] ${mine ? 'self-end' : 'self-start'} my-1`,
             ...(m.id ? { 'data-msg-id': String(m.id) } : {})
         });
-        const bubble = h('div', { class: `rounded-2xl px-3 py-2 ${mine ? 'bg-indigo-600/80' : 'bg-white/10'}` }, m.kind === 'invite' ? '🎮 Invitación a jugar a Pong' : (m.body ?? ''));
+        const bubbleClass = m.kind === 'invite'
+            ? (mine ? 'bg-emerald-600/80' : 'bg-emerald-700/60')
+            : (mine ? 'bg-indigo-600/80' : 'bg-white/10');
+        const bubble = h('div', { class: `rounded-2xl px-3 py-2 ${bubbleClass}` }, m.body ?? (m.kind === 'invite' ? '🎮 Invitación a jugar a Pong' : ''));
         const time = h('div', {
             class: `text-[11px] opacity-60 mt-0.5 ${mine ? 'text-right' : 'text-left'}`,
             'data-time': '1'
@@ -174,10 +177,19 @@ export function mountChat(host, ctx) {
         hname.textContent = p.display_name;
         const act = $('#chat-actions', host);
         act.innerHTML = '';
-        const btnInvite = h('button', { class: 'px-2 py-1 rounded bg-emerald-600/70 text-sm' }, `${ctx.t("chat.invite") ?? "Invitar a pong"}`);
-        btnInvite.onclick = () => sendInvite(p.id);
         const isBlocked = blockedIds.has(p.id);
-        const btnBlock = h('button', { class: 'px-2 py-1 rounded bg-red-600/70 text-sm' }, isBlocked ? `${ctx.t("chat.unblock") ?? "Desbloquear"}` : `${ctx.t("chat.block") ?? "Bloquear"}`);
+        const btnInvite = h('button', { class: 'px-2 py-1 rounded bg-emerald-600/70 hover:bg-emerald-700 text-sm' }, `${ctx.t("chat.invite") ?? "Invitar a pong"}`);
+        btnInvite.onclick = async () => {
+            const originalText = btnInvite.textContent;
+            btnInvite.textContent = '✓ Enviado';
+            btnInvite.setAttribute('disabled', 'true');
+            await sendInvite(p.id);
+            setTimeout(() => {
+                btnInvite.textContent = originalText;
+                btnInvite.removeAttribute('disabled');
+            }, 2000);
+        };
+        const btnBlock = h('button', { class: 'px-2 py-1 rounded bg-red-600/70 hover:bg-red-700 text-sm' }, isBlocked ? `${ctx.t("chat.unblock") ?? "Desbloquear"}` : `${ctx.t("chat.block") ?? "Bloquear"}`);
         btnBlock.onclick = async () => {
             if (isBlocked) {
                 await api(`/api/chat/block/${p.id}`, { method: 'DELETE' });
@@ -190,7 +202,18 @@ export function mountChat(host, ctx) {
             updateHeader(p);
         };
         act.append(btnInvite, btnBlock);
-        $('#chat-input', host)?.removeAttribute('disabled');
+        // Deshabilitar input si está bloqueado
+        const input = $('#chat-input', host);
+        if (input) {
+            if (isBlocked) {
+                input.setAttribute('disabled', 'true');
+                input.placeholder = ctx.t("chat.blocked") ?? "Usuario bloqueado";
+            }
+            else {
+                input.removeAttribute('disabled');
+                input.placeholder = ctx.t("chat.write") ?? "Escribe un mensaje...";
+            }
+        }
     }
     async function loadHistory(peerId) {
         const { messages } = await api(`/api/chat/history/${peerId}?limit=50`);
@@ -238,7 +261,10 @@ export function mountChat(host, ctx) {
                     class: `max-w-[80%] ${mine ? 'self-end' : 'self-start'} my-1`,
                     'data-msg-id': String(m.id)
                 });
-                const bubble = h('div', { class: `rounded-2xl px-3 py-2 ${mine ? 'bg-indigo-600/80' : 'bg-white/10'}` }, m.kind === 'invite' ? '🎮 Invitación a jugar a Pong' : (m.body ?? ''));
+                const bubbleClass = m.kind === 'invite'
+                    ? (mine ? 'bg-emerald-600/80' : 'bg-emerald-700/60')
+                    : (mine ? 'bg-indigo-600/80' : 'bg-white/10');
+                const bubble = h('div', { class: `rounded-2xl px-3 py-2 ${bubbleClass}` }, m.body ?? (m.kind === 'invite' ? '🎮 Invitación a jugar a Pong' : ''));
                 const time = h('div', {
                     class: `text-[11px] opacity-60 mt-0.5 ${mine ? 'text-right' : 'text-left'}`
                 }, fmtTime(m.created_at));
@@ -294,9 +320,40 @@ export function mountChat(host, ctx) {
         }
         catch { }
     }
-    function sendInvite(to) {
-        const payload = JSON.stringify({ type: 'send', kind: 'invite', to });
-        ws?.send(payload);
+    async function sendInvite(to) {
+        const body = '🎮 ¡Te reto a jugar a Pong! Ven a mi ordenador para jugar.';
+        // Crear mensaje optimista en la UI
+        const optimisticMsg = {
+            id: 0, // temporal
+            sender_id: me.id,
+            receiver_id: to,
+            body,
+            kind: 'invite',
+            created_at: new Date().toISOString()
+        };
+        // Mostrar inmediatamente en la UI
+        addMessageToUI(optimisticMsg);
+        try {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const payload = JSON.stringify({ type: 'send', kind: 'invite', to, body });
+                ws.send(payload);
+            }
+            else {
+                // Fallback HTTP si el WebSocket no está conectado
+                await api('/api/chat/invite', {
+                    method: 'POST',
+                    body: JSON.stringify({ to }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+        }
+        catch (e) {
+            if (process.env.NODE_ENV === 'development') {
+                console.error('Error sending invite:', e);
+            }
+            // TODO: Show user-friendly error message
+            // TODO: Remover el mensaje optimista si falla
+        }
     }
     function mountUI() {
         host.innerHTML = '';
