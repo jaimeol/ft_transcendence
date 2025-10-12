@@ -1,5 +1,6 @@
 
 import { Ctx } from "./router";
+import { currentTranslations, initializeLanguages } from "./translate.js";
 
 type UserLite = {
   id: number;
@@ -9,6 +10,9 @@ type UserLite = {
 };
 
 export async function mount(el: HTMLElement, ctx: Ctx) {
+	// Inicializar el sistema de traducción primero
+	await initializeLanguages();
+	
 	const t = ctx.t;
 
 	const $ = <T extends HTMLElement = HTMLElement>(s: string) => el.querySelector(s) as T | null;

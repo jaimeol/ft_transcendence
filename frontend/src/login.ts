@@ -1,7 +1,11 @@
 // login.ts
 import type { Ctx } from "./router.js";
+import { currentTranslations, initializeLanguages } from "./translate.js";
 
-export function mount(el: HTMLElement, ctx: Ctx) {
+export async function mount(el: HTMLElement, ctx: Ctx) {
+	// Inicializar el sistema de traducción primero
+	await initializeLanguages();
+	
 	const { api, t, navigate } = ctx;
 
 	el.innerHTML = `

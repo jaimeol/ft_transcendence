@@ -1,4 +1,7 @@
+import { initializeLanguages } from "./translate.js";
 export async function mount(el, ctx) {
+    // Inicializar el sistema de traducción primero
+    await initializeLanguages();
     const t = ctx.t;
     const $ = (s) => el.querySelector(s);
     const $$ = (s) => Array.from(el.querySelectorAll(s));

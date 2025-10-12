@@ -1,5 +1,3 @@
-
-
 export let currentTranslations: Record<string, string> = {};
 
 export type language = "es" | "fr" | "en";
@@ -103,6 +101,9 @@ export async function changeLanguage(lang: language): Promise<void> {
 
   await loadTranslations(lang);
   updateContent();
+  
+  // Disparar evento para que las páginas SPA se actualicen
+  window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang } }));
 }
 
 (window as any).changeLanguage = changeLanguage;

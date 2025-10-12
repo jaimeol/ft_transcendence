@@ -1,4 +1,7 @@
-export function mount(el, { t }) {
+import { initializeLanguages } from "./translate.js";
+export async function mount(el, { t }) {
+    // Inicializar el sistema de traducción primero
+    await initializeLanguages();
     // Metemos TODO el HTML de la landing dentro de un contenedor "relative"
     el.innerHTML = `
     <div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white relative overflow-hidden">

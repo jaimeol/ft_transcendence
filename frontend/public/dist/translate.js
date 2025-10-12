@@ -94,6 +94,8 @@ export async function changeLanguage(lang) {
     history.replaceState({}, '', url.toString());
     await loadTranslations(lang);
     updateContent();
+    // Disparar evento para que las páginas SPA se actualicen
+    window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang } }));
 }
 window.changeLanguage = changeLanguage;
 export function ensureLinksCarryLang(selector = 'a[href]') {

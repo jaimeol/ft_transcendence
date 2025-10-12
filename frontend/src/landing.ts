@@ -1,6 +1,10 @@
 import type { Ctx } from "./router.js";
+import { currentTranslations, initializeLanguages } from "./translate.js";
 
-export function mount(el: HTMLElement, { t }: Ctx) {
+export async function mount(el: HTMLElement, { t }: Ctx) {
+  // Inicializar el sistema de traducción primero
+  await initializeLanguages();
+  
   // Metemos TODO el HTML de la landing dentro de un contenedor "relative"
   el.innerHTML = `
     <div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white relative overflow-hidden">

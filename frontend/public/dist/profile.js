@@ -1,4 +1,7 @@
+import { initializeLanguages } from "./translate.js";
 export async function mount(el, ctx) {
+    // Inicializar el sistema de traducción primero
+    await initializeLanguages();
     document.body.className = "min-h-screen bg-black text-white";
     el.innerHTML = `
 	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
@@ -16,11 +19,11 @@ export async function mount(el, ctx) {
 	  <div class="flex items-center gap-3">
 		<!-- Selector idioma -->
 		<div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
-		  <button class="hover:underline" onclick="changeLanguage?.('en')">EN</button>
+		  <button class="hover:underline" onclick="window.changeLanguage?.('en')">EN</button>
 		  <span class="mx-1 text-white/40">|</span>
-		  <button class="hover:underline" onclick="changeLanguage?.('es')">ES</button>
+		  <button class="hover:underline" onclick="window.changeLanguage?.('es')">ES</button>
 		  <span class="mx-1 text-white/40">|</span>
-		  <button class="hover:underline" onclick="changeLanguage?.('fr')">FR</button>
+		  <button class="hover:underline" onclick="window.changeLanguage?.('fr')">FR</button>
 		</div>
 		<!-- Logout (lo engancha profile.ts por id) -->
 		<button id="btn-logout"
@@ -288,6 +291,8 @@ export async function mount(el, ctx) {
             h1.textContent = name;
     }
     await loadMatchesAndStats(ctx, viewedUser.id);
+    // Inicializar el sistema de traducción
+    await initializeLanguages();
 }
 // Función de Charts.js eliminada - ya no se necesita
 // ========= Utilidades =========
@@ -482,9 +487,9 @@ async function loadMatchesAndStats(ctx, userId) {
     $("#player-rank").textContent = `#${rank}`;
     // Los gráficos han sido eliminados del diseño
     // Debug info for development only
-    if (unknownGames && process.env.NODE_ENV === 'development') {
-        console.warn(`[profile] Partidas sin juego reconocido: ${unknownGames}`);
-    }
+    // if (unknownGames && process.env.NODE_ENV === 'development') {
+    // 	console.warn(`[profile] Partidas sin juego reconocido: ${unknownGames}`);
+    // }
 }
 // ========= Formularios/acciones =========
 function wireUpdateForm(ctx, el) {

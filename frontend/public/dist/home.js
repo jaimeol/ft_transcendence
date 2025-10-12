@@ -1,9 +1,11 @@
 import { mountChat } from "./chat.js";
+import { initializeLanguages } from "./translate.js";
 // ==== Helper fecha ====
 const fmtDateTime = (s) => (!s ? "—" : new Date(s).toLocaleString());
 // ==== Componente de página ====
 export async function mount(el, ctx) {
-    // -------- Markup (adaptado de tu home.html; rutas SPA sin .html) --------
+    // Inicializar el sistema de traducción primero
+    await initializeLanguages();
     el.innerHTML = `
 	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
 		<div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -53,10 +55,10 @@ export async function mount(el, ctx) {
 				${ctx.t("home.quickActions") ?? "Acciones rápidas"}
 			</h2>
 
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
 				<a href="/friends"
-					 class="group rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-5 flex flex-col gap-2">
+					class="group rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-5 flex flex-col gap-2">
 					<div class="text-2xl">👥</div>
 					<div class="font-semibold" data-translate="home.cards.friends.title">${ctx.t("home.cards.friends.title") ?? "Amigos"}</div>
 					<div class="text-sm text-white/60" data-translate="home.cards.friends.desc">${ctx.t("home.cards.friends.desc") ?? "Solicitudes y lista"}</div>
@@ -82,6 +84,18 @@ export async function mount(el, ctx) {
 					<div class="text-2xl">🎮</div>
 					<div class="font-semibold" data-translate="play_1v1">${ctx.t("play_1v1") ?? "Jugar 1v1"}</div>
 					<div class="text-sm text-white/60" data-translate="home.cards.pvp.desc">${ctx.t("home.cards.pvp.desc") ?? "Local en el navegador"}</div>
+				</a>
+			</div>
+
+			<div class="grid grid-cols-1 gap-4">
+				<a href="/tournament"
+					class="group rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-5 flex flex-col sm:flex-row gap-4 items-center">
+					<div class="text-3xl">🏆</div>
+					<div class="flex-1 text-center sm:text-left">
+						<div class="font-semibold text-lg" data-translate="tournament.title">${ctx.t("tournament.title") ?? "Torneos"}</div>
+						<div class="text-sm text-white/60" data-translate="tournament.subtitle">${ctx.t("tournament.subtitle") ?? "Compite con otros jugadores en torneos eliminatorios"}</div>
+					</div>
+					<div class="text-white/40 text-sm hidden sm:block">→</div>
 				</a>
 			</div>
 		</section>

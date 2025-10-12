@@ -348,9 +348,9 @@ export function mountChat(host, ctx) {
             }
         }
         catch (e) {
-            if (process.env.NODE_ENV === 'development') {
-                console.error('Error sending invite:', e);
-            }
+            // if (process.env.NODE_ENV === 'development') {
+            // 	console.error('Error sending invite:', e);
+            // }
             // TODO: Show user-friendly error message
             // TODO: Remover el mensaje optimista si falla
         }

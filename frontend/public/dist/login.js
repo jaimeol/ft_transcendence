@@ -1,4 +1,7 @@
-export function mount(el, ctx) {
+import { initializeLanguages } from "./translate.js";
+export async function mount(el, ctx) {
+    // Inicializar el sistema de traducción primero
+    await initializeLanguages();
     const { api, t, navigate } = ctx;
     el.innerHTML = `
 	<div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white relative overflow-hidden">
