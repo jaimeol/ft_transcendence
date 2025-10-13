@@ -194,5 +194,8 @@
   "tournament.incompleteMatches": "incomplete matches",
   "tournament.advancedTo": "Advanced to round",
   "tournament.advanceError": "Error advancing round",
-  "tournament.notFinished": "Tournament not finished yet or winner not defined"
+  "tournament.notFinished": "Tournament not finished yet or winner not defined",
+  "tournament.champion": "Champion",
+  "tournament.participant": "Participant",
+  "tournament.noWinner": "No winner"
 }

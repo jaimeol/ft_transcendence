@@ -16,7 +16,7 @@ async function tournamentsRoutes(app, opts) {
 				LEFT JOIN users u ON t.creator_id = u.id
 				LEFT JOIN tournament_participants tp ON t.id = tp.tournament_id
 				LEFT JOIN tournament_participants tp_user ON t.id = tp_user.tournament_id AND tp_user.user_id = ?
-				WHERE t.is_public = 1
+				WHERE t.is_public = 1 AND t.status != 'finished'
 				GROUP BY t.id
 				ORDER BY t.created_at DESC
 			`).all(uid || 0, uid || 0);
@@ -24,6 +24,40 @@ async function tournamentsRoutes(app, opts) {
 			return tournaments;
 		} catch (error) {
 			return reply.code(500).send({ error: 'Error fetching tournaments' });
+		}
+	});
+
+	// GET /api/tournaments/history - Get tournament history for current user
+	app.get('/api/tournaments/history', async (req, reply) => {
+		const uid = req.session.uid;
+		if (!uid) {
+			return reply.code(401).send({ error: 'Not authenticated' });
+		}
+		
+		try {
+			const tournaments = db.prepare(`
+				SELECT t.*, 
+							 u.display_name as creator_name,
+							 COUNT(DISTINCT tp.id) as total_players,
+							 CASE WHEN tp_user.id IS NOT NULL THEN 1 ELSE 0 END as was_participant,
+							 CASE WHEN t.creator_id = ? THEN 1 ELSE 0 END as was_creator,
+							 CASE WHEN t.winner_id = ? THEN 1 ELSE 0 END as was_winner,
+							 winner_u.display_name as winner_name
+				FROM tournaments t
+				LEFT JOIN users u ON t.creator_id = u.id
+				LEFT JOIN users winner_u ON t.winner_id = winner_u.id
+				LEFT JOIN tournament_participants tp ON t.id = tp.tournament_id
+				LEFT JOIN tournament_participants tp_user ON t.id = tp_user.tournament_id AND tp_user.user_id = ?
+				WHERE t.status = 'finished' 
+				  AND (tp_user.id IS NOT NULL OR t.creator_id = ?)
+				GROUP BY t.id
+				ORDER BY t.completed_at DESC, t.created_at DESC
+			`).all(uid, uid, uid, uid);
+
+			return tournaments;
+		} catch (error) {
+			console.error('Error fetching tournament history:', error);
+			return reply.code(500).send({ error: 'Error fetching tournament history' });
 		}
 	});
 

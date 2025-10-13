@@ -183,10 +183,14 @@
   "tournament.startError": "Error iniciando torneo",
   "tournament.checkError": "Error verificando estado del torneo",
   "tournament.confirmAdvance": "¿Avanzar a la siguiente ronda?",
-  "tournament.completed": "¡Torneo completado!",
+  "tournament.tournamentCompleted": "¡Torneo completado!",
   "tournament.cannotAdvance": "No se puede avanzar",
   "tournament.incompleteMatches": "partidas incompletas",
   "tournament.advancedTo": "Avanzado a la ronda",
   "tournament.advanceError": "Error avanzando ronda",
-  "tournament.notFinished": "Torneo aún no terminado o ganador no definido"
+  "tournament.notFinished": "Torneo aún no terminado o ganador no definido",
+  "tournament.champion": "Campeón",
+  "tournament.participant": "Participante",
+  "tournament.noWinner": "Sin ganador",
+  "tournament.completed": "Completado"
 }

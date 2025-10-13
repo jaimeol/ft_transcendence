@@ -14,10 +14,17 @@ type BackendTournament = {
   current_round?: number;
   current_players?: number;
   created_at?: string;
+  completed_at?: string;
   is_joined?: number;
   is_creator?: number;
   participants?: any[];
   matches?: any[];
+  // History specific fields
+  total_players?: number;
+  was_participant?: number;
+  was_creator?: number;
+  was_winner?: number;
+  winner_name?: string;
 };
 
 export async function mount(el: HTMLElement, ctx: Ctx) {
@@ -159,11 +166,11 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
             </div>
             <div>
               <label class="block text-sm font-medium mb-2" data-translate="tournament.numberOfPlayers">${ctx.t("tournament.numberOfPlayers") ?? "Number of Players"}</label>
-              <select id="tournamentPlayersInput" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg">
-                <option value="4">${ctx.t("tournament.players4") ?? "4 Players"}</option>
-                <option value="8">${ctx.t("tournament.players8") ?? "8 Players"}</option>
-                <option value="16">${ctx.t("tournament.players16") ?? "16 Players"}</option>
-                <option value="32">${ctx.t("tournament.players32") ?? "32 Players"}</option>
+              <select id="tournamentPlayersInput" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white">
+                <option class="bg-white text-black" value="4">${ctx.t("tournament.players4") ?? "4 Players"}</option>
+                <option class="bg-white text-black" value="8">${ctx.t("tournament.players8") ?? "8 Players"}</option>
+                <option class="bg-white text-black" value="16">${ctx.t("tournament.players16") ?? "16 Players"}</option>
+                <option class="bg-white text-black" value="32">${ctx.t("tournament.players32") ?? "32 Players"}</option>
               </select>
             </div>
             <div class="flex gap-3 pt-4">
@@ -191,6 +198,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
   // state
   let availableTournaments: BackendTournament[] = [];
   let myTournaments: BackendTournament[] = [];
+  let tournamentHistory: BackendTournament[] = [];
   let currentTournament: BackendTournament | null = null;
   let activeTab: 'available' | 'my' | 'history' = 'available';
   let currentUser: any = null;
@@ -237,6 +245,18 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
     } catch (err) { console.error(err); }
   }
 
+  async function loadTournamentHistory() {
+    try {
+      const r = await apiFetch('/api/tournaments/history', { method: 'GET' });
+      if (r.ok) {
+        tournamentHistory = Array.isArray(r.data) ? r.data : [];
+        renderHistory();
+      } else {
+        console.error('Failed loading tournament history', r.data);
+      }
+    } catch (err) { console.error(err); }
+  }
+
   function bindEventListeners() {
     // tabs
     $('#availableTab')?.addEventListener('click', () => switchTab('available'));
@@ -266,7 +286,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 
     if (tab === 'my') loadMyTournaments();
     if (tab === 'available') renderAvailableTournaments();
-    if (tab === 'history') renderHistory();
+    if (tab === 'history') loadTournamentHistory();
   }
 
   function renderAvailableTournaments() {
@@ -361,7 +381,72 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
   function renderHistory() {
     const container = $('#tournamentHistory');
     if (!container) return;
-    container.innerHTML = `<div class="text-center py-8 text-white/60"><div class="text-4xl mb-2">📚</div><div data-translate="tournament.historyText">${ctx.t("tournament.historyText") ?? "Tournament history"}</div><div class="text-sm mt-1" data-translate="tournament.pastTournaments">${ctx.t("tournament.pastTournaments") ?? "Past tournaments will appear here"}</div></div>`;
+    container.innerHTML = '';
+    
+    if (tournamentHistory.length === 0) {
+      container.innerHTML = `<div class="text-center py-8 text-white/60"><div class="text-4xl mb-2">📚</div><div data-translate="tournament.noHistory">${ctx.t("tournament.noHistory") ?? "No tournament history"}</div><div class="text-sm mt-1" data-translate="tournament.pastTournaments">${ctx.t("tournament.pastTournaments") ?? "Complete tournaments to see them here"}</div></div>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
+
+    for (const t of tournamentHistory) {
+      const card = document.createElement('div');
+      card.className = 'bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition flex flex-col';
+      
+      // Determinar el estado del usuario en el torneo
+      let userStatus = '';
+      let statusClass = 'px-2 py-1 rounded-full text-xs font-medium';
+      
+      if (t.was_winner === 1) {
+        userStatus = ctx.t("tournament.champion") ?? "Champion";
+        statusClass += ' bg-yellow-500/20 text-yellow-300 border border-yellow-500/30';
+      } else if (t.was_creator === 1) {
+        userStatus = ctx.t("tournament.creator") ?? "Creator";
+        statusClass += ' bg-blue-500/20 text-blue-300 border border-blue-500/30';
+      } else if (t.was_participant === 1) {
+        userStatus = ctx.t("tournament.participant") ?? "Participant";
+        statusClass += ' bg-green-500/20 text-green-300 border border-green-500/30';
+      }
+
+      const completedDate = t.completed_at ? new Date(t.completed_at).toLocaleDateString() : 
+                           (t.created_at ? new Date(t.created_at).toLocaleDateString() : '—');
+
+      card.innerHTML = `
+        <div class="flex-1">
+          <div class="flex items-start justify-between mb-3">
+            <h3 class="font-semibold text-lg">${escapeHtml(t.name)}</h3>
+            <div class="${statusClass}">${userStatus}</div>
+          </div>
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between text-sm">
+              <span class="text-white/60" data-translate="tournament.winner">${ctx.t("tournament.winner") ?? "Winner"}:</span>
+              <span class="text-white">${escapeHtml(t.winner_name || (ctx.t("tournament.noWinner") ?? "No winner"))}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-white/60" data-translate="tournament.players">${ctx.t("tournament.players") ?? "Players"}:</span>
+              <span class="text-white">${t.total_players || 0}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-white/60" data-translate="tournament.completed">${ctx.t("tournament.completed") ?? "Completed"}:</span>
+              <span class="text-white">${completedDate}</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <button data-id="${t.id}" class="view-details w-full px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm transition" data-translate="tournament.viewDetails">${ctx.t("tournament.viewDetails") ?? "View Details"}</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+    
+    container.appendChild(grid);
+
+    // Delegate buttons
+    container.querySelectorAll<HTMLButtonElement>('.view-details').forEach(btn => {
+      btn.addEventListener('click', () => viewTournament(parseInt(btn.dataset.id!)));
+    });
   }
 
   async function handleCreateTournament(e: Event) {

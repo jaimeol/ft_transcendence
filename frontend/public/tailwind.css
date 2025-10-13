@@ -107,7 +107,7 @@
 }
 
 /*
-! tailwindcss v3.4.18 | MIT License | https://tailwindcss.com
+! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com
 */
 
 /*
@@ -1270,6 +1270,10 @@ video {
   border-color: rgb(255 255 255 / 0.3);
 }
 
+.border-yellow-500\/30 {
+  border-color: rgb(234 179 8 / 0.3);
+}
+
 .bg-black {
   --tw-bg-opacity: 1;
   background-color: rgb(0 0 0 / var(--tw-bg-opacity, 1));
@@ -1412,6 +1416,10 @@ video {
 .bg-yellow-500 {
   --tw-bg-opacity: 1;
   background-color: rgb(234 179 8 / var(--tw-bg-opacity, 1));
+}
+
+.bg-yellow-500\/20 {
+  background-color: rgb(234 179 8 / 0.2);
 }
 
 .bg-yellow-600\/20 {
@@ -1820,6 +1828,11 @@ video {
 
 .text-white\/90 {
   color: rgb(255 255 255 / 0.9);
+}
+
+.text-yellow-300 {
+  --tw-text-opacity: 1;
+  color: rgb(253 224 71 / var(--tw-text-opacity, 1));
 }
 
 .text-yellow-400 {

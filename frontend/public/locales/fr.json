@@ -188,5 +188,8 @@
   "tournament.incompleteMatches": "matchs incomplets",
   "tournament.advancedTo": "Avancé à la manche",
   "tournament.advanceError": "Erreur lors de l'avancement de manche",
-  "tournament.notFinished": "Tournoi pas encore terminé ou gagnant non défini"
+  "tournament.notFinished": "Tournoi pas encore terminé ou gagnant non défini",
+  "tournament.champion": "Champion",
+  "tournament.participant": "Participant",
+  "tournament.noWinner": "Aucun gagnant"
 }
