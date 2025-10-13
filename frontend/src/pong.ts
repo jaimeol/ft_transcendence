@@ -398,7 +398,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 				}
 			});
 		} else if (isPVP && pvpPlayers === '2') {
-			// multi-step: 2 -> 3 -> 4
 			let step = 2;
 			heading.textContent = ctx.t("pvp.second_player");
 			form.addEventListener('submit', async (ev) => {
@@ -553,6 +552,8 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 		let aiPressedKey: string | null = null;
 		let ai2PressedKey: string | null = null;
 
+		const KEY_PRESS_DURATION = 300;
+
 		const simulateKeyPress = (key: string) => {
 			if (!keys[key]) window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 		};
@@ -560,80 +561,174 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 			if (keys[key]) window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }));
 		};
 
+		const pressKeyWithDuration = (key: string) => {
+			simulateKeyPress(key);
+			setTimeout(() => {
+				simulateKeyRelease(key);
+			}, KEY_PRESS_DURATION);
+		};
+
 		const predictballY = (): number => {
-			let x = ballX, y = ballY, dx = ballSpeedX, dy = ballSpeedY;
-			if (dx <= 0) return rightPaddleY + paddleHeight / 2;
-			while (x < canvas.width - 20) {
-				x += dx; y += dy;
-				if (y - ballRadius < 0 || y + ballRadius > canvas.height) {
-					dy *= -1;
-					y = Math.max(ballRadius, Math.min(canvas.height - ballRadius, y));
+            let x = ballX, y = ballY, dx = ballSpeedX, dy = ballSpeedY;
+            if (dx <= 0) return canvas.height / 2;
+            
+            // Agregar error aleatorio basado en dificultad
+            let errorFactor = 0;
+            if (difficulty === 'easy') errorFactor = 0.4;
+            else if (difficulty === 'medium') errorFactor = 0.2;
+            else if (difficulty === 'hard') errorFactor = 0.1;
+
+			const targetX = canvas.width - 30;
+			let iterations = 0;
+			const maxIterations = 1000;
+            
+            while (x < targetX && iterations < maxIterations) {
+                x += dx; y += dy;
+                if (y - ballRadius <= 0) {
+                    y = ballRadius;
+					dy = Math.abs(dy);
+                } else if (y + ballRadius >= canvas.height) {
+					y = canvas.height - ballRadius;
+					dy = -Math.abs(dy);
 				}
-			}
-			return y;
-		};
 
-		const updateAI = () => {
-			if (!gameRunning || gameOver1) return;
-			if (ballSpeedX <= 0) {
-				if (aiPressedKey) { simulateKeyRelease(aiPressedKey); aiPressedKey = null; }
-				return;
-			}
-			const predictedY = predictballY();
-			const paddleCenter = rightPaddleY + paddleHeight / 2;
-			const diff = predictedY - paddleCenter;
-			let DEAD_ZONE = 60;
-			if (difficulty === 'easy') DEAD_ZONE = 110;
-			else if (difficulty === 'medium') DEAD_ZONE = 75;
-			else if (difficulty === 'hard') DEAD_ZONE = 60;
-			let keyToPress: string | null = null;
-			if (diff < -DEAD_ZONE && rightPaddleY > 0) keyToPress = 'ArrowUp';
-			else if (diff > DEAD_ZONE && rightPaddleY + paddleHeight < canvas.height) keyToPress = 'ArrowDown';
-			if (keyToPress !== aiPressedKey) {
-				if (aiPressedKey) simulateKeyRelease(aiPressedKey);
-				if (keyToPress) simulateKeyPress(keyToPress);
-				aiPressedKey = keyToPress;
-			}
-		};
+				iterations++;
+            }
+            
+            // Agregar ruido aleatorio a la predicción
+            const maxError = canvas.height * errorFactor;
+            const randomError = (Math.random() - 0.5) * maxError * 2;
+            return Math.max(ballRadius, Math.min(canvas.height - ballRadius, y + randomError));
+        };
 
-		aiTimer1 = window.setInterval(updateAI, 100);
-
-		// IA para la segunda partida (vertical/horizontal) si duoAI
-		const predictball2X = (): number => {
-			let x = ball2X, y = ball2Y, dx = ball2SpeedX, dy = ball2SpeedY;
-			if (dy >= 0) return topPaddleX + hPaddleWidth / 2;
-			while (y > 20) {
-				x += dx; y += dy;
-				if (x - ballRadius < 0 || x + ballRadius > canvas.width) {
-					dx *= -1;
-					x = Math.max(ballRadius, Math.min(canvas.width - ballRadius, x));
+        const updateAI = () => {
+            if (!gameRunning || gameOver1) return;
+            if (ballSpeedX <= 0) {
+				if (aiPressedKey) {
+					simulateKeyRelease(aiPressedKey);
+					aiPressedKey = null;
 				}
+                return;
+            }
+            
+            const predictedY = predictballY();
+            const paddleCenter = rightPaddleY + paddleHeight / 2;
+            const diff = predictedY - paddleCenter;
+            
+            // Una sola zona muerta para todos los niveles
+            const DEAD_ZONE = 30;
+            
+            // Retrasos de reacción según dificultad
+            let reactionDelay = 0;
+            if (difficulty === 'easy') reactionDelay = Math.random() < 0.3 ? 1 : 0; // 30% de fallar una reacción
+            else if (difficulty === 'medium') reactionDelay = Math.random() < 0.15 ? 1 : 0; // 15% de fallar una reacción
+            else if (difficulty === 'hard') reactionDelay = Math.random() < 0.05 ? 1 : 0; // 5% de fallar una reacción
+            
+            // Si hay delay de reacción, no hacer nada en este ciclo
+            if (reactionDelay) return;
+            
+            let keyToPress: string | null = null;
+            
+            if (difficulty === 'easy' && Math.random() < 0.3) {
+				keyToPress = Math.random() < 0.5 ? 'ArrowUp' : 'ArrowDown';
+			} else if (difficulty === 'medium' && Math.random() < 0.15) {
+				if (diff < -DEAD_ZONE) keyToPress = 'ArrowDown';
+				else if (diff > DEAD_ZONE) keyToPress = 'ArrowUp';
+			} else {
+				if (diff < -DEAD_ZONE && rightPaddleY > 0) keyToPress = 'ArrowUp';
+				else if (diff > DEAD_ZONE && rightPaddleY + paddleHeight < canvas.height) keyToPress = 'ArrowDown';
 			}
-			return x;
-		};
-		const updateAIHorizontal = () => {
-			if (!gameRunning || gameOver2) return;
-			if (ball2SpeedY >= 0) {
-				if (ai2PressedKey) { simulateKeyRelease(ai2PressedKey); ai2PressedKey = null; }
-				return;
+            
+            if (keyToPress !== aiPressedKey) {
+                if (aiPressedKey) simulateKeyRelease(aiPressedKey);
+                if (keyToPress) pressKeyWithDuration(keyToPress);
+                aiPressedKey = keyToPress;
+            }
+        };
+
+        // Actualizar cada segundo (1000ms) como requisito obligatorio
+        aiTimer1 = window.setInterval(updateAI, 1000);
+
+        // IA para la segunda partida (vertical/horizontal) si duoAI
+        const predictball2X = (): number => {
+            let x = ball2X, y = ball2Y, dx = ball2SpeedX, dy = ball2SpeedY;
+            if (dy <= 0) return canvas.height / 2;
+            
+            // Agregar error aleatorio basado en dificultad
+            let errorFactor = 0;
+            if (difficulty === 'easy') errorFactor = 0.3;
+            else if (difficulty === 'medium') errorFactor = 0.15;
+            else if (difficulty === 'hard') errorFactor = 0.05;
+
+			const targetX = canvas.width - 30;
+			let iterations = 0;
+			const maxIterations = 1000;
+
+			while (x < targetX && iterations < maxIterations) {
+				x += dx;
+				y += dy;
+
+				if (y - ballRadius <= 0) {
+					y = ballRadius;
+					dy = Math.abs(dy);
+				} else if (y + ballRadius >= canvas.height) {
+					y = canvas.height - ballRadius;
+					dy = -Math.abs(dy);
+				}
+
+				iterations++;
 			}
-			const predictedX = predictball2X();
-			const paddleCenter = topPaddleX + hPaddleWidth / 2;
-			const diff = predictedX - paddleCenter;
-			let DEAD_ZONE_H = 60;
-			if (difficulty === 'easy') DEAD_ZONE_H = 110;
-			else if (difficulty === 'medium') DEAD_ZONE_H = 75;
-			else if (difficulty === 'hard') DEAD_ZONE_H = 60;
-			let keyToPress: string | null = null;
-			if (diff < -DEAD_ZONE_H && topPaddleX > 0) keyToPress = 'a';
-			else if (diff > DEAD_ZONE_H && topPaddleX + hPaddleWidth < canvas.width) keyToPress = 'd';
-			if (keyToPress !== ai2PressedKey) {
-				if (ai2PressedKey) simulateKeyRelease(ai2PressedKey);
-				if (keyToPress) simulateKeyPress(keyToPress);
-				ai2PressedKey = keyToPress;
-			}
-		};
-		aiTimer2 = window.setInterval(updateAIHorizontal, 100);
+            
+            // Agregar ruido aleatorio a la predicción
+            const maxError = canvas.width * errorFactor;
+            const randomError = (Math.random() - 0.5) * maxError * 2;
+            return Math.max(ballRadius, Math.min(canvas.width - ballRadius, x + randomError));
+        };
+
+        const updateAIHorizontal = () => {
+            if (!gameRunning || gameOver2) return;
+            if (ball2SpeedY >= 0) {
+                if (ai2PressedKey) { simulateKeyRelease(ai2PressedKey); ai2PressedKey = null; }
+                return;
+            }
+            
+            const predictedX = predictball2X();
+            const paddleCenter = topPaddleX + hPaddleWidth / 2;
+            const diff = predictedX - paddleCenter;
+            
+            // Una sola zona muerta para todos los niveles
+            const DEAD_ZONE = 60;
+            
+            // Retrasos de reacción según dificultad
+            let reactionDelay = 0;
+            if (difficulty === 'easy') reactionDelay = Math.random() < 0.3 ? 1 : 0;
+            else if (difficulty === 'medium') reactionDelay = Math.random() < 0.15 ? 1 : 0;
+            else if (difficulty === 'hard') reactionDelay = Math.random() < 0.05 ? 1 : 0;
+            
+            if (reactionDelay) return;
+            
+            let keyToPress: string | null = null;
+            
+            // Lógica de movimiento con errores ocasionales
+            if (difficulty === 'medium' && Math.random() < 0.1) {
+                // 10% de error
+                if (diff < -DEAD_ZONE && topPaddleX + hPaddleWidth < canvas.width) keyToPress = 'd';
+                else if (diff > DEAD_ZONE && topPaddleX > 0) keyToPress = 'a';
+            } else {
+                // Movimiento normal
+                if (diff < -DEAD_ZONE && topPaddleX > 0) keyToPress = 'a';
+                else if (diff > DEAD_ZONE && topPaddleX + hPaddleWidth < canvas.width) keyToPress = 'd';
+            }
+            
+            if (keyToPress !== ai2PressedKey) {
+                if (ai2PressedKey) simulateKeyRelease(ai2PressedKey);
+                if (keyToPress) pressKeyWithDuration(keyToPress);
+                ai2PressedKey = keyToPress;
+            }
+        };
+
+        // Actualizar cada segundo (1000ms) como requisito obligatorio
+        aiTimer2 = window.setInterval(updateAIHorizontal, 1000);
 	}
 
 	/* -------------------------
