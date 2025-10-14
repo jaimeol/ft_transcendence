@@ -40,56 +40,6 @@ export async function mount(el, ctx) {
         </button>
       </div>
 
-      <section id="currentTournamentSection" class="hidden bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold" data-translate="tournament.current">${ctx.t("tournament.current") ?? "Current Tournament"}</h2>
-          <div id="tournamentStatus" class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30"><span>Active</span></div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white/5 rounded-lg p-4">
-            <div class="text-sm text-white/60" data-translate="tournament.name">${ctx.t("tournament.name") ?? "Name"}</div>
-            <div id="tournamentName" class="font-semibold">—</div>
-          </div>
-          <div class="bg-white/5 rounded-lg p-4">
-            <div class="text-sm text-white/60" data-translate="tournament.players">${ctx.t("tournament.players") ?? "Players"}</div>
-            <div id="tournamentPlayers" class="font-semibold">—</div>
-          </div>
-          <div class="bg-white/5 rounded-lg p-4">
-            <div class="text-sm text-white/60" data-translate="tournament.round">${ctx.t("tournament.round") ?? "Round"}</div>
-            <div id="tournamentRound" class="font-semibold">—</div>
-          </div>
-          <div class="bg-white/5 rounded-lg p-4">
-            <div class="text-sm text-white/60" data-translate="tournament.creator">${ctx.t("tournament.creator") ?? "Creator"}</div>
-            <div id="tournamentCreator" class="font-semibold">—</div>
-          </div>
-        </div>
-
-        <div id="nextMatchSection" class="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4 mb-4 hidden">
-          <h3 class="font-semibold mb-2" data-translate="tournament.nextMatch">${ctx.t("tournament.nextMatch") ?? "Next Match"}</h3>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-              <div class="text-center">
-                <div id="nextPlayer1" class="font-semibold">Player 1</div>
-                <div class="text-xs text-white/60">vs</div>
-              </div>
-              <div class="text-2xl">⚔️</div>
-              <div class="text-center">
-                <div id="nextPlayer2" class="font-semibold">Player 2</div>
-              </div>
-            </div>
-            <button id="startMatchBtn" class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-sm font-medium transition" data-translate="tournament.startMatch">
-              ${ctx.t("tournament.startMatch") ?? "Start Match"}
-            </button>
-          </div>
-        </div>
-
-        <div class="bg-white/5 rounded-lg p-4">
-          <h3 class="font-semibold mb-4" data-translate="tournament.bracket">${ctx.t("tournament.bracket") ?? "Tournament Bracket"}</h3>
-          <div id="tournamentBracket" class="overflow-x-auto"></div>
-        </div>
-      </section>
-
       <!-- Tabs -->
       <div class="bg-white/5 border border-white/10 rounded-2xl backdrop-blur overflow-hidden">
         <div class="flex border-b border-white/10">
@@ -316,7 +266,7 @@ export async function mount(el, ctx) {
             btn.addEventListener('click', () => viewTournament(parseInt(btn.dataset.id)));
         });
         container.querySelectorAll('.join-t').forEach(btn => {
-            btn.addEventListener('click', () => showJoinModal(parseInt(btn.dataset.id)));
+            btn.addEventListener('click', () => joinTournament(parseInt(btn.dataset.id)));
         });
         container.querySelectorAll('.leave-t').forEach(btn => {
             btn.addEventListener('click', () => leaveTournament(parseInt(btn.dataset.id)));
@@ -476,133 +426,6 @@ export async function mount(el, ctx) {
         const t = r.data;
         currentTournament = t;
         showTournamentDetailsModal(t);
-        if (t.status === 'active' || t.status === 'completed' || t.status === 'finished') {
-            renderCurrentTournamentSection(t);
-        }
-    }
-    function renderCurrentTournamentSection(t) {
-        const sec = $('#currentTournamentSection');
-        if (!sec)
-            return;
-        sec.classList.remove('hidden');
-        $('#tournamentName').textContent = t.name;
-        $('#tournamentPlayers').textContent = String(t.participants?.length ?? t.current_players ?? 0);
-        $('#tournamentRound').textContent = String(t.current_round ?? t.current_round ?? 0);
-        $('#tournamentCreator').textContent = t.creator_name || 'Unknown';
-        const statusEl = $('#tournamentStatus');
-        if (statusEl) {
-            statusEl.className = `px-3 py-1 rounded-full text-xs font-medium text-white/60`;
-            statusEl.innerHTML = `<span>${escapeHtml(String(t.status))}</span>`;
-        }
-        updateNextMatch();
-        renderTournamentBracket(t);
-    }
-    function renderTournamentBracket(t) {
-        const bracket = $('#tournamentBracket');
-        if (!bracket || !t)
-            return;
-        bracket.innerHTML = '';
-        if (!t.matches || t.matches.length === 0) {
-            bracket.innerHTML = `<div class="text-center text-white/60" data-translate="tournament.noMatches">${ctx.t("tournament.noMatches") ?? "No matches yet"}</div>`;
-            return;
-        }
-        // group by round
-        const rounds = {};
-        for (const m of t.matches) {
-            rounds[m.round] = rounds[m.round] || [];
-            rounds[m.round].push(m);
-        }
-        const container = document.createElement('div');
-        container.className = 'flex gap-8 overflow-x-auto pb-4';
-        const roundKeys = Object.keys(rounds).map(k => parseInt(k)).sort((a, b) => a - b);
-        // Función para obtener el nombre de la ronda
-        function getRoundName(roundNumber, totalRounds) {
-            const maxPlayers = t.max_players || 0;
-            if (totalRounds === 1) {
-                return ctx.t("tournament.final") ?? "Final";
-            }
-            if (roundNumber === totalRounds) {
-                return ctx.t("tournament.final") ?? "Final";
-            }
-            if (roundNumber === totalRounds - 1) {
-                return ctx.t("tournament.semifinals") ?? "Semifinals";
-            }
-            if (roundNumber === totalRounds - 2 && maxPlayers >= 8) {
-                return ctx.t("tournament.quarterfinals") ?? "Quarterfinals";
-            }
-            // Para rondas anteriores, usar número específico si existe, sino genérico
-            const specificKey = `tournament.round${roundNumber}`;
-            const specificTranslation = ctx.t(specificKey);
-            if (specificTranslation && specificTranslation !== specificKey) {
-                return specificTranslation;
-            }
-            return `${ctx.t("tournament.round") ?? "Round"} ${roundNumber}`;
-        }
-        const totalRounds = Math.max(...roundKeys);
-        for (const rk of roundKeys) {
-            const col = document.createElement('div');
-            col.className = 'flex flex-col gap-4 min-w-max';
-            const header = document.createElement('h4');
-            header.className = 'text-sm font-medium text-white/60 text-center mb-2';
-            header.textContent = getRoundName(rk, totalRounds);
-            col.appendChild(header);
-            for (const match of rounds[rk]) {
-                const card = document.createElement('div');
-                card.className = `border border-white/20 rounded-lg p-3 bg-white/5 ${match.winner_id ? 'bg-green-500/10 border-green-500/30' : ''}`;
-                card.innerHTML = `
-          <div class="space-y-2">
-            <div class="flex items-center justify-between ${match.winner_id === match.player1_id ? 'text-green-300 font-semibold' : ''}">
-              <span>${escapeHtml(match.player1_alias || 'TBD')}</span>
-              ${match.winner_id === match.player1_id ? '<span>🏆</span>' : ''}
-            </div>
-            <div class="border-t border-white/20"></div>
-            <div class="flex items-center justify-between ${match.winner_id === match.player2_id ? 'text-green-300 font-semibold' : ''}">
-              <span>${escapeHtml(match.player2_alias || 'TBD')}</span>
-              ${match.winner_id === match.player2_id ? '<span>🏆</span>' : ''}
-            </div>
-          </div>
-        `;
-                col.appendChild(card);
-            }
-            container.appendChild(col);
-        }
-        bracket.appendChild(container);
-    }
-    function updateNextMatch() {
-        if (!currentTournament?.matches)
-            return;
-        const curRound = currentTournament.current_round ?? 1;
-        const pending = currentTournament.matches.filter(m => m.round === curRound && !m.winner_id);
-        const next = pending[0];
-        const section = $('#nextMatchSection');
-        if (!next) {
-            section?.classList.add('hidden');
-            return;
-        }
-        $('#nextPlayer1').textContent = next.player1_alias || 'TBD';
-        $('#nextPlayer2').textContent = next.player2_alias || 'TBD';
-        section?.classList.remove('hidden');
-        const startBtn = $('#startMatchBtn');
-        if (startBtn) {
-            startBtn.replaceWith(startBtn.cloneNode(true));
-            const newStartBtn = $('#startMatchBtn');
-            newStartBtn?.addEventListener('click', () => {
-                // DEBUG MEJORADO
-                console.log('Next match object:', next);
-                console.log('player1_participant_id:', next.player1_participant_id);
-                console.log('player2_participant_id:', next.player2_participant_id);
-                const params = new URLSearchParams({
-                    matchId: String(next.id),
-                    tournamentId: String(currentTournament.id),
-                    player1: next.player1_alias || 'Player 1',
-                    player2: next.player2_alias || 'Player 2',
-                    player1Id: String(next.player1_participant_id || ''), // USAR participant_id
-                    player2Id: String(next.player2_participant_id || '') // USAR participant_id
-                });
-                console.log('All params:', params.toString());
-                ctx.navigate(`/tournament-pong?${params.toString()}`);
-            });
-        }
     }
     function showTournamentDetailsModal(t) {
         // create modal HTML similar to original; keep it simple
@@ -620,6 +443,7 @@ export async function mount(el, ctx) {
         const isJoined = t.is_joined === 1;
         const isCreator = t.is_creator === 1;
         const canJoin = t.status === 'registration' && !isJoined && !isCreator;
+        const canStart = isCreator && t.status === 'registration'; // Solo permitir iniciar manualmente
         let statusText = escapeHtml(String(t.status));
         let statusClass = 'px-2 py-1 rounded-full text-xs font-medium text-white/60';
         if (isJoined && !isCreator) {
@@ -631,7 +455,7 @@ export async function mount(el, ctx) {
             statusClass = 'px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30';
         }
         modal.innerHTML = `
-    <div class="bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/30 rounded-2xl p-6 max-w-2xl w-full mx-4 backdrop-blur-xl max-h-[90vh] overflow-y-auto relative">
+    <div class="bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/30 rounded-2xl p-6 max-w-4xl w-full mx-4 backdrop-blur-xl max-h-[90vh] overflow-y-auto relative">
       <button onclick="document.getElementById('tournamentDetailsModal')?.remove()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60">✕</button>
       <h2 class="text-2xl font-semibold mb-2">${escapeHtml(t.name)}</h2>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -641,12 +465,14 @@ export async function mount(el, ctx) {
         <div class="bg-white/5 rounded-lg p-4"><div class="text-sm text-white/60 mb-1" data-translate="tournament.creator">${ctx.t("tournament.creator") ?? "Creator"}</div><div class="font-semibold">${escapeHtml(t.creator_name || (ctx.t("tournament.unknown") ?? "Unknown"))}</div></div>
       </div>
       <div class="mb-6"><h3 class="text-lg font-semibold mb-4" data-translate="tournament.participants">${ctx.t("tournament.participants") ?? "Participants"} (${t.participants?.length || 0})</h3><div class="space-y-2 max-h-48 overflow-y-auto">${participantsHtml}</div></div>
-      ${(t.status === 'active' || t.status === 'completed' || t.status === 'finished') ? `<div class="mb-6"><h3 class="text-lg font-semibold mb-4" data-translate="tournament.bracket">${ctx.t("tournament.bracket") ?? "Bracket"}</h3><div class="bg-white/5 rounded-lg p-4">${renderBracketPreviewHtml(t)}</div></div>` : ''}
+      ${(t.status === 'active' || t.status === 'completed' || t.status === 'finished') ? `<div class="mb-6"><h3 class="text-lg font-semibold mb-4" data-translate="tournament.bracket">${ctx.t("tournament.bracket") ?? "Tournament Bracket"}</h3><div class="bg-white/5 rounded-lg p-4 max-h-96 overflow-auto">${renderBracketPreviewHtml(t)}</div></div>` : ''}
       <div class="flex gap-3">
-        ${isCreator ? `<button id="startTournamentBtn" class="flex-1 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500" data-translate="tournament.startAdvance">${ctx.t("tournament.startAdvance") ?? "Start/Advance"}</button>` : ''}
+        ${canStart ? `<button id="startTournamentBtn" class="flex-1 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500" data-translate="tournament.start">${ctx.t("tournament.start") ?? "Start Tournament"}</button>` : ''}
         ${canJoin ? `<button id="joinFromDetailsBtn" class="flex-1 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500" data-translate="tournament.join">${ctx.t("tournament.join") ?? "Join"}</button>` : ''}
         ${isJoined && !isCreator ? `<button id="leaveFromDetailsBtn" class="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500" data-translate="tournament.leave">${ctx.t("tournament.leave") ?? "Leave"}</button>` : ''}
-        ${isCreator ? `<button id="deleteTournamentBtn" class="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500" data-translate="tournament.delete">${ctx.t("tournament.delete") ?? "Delete"}</button>` : ''}
+        ${t.status === 'finished' ? `<div class="flex-1 px-4 py-2 rounded-lg bg-yellow-600/20 text-yellow-300 border border-yellow-600/30 text-center">${ctx.t("tournament.completed") ?? "Completed"} ${t.winner_name ? `- ${ctx.t("tournament.champion") ?? "Champion"}: ${t.winner_name}` : ''}</div>` : ''}
+        ${t.status === 'active' ? `<div class="flex-1 px-4 py-2 rounded-lg bg-blue-600/20 text-blue-300 border border-blue-600/30 text-center">${ctx.t("tournament.inProgress") ?? "In Progress"} - ${ctx.t("tournament.round") ?? "Round"} ${t.current_round}</div>` : ''}
+        ${isCreator && t.status !== 'finished' && t.status !== 'active' ? `<button id="deleteTournamentBtn" class="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500" data-translate="tournament.delete">${ctx.t("tournament.delete") ?? "Delete"}</button>` : ''}
       </div>
     </div>
   `;
@@ -654,7 +480,7 @@ export async function mount(el, ctx) {
         // bind advanced actions
         document.getElementById('joinFromDetailsBtn')?.addEventListener('click', () => {
             if (t.id)
-                showJoinModal(t.id);
+                joinTournament(t.id);
         });
         // Añadir event listener para el botón de abandonar
         document.getElementById('leaveFromDetailsBtn')?.addEventListener('click', async () => {
@@ -670,22 +496,44 @@ export async function mount(el, ctx) {
             modal.remove();
         });
         document.getElementById('startTournamentBtn')?.addEventListener('click', async () => {
-            modal.remove();
             if (t.status === 'registration') {
-                // start
                 if (!confirm(ctx.t("tournament.confirmStart") ?? 'Start tournament?'))
                     return;
+                modal.remove();
                 await startTournament(t.id);
             }
-            else if (t.status === 'active') {
-                // show advance check
-                await checkAndShowAdvanceButton(t.id);
-            }
+        });
+        // Add event listeners for play match buttons
+        modal.querySelectorAll('.play-match-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const matchId = btn.dataset.matchId;
+                const tournamentId = btn.dataset.tournamentId;
+                const player1 = btn.dataset.player1;
+                const player2 = btn.dataset.player2;
+                const player1Id = btn.dataset.player1Id;
+                const player2Id = btn.dataset.player2Id;
+                if (matchId && tournamentId && player1 && player2 && player1Id && player2Id) {
+                    const params = new URLSearchParams({
+                        matchId,
+                        tournamentId,
+                        player1,
+                        player2,
+                        player1Id,
+                        player2Id
+                    });
+                    modal.remove();
+                    ctx.navigate(`/tournament-pong?${params.toString()}`);
+                }
+                else {
+                    alert('Missing match parameters');
+                }
+            });
         });
     }
     function renderBracketPreviewHtml(t) {
         if (!t.matches || t.matches.length === 0)
             return `<div class="text-center text-white/60 py-4" data-translate="tournament.noMatches">${ctx.t("tournament.noMatches") ?? "No matches yet"}</div>`;
+        // Group matches by round
         const rounds = {};
         for (const m of t.matches) {
             rounds[m.round] = rounds[m.round] || [];
@@ -715,52 +563,59 @@ export async function mount(el, ctx) {
             return `${ctx.t("tournament.round") ?? "Round"} ${roundNumber}`;
         }
         const totalRounds = Math.max(...keys);
-        return keys.map(rk => {
+        // Create the bracket structure for the modal
+        const columnsHtml = keys.map(rk => {
             const roundName = getRoundName(rk, totalRounds);
-            const matchesHtml = rounds[rk].map(m => `<div class="flex items-center justify-between bg-white/5 rounded p-3 text-sm mb-2"><div>${escapeHtml(m.player1_alias || 'TBD')} vs ${escapeHtml(m.player2_alias || 'TBD')}</div><div class="text-xs text-white/60">${m.winner_id ? (ctx.t("tournament.winner") ?? "Winner") + ': ' + escapeHtml(m.winner_alias || '') : (ctx.t("tournament.pending") ?? "Pending")}</div></div>`).join('');
-            return `<div><h4 class="text-sm font-medium text-white/80 mb-2">${roundName}</h4>${matchesHtml}</div>`;
+            const matchesHtml = rounds[rk].map(match => {
+                // Check if current user is in this match and if it's pending
+                const isUserInMatch = currentUser && (match.player1_user_id === currentUser.id ||
+                    match.player2_user_id === currentUser.id);
+                const canPlay = !match.winner_id && isUserInMatch && match.player1_user_id && match.player2_user_id;
+                return `
+        <div class="border border-white/20 rounded-lg p-3 bg-white/5 ${match.winner_id ? 'bg-green-500/10 border-green-500/30' : ''} ${canPlay ? 'bg-blue-500/10 border-blue-500/30' : ''} mb-3">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between ${match.winner_id === match.player1_id ? 'text-green-300 font-semibold' : ''}">
+              <span>${escapeHtml(match.player1_alias || 'TBD')}</span>
+              ${match.winner_id === match.player1_id ? '<span>🏆</span>' : ''}
+            </div>
+            <div class="border-t border-white/20"></div>
+            <div class="flex items-center justify-between ${match.winner_id === match.player2_id ? 'text-green-300 font-semibold' : ''}">
+              <span>${escapeHtml(match.player2_alias || 'TBD')}</span>
+              ${match.winner_id === match.player2_id ? '<span>🏆</span>' : ''}
+            </div>
+            ${canPlay ? `
+            <div class="border-t border-white/20 mt-2 pt-2">
+              <button 
+                class="play-match-btn w-full px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-sm font-medium transition" 
+                data-match-id="${match.id}" 
+                data-tournament-id="${t.id}"
+                data-player1="${escapeHtml(match.player1_alias || 'Player 1')}"
+                data-player2="${escapeHtml(match.player2_alias || 'Player 2')}"
+                data-player1-id="${match.player1_participant_id || ''}"
+                data-player2-id="${match.player2_participant_id || ''}"
+                data-translate="tournament.playMatch">
+                ${ctx.t("tournament.playMatch") ?? "Play Match"}
+              </button>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        `;
+            }).join('');
+            return `
+        <div class="flex flex-col gap-2 min-w-max">
+          <h4 class="text-sm font-medium text-white/60 text-center mb-2">${roundName}</h4>
+          ${matchesHtml}
+        </div>
+      `;
         }).join('');
+        return `<div class="flex gap-6 overflow-x-auto pb-4">${columnsHtml}</div>`;
     }
-    function showJoinModal(tournamentId) {
-        const existing = document.getElementById('joinTournamentModal');
-        if (existing)
-            existing.remove();
-        const modal = document.createElement('div');
-        modal.id = 'joinTournamentModal';
-        modal.className = 'fixed inset-0 bg-black/50 backdrop-blur z-50 flex items-center justify-center';
-        modal.innerHTML = `
-      <div class="bg-white/10 border border-white/20 rounded-2xl p-6 max-w-md w-full mx-4 backdrop-blur-xl">
-        <h2 class="text-xl font-semibold mb-4" data-translate="tournament.joinTitle">${ctx.t("tournament.joinTitle") ?? "Join Tournament"}</h2>
-        <form id="joinTournamentForm" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium mb-2" data-translate="tournament.yourAlias">${ctx.t("tournament.yourAlias") ?? "Your Alias"}</label>
-            <input type="text" id="joinAliasInput" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg" placeholder="${ctx.t("tournament.aliasPlaceholder") ?? "Alias"}" required>
-          </div>
-          <div class="flex gap-3 pt-4">
-            <button type="button" id="cancelJoinBtn" class="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20" data-translate="tournament.cancel">${ctx.t("tournament.cancel") ?? "Cancel"}</button>
-            <button type="submit" class="flex-1 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500" data-translate="tournament.join">${ctx.t("tournament.join") ?? "Join"}</button>
-          </div>
-        </form>
-      </div>
-    `;
-        document.body.appendChild(modal);
-        modal.querySelector('#cancelJoinBtn')?.addEventListener('click', () => modal.remove());
-        modal.querySelector('#joinTournamentForm')?.addEventListener('submit', (e) => handleJoinTournament(e, tournamentId));
-    }
-    async function handleJoinTournament(e, tournamentId) {
-        e.preventDefault();
-        const modal = document.getElementById('joinTournamentModal');
-        if (!modal)
+    async function joinTournament(tournamentId) {
+        if (!confirm(ctx.t("tournament.confirmJoin") ?? 'Join this tournament?'))
             return;
-        const aliasEl = modal.querySelector('#joinAliasInput');
-        if (!aliasEl)
-            return;
-        const alias = aliasEl.value.trim();
-        if (!alias)
-            return alert(ctx.t("tournament.aliasRequired") ?? 'Alias required');
-        const r = await apiFetch(`/api/tournaments/${tournamentId}/join`, { method: 'POST', body: JSON.stringify({ alias }) });
+        const r = await apiFetch(`/api/tournaments/${tournamentId}/join`, { method: 'POST', body: JSON.stringify({}) });
         if (r.ok) {
-            document.getElementById('joinTournamentModal')?.remove();
             // Recargar AMBAS listas para actualizar el estado
             await loadAvailableTournaments();
             if (activeTab === 'my') {
@@ -818,76 +673,19 @@ export async function mount(el, ctx) {
                 console.log('=== END TOURNAMENT AFTER START ===');
                 const updatedTournament = tournamentResponse.data;
                 currentTournament = updatedTournament;
-                renderCurrentTournamentSection(updatedTournament);
             }
             alert(r.data?.message || (ctx.t("tournament.startSuccess") ?? 'Tournament started'));
+            // Mostrar el modal actualizado con el nuevo status después del alert
+            if (tournamentResponse.ok) {
+                const updatedTournament = tournamentResponse.data;
+                setTimeout(() => {
+                    showTournamentDetailsModal(updatedTournament);
+                }, 200);
+            }
         }
         else {
             console.error('Error starting tournament:', r.data);
             alert(r.data?.error || (ctx.t("tournament.startError") ?? 'Error starting tournament'));
-        }
-    }
-    async function checkAndShowAdvanceButton(tournamentId) {
-        const r = await apiFetch(`/api/tournaments/${tournamentId}/can-advance-round`, { method: 'GET' });
-        if (!r.ok) {
-            alert(r.data?.error || (ctx.t("tournament.checkError") ?? 'Error checking'));
-            return;
-        }
-        const data = r.data;
-        if (data.canAdvance) {
-            if (!confirm(ctx.t("tournament.confirmAdvance") ?? 'Advance to next round?'))
-                return;
-            await advanceTournamentRound(tournamentId);
-        }
-        else if (data.isCompleted) {
-            alert(ctx.t("tournament.completed") ?? 'Tournament completed — show winner.');
-            await showTournamentWinner(tournamentId);
-        }
-        else {
-            alert(`${ctx.t("tournament.cannotAdvance") ?? "Cannot advance"}: ${data.incompleteMatches} ${ctx.t("tournament.incompleteMatches") ?? "incomplete matches"}`);
-        }
-    }
-    async function advanceTournamentRound(tournamentId) {
-        const r = await apiFetch(`/api/tournaments/${tournamentId}/advance-round`, { method: 'POST' });
-        if (r.ok) {
-            await loadAvailableTournaments();
-            await loadMyTournaments();
-            alert(r.data?.message || `${ctx.t("tournament.advancedTo") ?? "Advanced to round"} ${r.data?.newRound}`);
-        }
-        else {
-            alert(r.data?.error || (ctx.t("tournament.advanceError") ?? 'Error advancing round'));
-        }
-    }
-    async function showTournamentWinner(tournamentId) {
-        const r = await apiFetch(`/api/tournaments/${tournamentId}`, { method: 'GET' });
-        if (!r.ok) {
-            alert(r.data?.error || (ctx.t("tournament.loadError") ?? 'Error loading tournament'));
-            return;
-        }
-        const t = r.data;
-        if (t.status === 'finished' && t.winner_id) {
-            let winnerName = null;
-            if (Array.isArray(t.participants)) {
-                const p = t.participants.find((part) => part.user_id === t.winner_id);
-                if (p) {
-                    winnerName = p.display_name || p.alias || null;
-                }
-            }
-            if (!winnerName) {
-                try {
-                    const ru = await apiFetch(`/api/users/${t.winner_id}`, { method: 'GET' });
-                    if (ru.ok && ru.data && ru.data.user) {
-                        winnerName = ru.data.user.display_name || ru.data.user.username || null;
-                    }
-                }
-                catch (err) {
-                    console.error('Error fetching winner user:', err);
-                }
-            }
-            alert(`${ctx.t("tournament.winner") ?? "Winner"}: ${winnerName ?? t.winner_id}`);
-        }
-        else {
-            alert(ctx.t("tournament.notFinished") ?? 'Tournament not finished yet or winner not defined');
         }
     }
     // small helpers

@@ -192,5 +192,9 @@
   "tournament.champion": "Campeón",
   "tournament.participant": "Participante",
   "tournament.noWinner": "Sin ganador",
-  "tournament.completed": "Completado"
+  "tournament.completed": "Completado",
+  "tournament.confirmJoin": "¿Unirse a este torneo?",
+  "tournament.playMatch": "Jugar Partido",
+  "tournament.inProgress": "En Progreso",
+  "tournament.start": "Iniciar Torneo"
 }

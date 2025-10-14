@@ -191,5 +191,9 @@
   "tournament.notFinished": "Tournoi pas encore terminé ou gagnant non défini",
   "tournament.champion": "Champion",
   "tournament.participant": "Participant",
-  "tournament.noWinner": "Aucun gagnant"
+  "tournament.noWinner": "Aucun gagnant",
+  "tournament.confirmJoin": "Rejoindre ce tournoi ?",
+  "tournament.playMatch": "Jouer le Match",
+  "tournament.inProgress": "En Cours",
+  "tournament.start": "Démarrer le Tournoi"
 }

@@ -105,13 +105,17 @@ async function tournamentsRoutes(app, opts) {
 		}
 
 		const tournamentId = parseInt(req.params.id);
-		const { alias } = req.body;
-
-		if (!alias || alias.trim().length === 0) {
-			return reply.code(400).send({ error: 'Alias is required' });
-		}
 
 		try {
+			// Get user's display_name
+			const user = db.prepare(`
+				SELECT display_name FROM users WHERE id = ?
+			`).get(uid);
+
+			if (!user || !user.display_name) {
+				return reply.code(400).send({ error: 'User not found or missing display name' });
+			}
+
 			// Check if tournament exists and is joinable
 			const tournament = db.prepare(`
 				SELECT * FROM tournaments WHERE id = ? AND status = 'registration'
@@ -139,20 +143,20 @@ async function tournamentsRoutes(app, opts) {
 				return reply.code(400).send({ error: 'Tournament is full' });
 			}
 
-			// Check if alias is already taken in this tournament
-			const aliasExists = db.prepare(`
+			// Check if display_name is already taken in this tournament (unlikely but possible)
+			const nameExists = db.prepare(`
 				SELECT * FROM tournament_participants WHERE tournament_id = ? AND alias = ?
-			`).get(tournamentId, alias.trim());
+			`).get(tournamentId, user.display_name);
 
-			if (aliasExists) {
-				return reply.code(400).send({ error: 'Alias already taken in this tournament' });
+			if (nameExists) {
+				return reply.code(400).send({ error: 'A user with the same display name is already in this tournament' });
 			}
 
-			// Add participant
+			// Add participant using display_name as alias
 			const result = db.prepare(`
 				INSERT INTO tournament_participants (tournament_id, user_id, alias)
 				VALUES (?, ?, ?)
-			`).run(tournamentId, uid, alias.trim());
+			`).run(tournamentId, uid, user.display_name);
 
 			// Get updated participant count
 			const updatedCount = db.prepare(`
@@ -181,11 +185,13 @@ async function tournamentsRoutes(app, opts) {
     const tournament = db.prepare(`
       SELECT t.*,
         u.display_name as creator_name,
+        winner_u.display_name as winner_name,
         COUNT(DISTINCT tp.id) as current_players,
         CASE WHEN tp_user.user_id IS NOT NULL THEN 1 ELSE 0 END as is_joined,
         CASE WHEN t.creator_id = ? THEN 1 ELSE 0 END as is_creator
       FROM tournaments t
       LEFT JOIN users u ON t.creator_id = u.id
+      LEFT JOIN users winner_u ON t.winner_id = winner_u.id
       LEFT JOIN tournament_participants tp ON t.id = tp.tournament_id
       LEFT JOIN tournament_participants tp_user ON t.id = tp_user.tournament_id AND tp_user.user_id = ?
       WHERE t.id = ?
@@ -587,15 +593,24 @@ async function tournamentsRoutes(app, opts) {
 			console.log(`Tournament ${tournamentId}: Round ${currentRound} complete with ${winners.length} winners`);
 			
 			if (winners.length <= 1) {
-				const winnerId = winners.length === 1 ? winners[0].winner_id : null;
+				let winnerUserId = null;
+				
+				if (winners.length === 1) {
+					// Convertir participant_id a user_id
+					const winnerParticipant = db.prepare(`
+						SELECT user_id FROM tournament_participants WHERE id = ?
+					`).get(winners[0].winner_id);
+					
+					winnerUserId = winnerParticipant ? winnerParticipant.user_id : null;
+				}
 
 				db.prepare(`
 					UPDATE tournaments
 					SET status = 'finished', winner_id = ?, completed_at = datetime('now')
 					WHERE id = ?
-				`).run(winnerId, tournamentId);
+				`).run(winnerUserId, tournamentId);
 
-				console.log(`Tournament ${tournamentId} finished with winner: ${winnerId}`);
+				console.log(`Tournament ${tournamentId} finished with winner user_id: ${winnerUserId}`);
 
 				const participants = db.prepare(`
 					SELECT user_id FROM tournament_participants WHERE tournament_id = ?
@@ -606,7 +621,7 @@ async function tournamentsRoutes(app, opts) {
 						app.websocketPush(participant.user_id, {
 							type: 'tournament_finished',
 							tournamentId,
-							winnerId
+							winnerId: winnerUserId
 						});
 					}
 				}
@@ -661,203 +676,9 @@ async function tournamentsRoutes(app, opts) {
 		}
 	}
 
-	// GET /api/tournaments/:id/can-advance-round - Check if tournament can advance to next round
-	app.get('/api/tournaments/:id/can-advance-round', async (req, reply) => {
-		const { id } = req.params;
-		const uid = req.session?.uid;
 
-		if (!uid) {
-			return reply.code(401).send({ error: 'Not authenticated' });
-		}
 
-		try {
-			// Verificar que el usuario sea el creador del torneo
-			const tournament = db.prepare(`
-				SELECT * FROM tournaments WHERE id = ? AND creator_id = ?
-			`).get(id, uid);
 
-			if (!tournament) {
-				return reply.code(404).send({ error: 'Tournament not found or you are not the creator' });
-			}
-
-			if (tournament.status !== 'active') {
-				return reply.code(400).send({ error: 'Tournament is not active' });
-			}
-
-			// Verificar si todas las partidas de la ronda actual están completadas
-			const incompleteMatches = db.prepare(`
-				SELECT COUNT(*) as count
-				FROM tournament_matches
-				WHERE tournament_id = ? AND round = ? AND winner_id IS NULL
-			`).get(id, tournament.current_round);
-
-			// Obtener ganadores de la ronda actual
-			const winners = db.prepare(`
-				SELECT winner_id FROM tournament_matches
-				WHERE tournament_id = ? AND round = ? AND winner_id IS NOT NULL
-			`).all(id, tournament.current_round);
-
-			const canAdvance = incompleteMatches.count === 0 && winners.length > 1;
-			const isCompleted = incompleteMatches.count === 0 && winners.length <= 1;
-
-			return {
-				canAdvance,
-				isCompleted,
-				currentRound: tournament.current_round,
-				incompleteMatches: incompleteMatches.count,
-				winners: winners.length
-			};
-		} catch (error) {
-			console.error('Error checking tournament advancement:', error);
-			return reply.code(500).send({ error: 'Error checking tournament advancement' });
-		}
-	});
-
-	// POST /api/tournaments/:id/advance-round - Advance tournament to next round
-	app.post('/api/tournaments/:id/advance-round', async (req, reply) => {
-		const { id } = req.params;
-		const uid = req.session?.uid;
-
-		if (!uid) {
-			return reply.code(401).send({ error: 'Not authenticated' });
-		}
-
-		try {
-			// Verificar que el usuario sea el creador del torneo
-			const tournament = db.prepare(`
-				SELECT * FROM tournaments WHERE id = ? AND creator_id = ?
-			`).get(id, uid);
-
-			if (!tournament) {
-				return reply.code(404).send({ error: 'Tournament not found or you are not the creator' });
-			}
-
-			if (tournament.status !== 'active') {
-				return reply.code(400).send({ error: 'Tournament is not active' });
-			}
-
-			// Verificar si todas las partidas de la ronda actual están completadas
-			const incompleteMatches = db.prepare(`
-				SELECT COUNT(*) as count
-				FROM tournament_matches
-				WHERE tournament_id = ? AND round = ? AND winner_id IS NULL
-			`).get(id, tournament.current_round);
-
-			if (incompleteMatches.count > 0) {
-				return reply.code(400).send({ 
-					error: `There are still ${incompleteMatches.count} incomplete matches in round ${tournament.current_round}` 
-				});
-			}
-
-			// Obtener ganadores de la ronda actual
-			const winners = db.prepare(`
-				SELECT winner_id FROM tournament_matches
-				WHERE tournament_id = ? AND round = ? AND winner_id IS NOT NULL
-			`).all(id, tournament.current_round);
-
-			if (winners.length <= 1) {
-				// Torneo completado
-				if (winners.length === 1) {
-					const winner = db.prepare(`
-						SELECT tp.user_id, u.display_name 
-						FROM tournament_participants tp
-						JOIN users u ON tp.user_id = u.id
-						WHERE tp.id = ?
-					`).get(winners[0].winner_id);
-
-					db.prepare(`
-						UPDATE tournaments 
-						SET status = 'finished', winner_id = ?, completed_at = datetime('now')
-						WHERE id = ?
-					`).run(winner.user_id, id);
-
-					return reply.send({ 
-						success: true, 
-						message: 'Tournament completed!',
-						isCompleted: true,
-						winnerId: winner.user_id,
-						winnerName: winner.display_name
-					});
-				} else {
-					return reply.code(400).send({ error: 'No winners found in current round' });
-				}
-			}
-
-			// Crear partidas de la siguiente ronda
-			const nextRound = tournament.current_round + 1;
-			
-			// Barajar ganadores aleatoriamente para la siguiente ronda
-			const shuffledWinners = [...winners].sort(() => Math.random() - 0.5);
-			const nextMatches = [];
-			let position = 1;
-
-			for (let i = 0; i < shuffledWinners.length; i += 2) {
-				const player1 = shuffledWinners[i];
-				const player2 = shuffledWinners[i + 1] || null;
-
-				const matchResult = db.prepare(`
-					INSERT INTO tournament_matches (tournament_id, round, position, player1_id, player2_id)
-					VALUES (?, ?, ?, ?, ?)
-				`).run(id, nextRound, position, player1.winner_id, player2?.winner_id || null);
-
-				nextMatches.push({
-					id: matchResult.lastInsertRowid,
-					round: nextRound,
-					position,
-					player1_id: player1.winner_id,
-					player2_id: player2?.winner_id || null
-				});
-
-				position++;
-			}
-
-			// Actualizar la ronda actual del torneo
-			db.prepare(`
-				UPDATE tournaments SET current_round = ? WHERE id = ?
-			`).run(nextRound, id);
-
-			// Enviar notificaciones a los jugadores de la nueva ronda
-			for (const match of nextMatches) {
-				if (match.player1_id && match.player2_id) {
-					setTimeout(async () => {
-						try {
-							// Obtener información de los jugadores para las notificaciones
-							const matchInfo = db.prepare(`
-								SELECT tm.*, 
-											 t.name as tournament_name,
-											 p1.alias as player1_alias, p1.user_id as player1_user_id,
-											 p2.alias as player2_alias, p2.user_id as player2_user_id
-								FROM tournament_matches tm
-								JOIN tournaments t ON tm.tournament_id = t.id
-								JOIN tournament_participants p1 ON tm.player1_id = p1.id
-								JOIN tournament_participants p2 ON tm.player2_id = p2.id
-								WHERE tm.id = ?
-							`).get(match.id);
-
-							if (matchInfo) {
-								await sendTournamentNotification(app, matchInfo.player1_user_id, matchInfo.tournament_name, nextRound, matchInfo.player2_alias);
-								await sendTournamentNotification(app, matchInfo.player2_user_id, matchInfo.tournament_name, nextRound, matchInfo.player1_alias);
-							}
-						} catch (error) {
-							console.error('Error sending notifications for new round:', error);
-						}
-					}, 1000);
-				}
-			}
-
-			return reply.send({ 
-				success: true, 
-				message: `Tournament advanced to round ${nextRound}!`,
-				newRound: nextRound,
-				matches: nextMatches.length,
-				isCompleted: false
-			});
-
-		} catch (error) {
-			console.error('Error advancing tournament round:', error);
-			return reply.code(500).send({ error: 'Error advancing tournament round' });
-		}
-	});
 }
 
 // Helper function to start a tournament
