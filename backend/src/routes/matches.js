@@ -47,7 +47,7 @@ async function routes(fastify) {
         // Usamos la inserción simple sin is_draw para compatibilidad
         const info = db.prepare(`
           INSERT INTO matches (game, player1_id, player2_id, winner_id, details)
-          VALUES (?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?)
         `).run('pong', actorId, 0, winner_id, details);
 
         const row = db.prepare('SELECT * FROM matches WHERE id = ?').get(info.lastInsertRowid);
