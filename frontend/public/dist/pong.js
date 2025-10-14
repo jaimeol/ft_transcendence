@@ -1,111 +1,120 @@
 import { currentTranslations, initializeLanguages } from "./translate.js";
 export async function mount(el, ctx) {
+    // Inicializar traducciones
+    await initializeLanguages();
+    // Redirigir a pong2v2.ts si es un juego 2v2
+    const url = new URL(window.location.href);
+    let mode = url.searchParams.get('mode');
+    let players = url.searchParams.get('players');
+    let pvpPlayers = url.searchParams.get('pvp_players');
+    if ((mode === 'ai' && players === '2') || (mode === 'pvp' && pvpPlayers === '2')) {
+        const pong2v2Module = await import('./pong2v2.js');
+        return pong2v2Module.mount(el, ctx);
+    }
     el.innerHTML = `
-	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
-		<div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-			<a href="/home" class="flex items-center gap-2" data-nav>
-				<div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
-				<span class="font-semibold">ft_transcendence</span>
-			</a>
+    <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+        <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/home" class="flex items-center gap-2" data-nav>
+                <div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+                <span class="font-semibold">ft_transcendence</span>
+            </a>
 
-			<div class="flex items-center gap-3">
-				<div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
-					<button class="hover:underline" data-lang="en">EN</button>
-					<span class="mx-1 text-white/40">|</span>
-					<button class="hover:underline" data-lang="es">ES</button>
-					<span class="mx-1 text-white/40">|</span>
-					<button class="hover:underline" data-lang="fr">FR</button>
-				</div>
-				<button id="logoutBtn"
+            <div class="flex items-center gap-3">
+                <div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+                    <button class="hover:underline" data-lang="en">EN</button>
+                    <span class="mx-1 text-white/40">|</span>
+                    <button class="hover:underline" data-lang="es">ES</button>
+                    <span class="mx-1 text-white/40">|</span>
+                    <button class="hover:underline" data-lang="fr">FR</button>
+                </div>
+                <button id="logoutBtn"
           class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
           data-translate="home.logout">
           Cerrar sesión
         </button>
-			</div>
-		</div>
-	</header>
+            </div>
+        </div>
+    </header>
 
-	<!-- Main -->
-	<main class="flex-1">
-		<div class="max-w-5xl mx-auto px-4 py-8">
-			<!-- Cabecera del juego -->
-			<div class="mb-6">
-			<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
-				<span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
-				Ft_Transcendence — Pong
-				</span>
-			</h1>
-			<div id="score" class="mt-2 text-white/70 text-lg font-mono">0 : 0</div>
-			</div>
+    <!-- Main -->
+    <main class="flex-1">
+        <div class="max-w-5xl mx-auto px-4 py-8">
+            <!-- Cabecera del juego -->
+            <div class="mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+                <span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
+                Ft_Transcendence — Pong
+                </span>
+            </h1>
+            <div id="score" class="mt-2 text-white/70 text-lg font-mono">0 : 0</div>
+            </div>
 
-			<!-- Contenedor del canvas -->
-			<section class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-4">
-			<div class="overflow-x-auto">
-				<!-- Contenedor relativo para canvas + overlay -->
-				<div class="relative w-full max-w-[1200px] mx-auto">
-				<canvas
-					id="pong"
-					width="1200"
-					height="800"
-					class="block w-full h-auto bg-gray-900"
-				></canvas>
-				<div
-					id="board-blocker"
-					class="absolute inset-0 bg-black z-40 hidden"
-				></div>
-				</div>
-			</div>
-			</section>
-		</div>
-	</main>
+            <!-- Contenedor del canvas -->
+            <section class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-4">
+            <div class="overflow-x-auto">
+                <!-- Contenedor relativo para canvas + overlay -->
+                <div class="relative w-full max-w-[1200px] mx-auto">
+                <canvas
+                    id="pong"
+                    width="1200"
+                    height="800"
+                    class="block w-full h-auto bg-gray-900"
+                ></canvas>
+                <div
+                    id="board-blocker"
+                    class="absolute inset-0 bg-black z-40 hidden"
+                ></div>
+                </div>
+            </div>
+            </section>
+        </div>
+    </main>
 
-	<div id="players-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
-		<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
-			<h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_players">Selecciona Jugadores</h2>
-			<div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-				<button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="1" data-translate="one_player"> 1 Jugador</button>
-				<button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="2" data-translate="two_players"> 2 Jugadores</button>
-			</div>
-		</div>
-	</div>
-	<!-- Overlay dificultad -->
-	<div id="difficulty-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate-fade-in">
-		<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
-			<h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_difficulty">Selecciona dificultad</h2>
-			<div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-				<button type="button" class="difficulty-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" data-translate="easy" data-level="easy">Fácil</button>
-				<button type="button" class="difficulty-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded" data-translate="medium" data-level="medium">Media</button>
-				<button type="button" class="difficulty-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" data-translate="hard" data-level="hard">Difícil</button>
-			</div>
-		</div>
-	</div>
+    <div id="players-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
+        <div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
+            <h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_players">Selecciona Jugadores</h2>
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
+                <button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="1" data-translate="one_player"> 1 Jugador</button>
+                <button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="2" data-translate="two_players"> 2 Jugadores</button>
+            </div>
+        </div>
+    </div>
+    <!-- Overlay dificultad -->
+    <div id="difficulty-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate-fade-in">
+        <div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
+            <h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_difficulty">Selecciona dificultad</h2>
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
+                <button type="button" class="difficulty-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" data-translate="easy" data-level="easy">Fácil</button>
+                <button type="button" class="difficulty-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded" data-translate="medium" data-level="medium">Media</button>
+                <button type="button" class="difficulty-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" data-translate="hard" data-level="hard">Difícil</button>
+            </div>
+        </div>
+    </div>
 
-	<!-- Overlay login PVP (reutilizado para 1v1 y pasos 2v2) -->
-	<div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
-		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
-			<h2 class="text-xl font-semibold mb-4" id="pvp-login-heading">${ctx.t("pvp.second_player")}</h2>
-			<form id="pvp-login-form" class="flex flex-col gap-3">
-			<input id="pvp-email" type="email" placeholder="Email"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-			<input id="pvp-password" type="password" placeholder="${ctx.t("auth.password") ?? "Contraseña"}"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-			<button type="submit"
-					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
-				${ctx.t("pvp.start_match") ?? "Empezar partida"}
-			</button>
-			</form>
-			<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
-		</div>
-	</div>
-	`;
+    <!-- Overlay login PVP -->
+    <div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h2 class="text-xl font-semibold mb-4" id="pvp-login-heading">${ctx.t("pvp.second_player")}</h2>
+            <form id="pvp-login-form" class="flex flex-col gap-3">
+            <input id="pvp-email" type="email" placeholder="Email"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+            <input id="pvp-password" type="password" placeholder="${ctx.t("auth.password") ?? "Contraseña"}"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+            <button type="submit"
+                    class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
+                ${ctx.t("pvp.start_match") ?? "Empezar partida"}
+            </button>
+            </form>
+            <p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
+        </div>
+    </div>
+    `;
     const subs = new AbortController();
     const on = (type, handler) => window.addEventListener(type, handler, { signal: subs.signal });
-    await initializeLanguages();
     // language buttons
     el.querySelectorAll('[data-lang]').forEach(btn => {
         btn.addEventListener('click', () => window.changeLanguage?.(btn.dataset.lang));
     });
-    // SPA nav binding for header link(s)
     el.addEventListener("click", (ev) => {
         const a = ev.target.closest('a[data-nav]');
         if (!a)
@@ -123,43 +132,28 @@ export async function mount(el, ctx) {
         }
     });
     /* -------------------------
-       Variables del juego (comunes)
+       Variables del juego
        ------------------------- */
     const canvas = el.querySelector('#pong');
     const ctx2d = canvas.getContext('2d');
     if (!ctx2d)
         throw new Error("Could not obtain 2dcontext");
     const paddleWidth = 10, paddleHeight = 120, ballRadius = 10;
-    const hPaddleWidth = 120, hPaddleHeight = 10; // horizontal paddles (para la segunda partida en duoAI / 2v2)
-    const INITIAL_BALL_SPEED = 10, MAX_BALL_SPEED = 20, paddleSpeed = 8, hPaddleSpeed = 6;
+    const INITIAL_BALL_SPEED = 5, MAX_BALL_SPEED = 10, paddleSpeed = 6;
     const keys = {};
     let leftPaddleY = (canvas.height - paddleHeight) / 2;
     let rightPaddleY = (canvas.height - paddleHeight) / 2;
-    let topPaddleX = (canvas.width - hPaddleWidth) / 2;
-    let bottomPaddleX = (canvas.width - hPaddleWidth) / 2;
     let ballX = canvas.width / 2, ballY = canvas.height / 2;
     let ballSpeedX = 0, ballSpeedY = 0;
-    // segundo (vertical/horizontal) juego
-    let ball2X = canvas.width / 2, ball2Y = canvas.height / 2;
-    let ball2SpeedX = 0, ball2SpeedY = 0;
     let leftScore = 0, rightScore = 0;
-    let topScore = 0, bottomScore = 0;
     let gameRunning = false, gameOver = false;
-    let gameOver1 = false, gameOver2 = false; // para duoAI (dos subpartidas)
     let savedThisGame = false;
     let gameStartTs = performance.now();
-    let secondPlayer = null, thirdPlayer = null, fourthPlayer = null;
+    let secondPlayer = null;
     let pvpReady = false;
-    /* --- LECTURA DE QUERY PARAMS (mode, players, pvp_players, level) --- */
-    const url = new URL(window.location.href);
-    let mode = url.searchParams.get('mode');
-    let players = url.searchParams.get('players'); // para isAI duo
-    let pvpPlayers = url.searchParams.get('pvp_players'); // para pvp 2
     let difficulty = url.searchParams.get('level');
     const isAI = mode === 'ai';
     const isPVP = mode === 'pvp';
-    const isPVP2v2 = isPVP && pvpPlayers === '2';
-    const duoAI = (isAI && players === '2') || isPVP2v2;
     if (isAI && !players) {
         const playersOverlay = $('#players-overlay');
         if (playersOverlay) {
@@ -175,7 +169,7 @@ export async function mount(el, ctx) {
         }
         return;
     }
-    console.log('Mode:', { isAI, isPVP, duoAI, isPVP2v2, players, pvpPlayers, difficulty });
+    console.log('Mode:', { isAI, isPVP, players, difficulty });
     function replaceQueryParam(k, v) {
         const u = new URL(window.location.href);
         u.searchParams.set(k, v);
@@ -198,37 +192,7 @@ export async function mount(el, ctx) {
                     body: JSON.stringify(body)
                 });
             };
-            // duoAI: guardar las dos subpartidas (horizontal + vertical)
-            if (duoAI && secondPlayer) {
-                // Partida horizontal (jugador "principal" vs IA)
-                const bodyH = {
-                    mode: isPVP ? 'pvp' : 'ai',
-                    game: 'pong',
-                    level: difficulty || null,
-                    score_left: leftScore,
-                    score_right: rightScore,
-                    score_user: leftScore,
-                    score_ai: rightScore,
-                    score_user_role: 'left',
-                    opponent_id: secondPlayer?.id ?? undefined,
-                    duration_ms: duration
-                };
-                await post(bodyH);
-                // Partida vertical (segundo jugador contra IA / otra pareja)
-                const bodyV = {
-                    mode: isPVP ? 'pvp' : 'ai',
-                    game: 'pong',
-                    level: difficulty || null,
-                    user_id: secondPlayer?.id ?? undefined,
-                    score_left: bottomScore,
-                    score_right: topScore,
-                    score_user: bottomScore,
-                    score_ai: topScore,
-                    duration_ms: duration
-                };
-                await post(bodyV);
-            }
-            else if (isAI) {
+            if (isAI) {
                 // simple 1v1 AI
                 const body = {
                     mode: 'ai',
@@ -241,32 +205,6 @@ export async function mount(el, ctx) {
                     duration_ms: duration
                 };
                 await post(body);
-            }
-            else if (isPVP2v2 && pvpReady && secondPlayer && thirdPlayer && fourthPlayer) {
-                // PVP 2v2 -> guardar 2 matches: (left vs right) y (bottom vs top)
-                const bodyH = {
-                    mode: 'pvp',
-                    game: 'pong',
-                    opponent_id: secondPlayer.id,
-                    score_left: leftScore,
-                    score_right: rightScore,
-                    score_user: leftScore,
-                    score_opponent: rightScore,
-                    duration_ms: duration
-                };
-                await post(bodyH);
-                const bodyV = {
-                    mode: 'pvp',
-                    game: 'pong',
-                    user_id: thirdPlayer.id,
-                    opponent_id: fourthPlayer.id,
-                    score_left: bottomScore,
-                    score_right: topScore,
-                    score_user: bottomScore,
-                    score_opponent: topScore,
-                    duration_ms: duration
-                };
-                await post(bodyV);
             }
             else if (isPVP && secondPlayer) {
                 const body = {
@@ -314,24 +252,21 @@ export async function mount(el, ctx) {
         }
     }
     /* -------------------------
-       PVP flow (1v1 y 2v2)
+       PVP flow
        ------------------------- */
     if (isPVP && !pvpPlayers) {
-        // si no han elegido pvp_players en query, pedimos modo (este bloque asumía HTML en la página original).
-        // Para migración rápida, forzamos mostrar el overlay pvp-mode (si prefieres, puedes redirigir)
-        // Aquí mostramos directamente el pvp-login overlay pidiendo 'pvp_players' mediante botones en la URL.
-        // Para mantenerlo compacto: si no existe pvp_players, abrimos la overlay y al seleccionar reemplazamos URL.
+        // Si no han elegido pvp_players en query, mostramos opciones
         const pvpModeOverlay = document.createElement('div');
         pvpModeOverlay.className = 'fixed inset-0 flex items-center justify-center bg-black/80 z-50';
         pvpModeOverlay.innerHTML = `
-			<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
-				<h2 class="text-2xl font-bold mb-6 text-center">Selecciona modo</h2>
-				<div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-					<button type="button" class="pvp-mode-btn bg-white/20 hover:bg-white/30 transition rounded px-4 py-2 font-semibold" data-pvp-players="1">1 vs 1</button>
-					<button type="button" class="pvp-mode-btn bg-white/20 hover:bg-white/30 transition rounded px-4 py-2 font-semibold" data-pvp-players="2">2 vs 2</button>
-				</div>
-			</div>
-		`;
+            <div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
+                <h2 class="text-2xl font-bold mb-6 text-center">Selecciona modo</h2>
+                <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
+                    <button type="button" class="pvp-mode-btn bg-white/20 hover:bg-white/30 transition rounded px-4 py-2 font-semibold" data-pvp-players="1">1 vs 1</button>
+                    <button type="button" class="pvp-mode-btn bg-white/20 hover:bg-white/30 transition rounded px-4 py-2 font-semibold" data-pvp-players="2">2 vs 2</button>
+                </div>
+            </div>
+        `;
         document.body.appendChild(pvpModeOverlay);
         pvpModeOverlay.querySelectorAll('.pvp-mode-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -342,146 +277,51 @@ export async function mount(el, ctx) {
         });
         return; // salimos: el reload/replace cargará la misma ruta pero con pvp_players
     }
-    // Si es PVP o duoAI mostramos overlay de login / blocker
-    if (isPVP || duoAI) {
+    // Si es PVP 1v1 mostramos overlay de login / blocker
+    if (isPVP && pvpPlayers === '1') {
         blocker?.classList.remove('hidden');
         const pvpOverlay = $('#pvp-login-overlay');
         pvpOverlay.classList.remove('hidden');
         const form = el.querySelector('#pvp-login-form');
         const errorEl = $('#pvp-login-error');
         const heading = $('#pvp-login-heading');
-        if (isPVP && pvpPlayers === '1') {
-            heading.textContent = ctx.t("pvp.second_player");
-            form.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const email = (el.querySelector('#pvp-email')).value;
-                const password = (el.querySelector('#pvp-password')).value;
-                try {
-                    const res = await fetch('/api/auth/login-second', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ email, password }),
-                    });
-                    if (!res.ok)
-                        throw new Error(`HTTP ${res.status}`);
-                    const data = await res.json();
-                    secondPlayer = data;
-                    pvpReady = true;
-                    pvpOverlay.classList.add('hidden');
-                    blocker?.classList.add('hidden');
-                }
-                catch {
-                    errorEl.textContent = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";
-                    errorEl.classList.remove('hidden');
-                }
-            });
-        }
-        else if (isPVP && pvpPlayers === '2') {
-            // multi-step: 2 -> 3 -> 4
-            let step = 2;
-            heading.textContent = ctx.t("pvp.second_player");
-            form.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const emailEl = el.querySelector('#pvp-email');
-                const passwordEl = el.querySelector('#pvp-password');
-                const email = emailEl.value;
-                const password = passwordEl.value;
-                try {
-                    const res = await fetch('/api/auth/login-second', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ email, password }),
-                    });
-                    if (!res.ok)
-                        throw new Error(`HTTP ${res.status}`);
-                    const data = await res.json();
-                    // evitar usuarios repetidos
-                    if ((secondPlayer && data.id === secondPlayer.id) || (thirdPlayer && data.id === thirdPlayer.id) || (fourthPlayer && data.id === fourthPlayer.id)) {
-                        throw new Error('Jugador ya usado');
-                    }
-                    if (step === 2) {
-                        secondPlayer = data;
-                        step = 3;
-                        heading.textContent = ctx.t("pvp.third_player") ?? "Tercer jugador";
-                        emailEl.value = '';
-                        passwordEl.value = '';
-                        return;
-                    }
-                    else if (step === 3) {
-                        thirdPlayer = data;
-                        step = 4;
-                        heading.textContent = ctx.t("pvp.fourth_player") ?? "Cuarto jugador";
-                        emailEl.value = '';
-                        passwordEl.value = '';
-                        return;
-                    }
-                    else if (step === 4) {
-                        fourthPlayer = data;
-                        pvpReady = true;
-                        pvpOverlay.classList.add('hidden');
-                        blocker?.classList.add('hidden');
-                        return;
-                    }
-                }
-                catch (err) {
-                    if (err instanceof Error) {
-                        errorEl.textContent = err.message || (ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas");
-                    }
-                    else {
-                        errorEl.textContent = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";
-                    }
-                    errorEl.classList.remove('hidden');
-                }
-            });
-        }
-        else if (duoAI) {
-            // duoAI: pedimos login para el segundo jugador (que será "usuario 2")
-            heading.textContent = ctx.t("pvp.second_player");
-            form.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const email = (el.querySelector('#pvp-email')).value;
-                const password = (el.querySelector('#pvp-password')).value;
-                try {
-                    const res = await fetch('/api/auth/login-second', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ email, password }),
-                    });
-                    if (!res.ok)
-                        throw new Error(`HTTP ${res.status}`);
-                    const data = await res.json();
-                    secondPlayer = data;
-                    pvpReady = true;
-                    ($('#pvp-login-overlay')).classList.add('hidden');
-                    blocker?.classList.add('hidden');
-                }
-                catch {
-                    errorEl.textContent = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";
-                    errorEl.classList.remove('hidden');
-                }
-            });
-        }
+        heading.textContent = ctx.t("pvp.second_player");
+        form.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const email = (el.querySelector('#pvp-email')).value;
+            const password = (el.querySelector('#pvp-password')).value;
+            try {
+                const res = await fetch('/api/auth/login-second', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password }),
+                });
+                if (!res.ok)
+                    throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                secondPlayer = data;
+                pvpReady = true;
+                pvpOverlay.classList.add('hidden');
+                blocker?.classList.add('hidden');
+            }
+            catch {
+                errorEl.textContent = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";
+                errorEl.classList.remove('hidden');
+            }
+        });
     }
     else {
-        // no pvp ni duoAI -> ocultar blocker
+        // no pvp -> ocultar blocker
         blocker?.classList.add('hidden');
     }
     /* -------------------------
-       TECLAS (2v2 keys)
+       Teclas
        ------------------------- */
-    // asignaciones especial para 2v2 local (si es PVP 2v2)
     const keyLeftUp = 'w';
     const keyLeftDown = 's';
-    const keyRightUp = isPVP2v2 ? 't' : 'ArrowUp';
-    const keyRightDown = isPVP2v2 ? 'g' : 'ArrowDown';
-    // para la partida vertical (top/bottom) en 2v2 local
-    const keyTopLeft = isPVP2v2 ? 'ArrowLeft' : 'a';
-    const keyTopRight = isPVP2v2 ? 'ArrowRight' : 'd';
-    const keyBottomLeft = isPVP2v2 ? 'k' : 'ArrowLeft';
-    const keyBottomRight = isPVP2v2 ? 'l' : 'ArrowRight';
+    const keyRightUp = 'ArrowUp';
+    const keyRightDown = 'ArrowDown';
     /* -------------------------
        Handlers de teclado
        ------------------------- */
@@ -498,7 +338,7 @@ export async function mount(el, ctx) {
                 return;
             }
             if (!gameRunning && !gameOver) {
-                if ((isPVP || duoAI) && !pvpReady) {
+                if (isPVP && !pvpReady) {
                     const pvpOverlay = $('#pvp-login-overlay');
                     if (pvpOverlay) {
                         pvpOverlay.classList.remove('hidden');
@@ -508,26 +348,19 @@ export async function mount(el, ctx) {
                 }
                 gameRunning = true;
                 resetBall(1);
-                if (duoAI) {
-                    resetBall2(1);
-                    resetHPaddles();
-                }
+                if (isAI)
+                    aiImmediateTick = true; // <- tick IA inmediato al empezar
+                gameStartTs = performance.now();
             }
             else if (gameOver) {
                 // reiniciar todo
-                leftScore = rightScore = topScore = bottomScore = 0;
+                leftScore = rightScore = 0;
                 savedThisGame = false;
                 gameOver = false;
-                gameOver1 = false;
-                gameOver2 = false;
                 gameRunning = false;
                 gameStartTs = performance.now();
                 resetBall();
                 resetPaddles();
-                if (duoAI) {
-                    resetBall2();
-                    resetHPaddles();
-                }
                 updateScore();
             }
         }
@@ -541,123 +374,134 @@ export async function mount(el, ctx) {
     on('keyup', onKeyUp);
     on('beforeunload', () => { if (gameOver)
         saveMatchIfNeeded(); });
-    /* -------------------------
-       IA (para isAI y duoAI)
-       ------------------------- */
-    let aiTimer1 = null;
-    let aiTimer2 = null;
-    if (isAI) {
-        // prevenir que flechas queden indefinidas
-        keys['ArrowUp'] = false;
-        keys['ArrowDown'] = false;
-        let aiPressedKey = null;
-        let ai2PressedKey = null;
-        const simulateKeyPress = (key) => {
-            if (!keys[key])
-                window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-        };
-        const simulateKeyRelease = (key) => {
-            if (keys[key])
-                window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }));
-        };
-        const predictballY = () => {
-            let x = ballX, y = ballY, dx = ballSpeedX, dy = ballSpeedY;
-            if (dx <= 0)
-                return rightPaddleY + paddleHeight / 2;
-            while (x < canvas.width - 20) {
-                x += dx;
-                y += dy;
-                if (y - ballRadius < 0 || y + ballRadius > canvas.height) {
-                    dy *= -1;
-                    y = Math.max(ballRadius, Math.min(canvas.height - ballRadius, y));
-                }
+    let aiDir = 'none';
+    let aiImmediateTick = false; // <- primera decisión inmediata tras start/reset
+    let aiTargetY = null; // <- objetivo persistente entre ticks de 1s
+    let aiDeadZoneCurrent = 20; // <- zona muerta usada hasta el próximo tick
+    let prevGoingRight = ballSpeedX > 0; // <- recordar dirección horizontal para detectar cambios
+    const synthKey = (key, type) => {
+        const evt = new KeyboardEvent(type, { key, bubbles: true, cancelable: true });
+        window.dispatchEvent(evt);
+    };
+    const press = (key, down) => {
+        keys[key] = down; // asegurar que update() lo lea
+        synthKey(key, down ? 'keydown' : 'keyup'); // imitar teclado
+    };
+    const setAIDirection = (dir) => {
+        if (aiDir === dir)
+            return;
+        // Soltar la tecla anterior
+        if (aiDir === 'up')
+            press(keyRightUp, false);
+        if (aiDir === 'down')
+            press(keyRightDown, false);
+        aiDir = dir;
+        // Pulsar la nueva
+        if (aiDir === 'up')
+            press(keyRightUp, true);
+        if (aiDir === 'down')
+            press(keyRightDown, true);
+    };
+    // Guiado continuo hacia el objetivo sin “ver” nueva info
+    const steerAIToTarget = () => {
+        if (!gameRunning || gameOver || aiTargetY == null) {
+            setAIDirection('none');
+            return;
+        }
+        const paddleCenter = rightPaddleY + paddleHeight / 2;
+        const diff = aiTargetY - paddleCenter;
+        // Zona muerta dinámica: si la bola está muy cerca y viene hacia la derecha,
+        // reducimos a 0 para asegurar el “empuje” final.
+        let localDead = aiDeadZoneCurrent;
+        const targetX = canvas.width - 20 - ballRadius;
+        const distX = targetX - ballX;
+        if (ballSpeedX > 0) {
+            if (distX < 160)
+                localDead = Math.min(localDead, 1);
+            if (distX < 90)
+                localDead = 0;
+        }
+        if (Math.abs(diff) <= localDead) {
+            setAIDirection('none'); // llegó -> soltar
+        }
+        else {
+            setAIDirection(diff < 0 ? 'up' : 'down');
+        }
+    };
+    // Predice la Y de la bola al llegar cerca de la pala derecha
+    const predictBallYAtX = () => {
+        // Si la bola va hacia la izquierda, devolver centro
+        if (ballSpeedX <= 0) {
+            return canvas.height / 2;
+        }
+        // Simulación con rebotes en techo/suelo
+        let simX = ballX;
+        let simY = ballY;
+        let vx = ballSpeedX;
+        let vy = ballSpeedY;
+        const targetX = canvas.width - 20 - ballRadius; // cara izquierda de la pala derecha
+        const maxIterations = 4000;
+        let it = 0;
+        while (simX < targetX && it++ < maxIterations) {
+            simX += vx;
+            simY += vy;
+            if (simY <= ballRadius) {
+                simY = ballRadius;
+                vy = Math.abs(vy);
             }
-            return y;
-        };
-        const updateAI = () => {
-            if (!gameRunning || gameOver1)
-                return;
-            if (ballSpeedX <= 0) {
-                if (aiPressedKey) {
-                    simulateKeyRelease(aiPressedKey);
-                    aiPressedKey = null;
-                }
-                return;
+            else if (simY >= canvas.height - ballRadius) {
+                simY = canvas.height - ballRadius;
+                vy = -Math.abs(vy);
             }
-            const predictedY = predictballY();
-            const paddleCenter = rightPaddleY + paddleHeight / 2;
-            const diff = predictedY - paddleCenter;
-            let DEAD_ZONE = 60;
-            if (difficulty === 'easy')
-                DEAD_ZONE = 110;
-            else if (difficulty === 'medium')
-                DEAD_ZONE = 75;
-            else if (difficulty === 'hard')
-                DEAD_ZONE = 60;
-            let keyToPress = null;
-            if (diff < -DEAD_ZONE && rightPaddleY > 0)
-                keyToPress = 'ArrowUp';
-            else if (diff > DEAD_ZONE && rightPaddleY + paddleHeight < canvas.height)
-                keyToPress = 'ArrowDown';
-            if (keyToPress !== aiPressedKey) {
-                if (aiPressedKey)
-                    simulateKeyRelease(aiPressedKey);
-                if (keyToPress)
-                    simulateKeyPress(keyToPress);
-                aiPressedKey = keyToPress;
+        }
+        let predicted = (it >= maxIterations) ? canvas.height / 2 : simY;
+        // Ruido según dificultad para humanizar
+        let errorRange = 0;
+        if (difficulty === 'easy')
+            errorRange = canvas.height * 0.18;
+        else if (difficulty === 'medium')
+            errorRange = canvas.height * 0.08;
+        else
+            errorRange = canvas.height * 0.02;
+        if (Math.abs(vy) < 1.0)
+            errorRange *= 0.5;
+        predicted += (Math.random() * 2 - 1) * errorRange;
+        // Mantener margen y objetivo dentro de la pista
+        const margin = 8;
+        const minY = paddleHeight / 2 + margin;
+        const maxY = canvas.height - paddleHeight / 2 - margin;
+        return Math.max(minY, Math.min(maxY, predicted));
+    };
+    const updateAI = () => {
+        if (!gameRunning || gameOver) {
+            aiTargetY = null;
+            setAIDirection('none');
+            return;
+        }
+        const goingRight = ballSpeedX > 0;
+        // Dead zone más pequeña (para que reaccione más)
+        if (difficulty === 'easy')
+            aiDeadZoneCurrent = 18;
+        else if (difficulty === 'medium')
+            aiDeadZoneCurrent = 12;
+        else
+            aiDeadZoneCurrent = 6;
+        if (goingRight) {
+            // Si viene hacia mí, predecir impacto
+            aiTargetY = predictBallYAtX();
+        }
+        else {
+            // Si se aleja, NO volver al centro: mantener objetivo previo.
+            // Si aún no hay objetivo (inicio), fijar el actual centro de la pala.
+            if (aiTargetY == null) {
+                aiTargetY = rightPaddleY + paddleHeight / 2;
             }
-        };
-        aiTimer1 = window.setInterval(updateAI, 100);
-        // IA para la segunda partida (vertical/horizontal) si duoAI
-        const predictball2X = () => {
-            let x = ball2X, y = ball2Y, dx = ball2SpeedX, dy = ball2SpeedY;
-            if (dy >= 0)
-                return topPaddleX + hPaddleWidth / 2;
-            while (y > 20) {
-                x += dx;
-                y += dy;
-                if (x - ballRadius < 0 || x + ballRadius > canvas.width) {
-                    dx *= -1;
-                    x = Math.max(ballRadius, Math.min(canvas.width - ballRadius, x));
-                }
-            }
-            return x;
-        };
-        const updateAIHorizontal = () => {
-            if (!gameRunning || gameOver2)
-                return;
-            if (ball2SpeedY >= 0) {
-                if (ai2PressedKey) {
-                    simulateKeyRelease(ai2PressedKey);
-                    ai2PressedKey = null;
-                }
-                return;
-            }
-            const predictedX = predictball2X();
-            const paddleCenter = topPaddleX + hPaddleWidth / 2;
-            const diff = predictedX - paddleCenter;
-            let DEAD_ZONE_H = 60;
-            if (difficulty === 'easy')
-                DEAD_ZONE_H = 110;
-            else if (difficulty === 'medium')
-                DEAD_ZONE_H = 75;
-            else if (difficulty === 'hard')
-                DEAD_ZONE_H = 60;
-            let keyToPress = null;
-            if (diff < -DEAD_ZONE_H && topPaddleX > 0)
-                keyToPress = 'a';
-            else if (diff > DEAD_ZONE_H && topPaddleX + hPaddleWidth < canvas.width)
-                keyToPress = 'd';
-            if (keyToPress !== ai2PressedKey) {
-                if (ai2PressedKey)
-                    simulateKeyRelease(ai2PressedKey);
-                if (keyToPress)
-                    simulateKeyPress(keyToPress);
-                ai2PressedKey = keyToPress;
-            }
-        };
-        aiTimer2 = window.setInterval(updateAIHorizontal, 100);
-    }
+        }
+        // Ajuste inicial inmediato hacia el objetivo actual
+        steerAIToTarget();
+    };
+    // Decisión cada 1000 ms desde el bucle (primer tick inmediato tras empezar)
+    let lastAIDecision = 0;
     /* -------------------------
        DIBUJADO
        ------------------------- */
@@ -678,12 +522,6 @@ export async function mount(el, ctx) {
         drawRect(10, leftPaddleY, paddleWidth, paddleHeight, 'white');
         drawRect(canvas.width - 20, rightPaddleY, paddleWidth, paddleHeight, 'white');
         drawCircle(ballX, ballY, ballRadius, 'white');
-        // si duoAI (o pvp 2v2 local), dibujar el segundo juego (horizontal paddles)
-        if (duoAI) {
-            drawRect(topPaddleX, 10, hPaddleWidth, hPaddleHeight, 'white');
-            drawRect(bottomPaddleX, canvas.height - 20, hPaddleWidth, hPaddleHeight, 'white');
-            drawCircle(ball2X, ball2Y, ballRadius, 'white');
-        }
         ctx2d.fillStyle = 'white';
         ctx2d.textAlign = 'center';
         if (gameOver) {
@@ -696,14 +534,6 @@ export async function mount(el, ctx) {
             ctx2d.font = '40px Arial';
             ctx2d.fillText(currentTranslations['press_space_start'], canvas.width / 2, canvas.height / 2 - 40);
         }
-        else if (duoAI && gameOver1 && !gameOver2) {
-            ctx2d.font = '20px Arial';
-            ctx2d.fillText('Partida 1 terminada', canvas.width / 2, canvas.height / 2 - 60);
-        }
-        else if (duoAI && !gameOver1 && gameOver2) {
-            ctx2d.font = '20px Arial';
-            ctx2d.fillText('Partida 2 terminada', canvas.width / 2, canvas.height / 2 - 60);
-        }
     }
     /* -------------------------
        LÓGICA: reset y colisiones
@@ -713,60 +543,34 @@ export async function mount(el, ctx) {
         ballY = canvas.height / 2;
         ballSpeedX = flag ? INITIAL_BALL_SPEED : -INITIAL_BALL_SPEED;
         ballSpeedY = 0;
-    }
-    function resetBall2(dir = 1) {
-        ball2X = canvas.width / 2;
-        ball2Y = canvas.height / 2;
-        ball2SpeedX = 0;
-        ball2SpeedY = dir * INITIAL_BALL_SPEED;
+        if (isAI) {
+            aiImmediateTick = true;
+            aiTargetY = null;
+        }
+        prevGoingRight = ballSpeedX > 0; // <- reiniciar estado de dirección
     }
     function resetPaddles() {
         leftPaddleY = (canvas.height - paddleHeight) / 2;
         rightPaddleY = (canvas.height - paddleHeight) / 2;
     }
-    function resetHPaddles() {
-        topPaddleX = (canvas.width - hPaddleWidth) / 2;
-        bottomPaddleX = (canvas.width - hPaddleWidth) / 2;
-    }
     function checkGameOver() {
-        // comportamientos distintos según duoAI o no
-        if (duoAI) {
-            if (leftScore >= 5 || rightScore >= 5) {
-                gameOver1 = true;
-            }
-            if (topScore >= 5 || bottomScore >= 5) {
-                gameOver2 = true;
-            }
-            if (gameOver1 && gameOver2) {
-                gameOver = true;
-                gameRunning = false;
-                saveMatchIfNeeded();
-            }
-        }
-        else {
-            if (leftScore >= 5 || rightScore >= 5) {
-                gameOver = true;
-                gameRunning = false;
-                saveMatchIfNeeded();
-            }
+        if (leftScore >= 5 || rightScore >= 5) {
+            gameOver = true;
+            gameRunning = false;
+            saveMatchIfNeeded();
         }
     }
     function updateScore() {
         const scoreEl = $('#score');
         if (!scoreEl)
             return;
-        if (duoAI) {
-            scoreEl.textContent = `P1 ${leftScore}-${rightScore} | P2 ${bottomScore}-${topScore}`;
-        }
-        else {
-            scoreEl.textContent = `${leftScore} : ${rightScore}`;
-        }
+        scoreEl.textContent = `${leftScore} : ${rightScore}`;
     }
     /* -------------------------
-       UPDATE HORIZONTAL (P1)
+       UPDATE
        ------------------------- */
     function update() {
-        if (!gameRunning || gameOver1)
+        if (!gameRunning || gameOver)
             return;
         // movimientos verticales normales (left/right)
         if (keys[keyLeftUp] && leftPaddleY > 0)
@@ -800,7 +604,15 @@ export async function mount(el, ctx) {
             ballSpeedX = -speed * Math.cos(bounceAngle);
             ballSpeedY = -speed * Math.sin(bounceAngle);
         }
-        // puntuaciones horizontales
+        // Detectar cambio de dirección hacia la pala derecha -> tick IA inmediato
+        if (isAI) {
+            const goingRightNow = ballSpeedX > 0;
+            if (!prevGoingRight && goingRightNow) {
+                aiImmediateTick = true; // re-evaluar objetivo YA
+            }
+            prevGoingRight = goingRightNow;
+        }
+        // puntuaciones
         if (ballX + ballRadius < 0) {
             rightScore++;
             updateScore();
@@ -817,77 +629,40 @@ export async function mount(el, ctx) {
         }
     }
     /* -------------------------
-       UPDATE VERTICAL / HORIZONTAL (segundo juego)
-       ------------------------- */
-    function updateVertical() {
-        if (!gameRunning || gameOver2)
-            return;
-        // controles para top/bottom (horizontal paddles)
-        if (keys[keyBottomLeft] && bottomPaddleX > 0)
-            bottomPaddleX -= hPaddleSpeed;
-        if (keys[keyBottomRight] && bottomPaddleX + hPaddleWidth < canvas.width)
-            bottomPaddleX += hPaddleSpeed;
-        if (keys[keyTopLeft] && topPaddleX > 0)
-            topPaddleX -= hPaddleSpeed;
-        if (keys[keyTopRight] && topPaddleX + hPaddleWidth < canvas.width)
-            topPaddleX += hPaddleSpeed;
-        ball2X += ball2SpeedX;
-        ball2Y += ball2SpeedY;
-        // rebotar en paredes laterales
-        if (ball2X - ballRadius < 0 || ball2X + ballRadius > canvas.width)
-            ball2SpeedX = -ball2SpeedX;
-        // colisiones con paddles horizontales
-        if (ball2Y - ballRadius < 20 && ball2X > topPaddleX && ball2X < topPaddleX + hPaddleWidth) {
-            const relativeIntersectX = (topPaddleX + hPaddleWidth / 2) - ball2X;
-            const normalized = relativeIntersectX / (hPaddleWidth / 2);
-            const bounceAngle = normalized * (Math.PI / 4);
-            const currentSpeed = Math.hypot(ball2SpeedX, ball2SpeedY);
-            const speed = Math.min(currentSpeed * 1.05, MAX_BALL_SPEED);
-            ball2SpeedY = speed * Math.cos(bounceAngle);
-            ball2SpeedX = -speed * Math.sin(bounceAngle);
-        }
-        if (ball2Y + ballRadius > canvas.height - 20 && ball2X > bottomPaddleX && ball2X < bottomPaddleX + hPaddleWidth) {
-            const relativeIntersectX = (bottomPaddleX + hPaddleWidth / 2) - ball2X;
-            const normalized = relativeIntersectX / (hPaddleWidth / 2);
-            const bounceAngle = normalized * (Math.PI / 4);
-            const currentSpeed = Math.hypot(ball2SpeedX, ball2SpeedY);
-            const speed = Math.min(currentSpeed * 1.05, MAX_BALL_SPEED);
-            ball2SpeedY = -speed * Math.cos(bounceAngle);
-            ball2SpeedX = -speed * Math.sin(bounceAngle);
-        }
-        // puntuaciones verticales
-        if (ball2Y - ballRadius < 0) {
-            bottomScore++;
-            updateScore();
-            checkGameOver();
-            resetBall2(1);
-            resetHPaddles();
-        }
-        else if (ball2Y + ballRadius > canvas.height) {
-            topScore++;
-            updateScore();
-            checkGameOver();
-            resetBall2(-1);
-            resetHPaddles();
-        }
-    }
-    /* -------------------------
        LOOP (limpieza y requestAnimationFrame)
        ------------------------- */
     (function loop() {
         if (!el.isConnected) {
-            // limpieza timers IA
-            if (aiTimer1)
-                clearInterval(aiTimer1);
-            if (aiTimer2)
-                clearInterval(aiTimer2);
+            // soltar teclas virtuales
+            synthKey(keyRightUp, 'keyup');
+            synthKey(keyRightDown, 'keyup');
             subs.abort();
             return;
         }
+        // Tick IA: cada 1000 ms
+        if (isAI) {
+            const now = performance.now();
+            if (!gameRunning || gameOver) {
+                if (aiDir !== 'none')
+                    setAIDirection('none');
+                aiTargetY = null;
+            }
+            else if (aiImmediateTick) {
+                updateAI();
+                lastAIDecision = now; // fijar fase a partir de este instante
+                aiImmediateTick = false;
+            }
+            else if (now - lastAIDecision >= 1000) {
+                updateAI();
+                lastAIDecision = now;
+            }
+            // Guiado continuo: soltar/pulsar en cuanto llegue al objetivo
+            if (gameRunning && aiTargetY != null) {
+                steerAIToTarget();
+            }
+        }
         if (gameRunning) {
             update();
-            if (duoAI)
-                updateVertical();
         }
         draw();
         requestAnimationFrame(loop);
