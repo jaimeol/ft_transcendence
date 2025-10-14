@@ -120,15 +120,23 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 				</a>
 			</div>
 
-			<div class="grid grid-cols-1 gap-4">
+			<div class="grid grid-cols-2 gap-4">
 				<a href="/tournament"
-					class="group rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-5 flex flex-col sm:flex-row gap-4 items-center">
+					class="group rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-5 flex flex-col gap-4 items-center">
 					<div class="text-3xl">🏆</div>
-					<div class="flex-1 text-center sm:text-left">
+					<div class="flex-1 text-center">
 						<div class="font-semibold text-lg" data-translate="tournament.title">${ctx.t("tournament.title") ?? "Torneos"}</div>
-						<div class="text-sm text-white/60" data-translate="tournament.subtitle">${ctx.t("tournament.subtitle") ?? "Compite con otros jugadores en torneos eliminatorios"}</div>
+						<div class="text-sm text-white/60 hidden sm:block" data-translate="tournament.subtitle">${ctx.t("tournament.subtitle") ?? "Compite con otros"}</div>
 					</div>
-					<div class="text-white/40 text-sm hidden sm:block">→</div>
+				</a>
+
+				<a href="/stats"
+					class="group rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-5 flex flex-col gap-4 items-center">
+					<div class="text-3xl">📊</div>
+					<div class="flex-1 text-center">
+						<div class="font-semibold text-lg" data-translate="stats.title">${ctx.t("stats.title") ?? "Estadísticas"}</div>
+						<div class="text-sm text-white/60 hidden sm:block" data-translate="stats.subtitle">${ctx.t("stats.subtitle") ?? "Revisa tu rendimiento"}</div>
+					</div>
 				</a>
 			</div>
         </section>

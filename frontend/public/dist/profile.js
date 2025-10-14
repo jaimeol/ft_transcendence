@@ -277,7 +277,6 @@ export async function mount(el, ctx) {
             ctx.navigate("/", { replace: true });
         }
     });
-    // Charts.js ya no es necesario
     const meUser = await me(ctx);
     let viewedUser = meUser;
     if (viewedId && (!meUser || viewedId !== meUser.id)) {
@@ -306,7 +305,6 @@ export async function mount(el, ctx) {
     // Inicializar el sistema de traducción
     await initializeLanguages();
 }
-// Función de Charts.js eliminada - ya no se necesita
 // ========= Utilidades =========
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => Array.from(p.querySelectorAll(s));

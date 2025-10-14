@@ -1,5 +1,5 @@
 import type { Ctx } from "./router.js";
-import { currentTranslations, initializeLanguages } from "./translate.js";
+import { initializeLanguages } from "./translate.js";
 
 export async function mount(el: HTMLElement, ctx: Ctx) {
 	// Inicializar el sistema de traducción primero
@@ -287,8 +287,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 		}
   	});
 
-	// Charts.js ya no es necesario
-
 	const meUser = await me(ctx);
 	let viewedUser: Me | null = meUser;
 
@@ -321,8 +319,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	// Inicializar el sistema de traducción
 	await initializeLanguages();
 }
-
-// Función de Charts.js eliminada - ya no se necesita
 
 // ========= Utilidades =========
 const $ = <T extends HTMLElement = HTMLElement>(s: string, p: Document | HTMLElement = document) =>
