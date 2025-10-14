@@ -50,6 +50,21 @@ const WIN_COMBOS: winCombo[] = [
 
 export async function mount(el: HTMLElement, { t, api, navigate }: Ctx) {
 
+	let isAuthed = false;
+
+    try {
+		const response = await api("/api/auth/me");
+
+		isAuthed = !!(response && response.user);
+	} catch (error) {
+		isAuthed = false;
+	}
+
+	if (!isAuthed) {
+		navigate("/login", { replace: true });
+		return;
+	}
+
 	el.innerHTML = `
 	<div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex flex-col">
 

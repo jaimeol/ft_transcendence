@@ -2,6 +2,18 @@ import { initializeLanguages } from "./translate.js";
 export async function mount(el, ctx) {
     // Inicializar el sistema de traducción primero
     await initializeLanguages();
+    let isAuthed = false;
+    try {
+        const response = await ctx.api("/api/auth/me");
+        isAuthed = !!(response && response.user);
+    }
+    catch (error) {
+        isAuthed = false;
+    }
+    if (!isAuthed) {
+        ctx.navigate("/login", { replace: true });
+        return;
+    }
     const t = ctx.t;
     const $ = (s) => el.querySelector(s);
     const $$ = (s) => Array.from(el.querySelectorAll(s));

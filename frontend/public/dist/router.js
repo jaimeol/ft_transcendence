@@ -5,6 +5,20 @@ export function createRouter(opts) {
     function match(pathname) {
         return routes.find(r => r.path === pathname) || routes.find(r => r.path === "/404");
     }
+    async function ensureAuth() {
+        if (ctx.isAuthed && ctx.isAuthed())
+            return true;
+        try {
+            const r = await ctx.api("/api/auth/me");
+            if (r?.user) {
+                // mutar el ctx para sesiones ya cargadas
+                ctx.user = r.user;
+                return true;
+            }
+        }
+        catch { } // 401 -> no autenticado
+        return false;
+    }
     async function render(input) {
         const pathname = toPathName(input);
         if (pathname === currentPath)
@@ -14,9 +28,11 @@ export function createRouter(opts) {
         if (!route)
             return navigate("/404", { replace: true });
         // Guard de auth
-        if (route.requiresAuth && !ctx.isAuthed()) {
-            if (pathname !== "/login")
-                return navigate("/login", { replace: true }); // <- ruta absoluta
+        if (route.requiresAuth) {
+            const ok = await ensureAuth();
+            if (!ok && pathname !== "/login") {
+                return navigate("/login", { replace: true });
+            }
         }
         const page = await route.loader();
         root.replaceChildren();

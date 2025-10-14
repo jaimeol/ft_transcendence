@@ -2,6 +2,18 @@ import { currentTranslations, initializeLanguages } from "./translate.js";
 export async function mount(el, ctx) {
     // Inicializar traducciones
     await initializeLanguages();
+    let isAuthed = false;
+    try {
+        const response = await ctx.api("/api/auth/me");
+        isAuthed = !!(response && response.user);
+    }
+    catch (error) {
+        isAuthed = false;
+    }
+    if (!isAuthed) {
+        ctx.navigate("/login", { replace: true });
+        return;
+    }
     // Redirigir a pong2v2.ts si es un juego 2v2
     const url = new URL(window.location.href);
     let mode = url.searchParams.get('mode');

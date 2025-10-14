@@ -5,6 +5,21 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	// Inicializar el sistema de traducción primero
 	await initializeLanguages();
 
+	let isAuthed = false;
+
+    try {
+		const response = await ctx.api("/api/auth/me");
+
+		isAuthed = !!(response && response.user);
+	} catch (error) {
+		isAuthed = false;
+	}
+
+	if (!isAuthed) {
+		ctx.navigate("/login", { replace: true });
+		return;
+	}
+
 	document.body.className = "min-h-screen bg-black text-white";
 
 	el.innerHTML = `

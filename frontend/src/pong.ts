@@ -6,6 +6,21 @@ type Player = { id: number; displayName?: string; email?: string } | null;
 export async function mount(el: HTMLElement, ctx: Ctx) {
     // Inicializar traducciones
     await initializeLanguages();
+
+	let isAuthed = false;
+
+    try {
+		const response = await ctx.api("/api/auth/me");
+
+		isAuthed = !!(response && response.user);
+	} catch (error) {
+		isAuthed = false;
+	}
+
+	if (!isAuthed) {
+		ctx.navigate("/login", { replace: true });
+		return;
+	}
     
     // Redirigir a pong2v2.ts si es un juego 2v2
     const url = new URL(window.location.href);

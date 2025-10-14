@@ -2,6 +2,22 @@ import { currentTranslations, initializeLanguages } from "./translate.js";
 import type { Ctx } from "./router.js";
 
 export async function mount(el: HTMLElement, ctx: Ctx) {
+
+    let isAuthed = false;
+
+    try {
+		const response = await ctx.api("/api/auth/me");
+
+		isAuthed = !!(response && response.user);
+	} catch (error) {
+		isAuthed = false;
+	}
+
+	if (!isAuthed) {
+		ctx.navigate("/login", { replace: true });
+		return;
+	}
+
     el.innerHTML = `
     <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
         <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">

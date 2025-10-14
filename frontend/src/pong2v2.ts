@@ -363,22 +363,27 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
     }
 
 	// Inicial: mostrar overlay de dificultad si no está especificada
-	if (!difficulty) {
-		diffOverlay?.classList.remove('hidden'); 
-		diffOverlay?.classList.add('flex');
-		el.querySelectorAll<HTMLButtonElement>('.difficulty-btn').forEach(btn => {
-			btn.addEventListener('click', () => {
-				const level = btn.getAttribute('data-level')!;
-				difficulty = level;
-				replaceQueryParam('level', level);
-				diffOverlay?.classList.add('hidden');
-				blocker?.classList.add('hidden');
+	if (mode === 'ai') {
+		if (!difficulty) {
+			diffOverlay?.classList.remove('hidden');
+			diffOverlay?.classList.add('flex');
+			el.querySelectorAll<HTMLButtonElement>('.difficulty-btn').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const level = btn.getAttribute('data-level')!;
+					difficulty = level;
+					replaceQueryParam('level', level);
+					diffOverlay?.classList.add('hidden');
+					blocker?.classList.add('hidden');
+				});
 			});
-		});
-		blocker?.classList.remove('hidden');
+			blocker?.classList.remove('hidden');
+		} else {
+			diffOverlay?.classList.add('hidden');
+			blocker?.classList.add('hidden');
+		}
 	} else {
+		// En PVP nunca mostrar selector de dificultad
 		diffOverlay?.classList.add('hidden');
-		blocker?.classList.add('hidden');
 	}
 
 	/* -------------------------

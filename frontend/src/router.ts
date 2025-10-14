@@ -25,6 +25,19 @@ export function createRouter(opts: { routes: Route[]; root: HTMLElement; ctx: Ct
     return routes.find(r => r.path === pathname) || routes.find(r => r.path === "/404");
   }
 
+  async function ensureAuth(): Promise<boolean> {
+    if (ctx.isAuthed && ctx.isAuthed()) return true;
+    try {
+      const r = await ctx.api("/api/auth/me");
+      if (r?.user) {
+        // mutar el ctx para sesiones ya cargadas
+        (ctx as any).user = r.user;
+        return true;
+      }
+    } catch {} // 401 -> no autenticado
+    return false;
+  }
+
   async function render(input: string){
     const pathname = toPathName(input);
     if (pathname === currentPath) return;
@@ -34,8 +47,11 @@ export function createRouter(opts: { routes: Route[]; root: HTMLElement; ctx: Ct
     if (!route) return navigate("/404", { replace: true });
 
     // Guard de auth
-    if (route.requiresAuth && !ctx.isAuthed()) {
-      if (pathname !== "/login") return navigate("/login", { replace: true }); // <- ruta absoluta
+    if (route.requiresAuth) {
+      const ok = await ensureAuth();
+      if (!ok && pathname !== "/login") {
+        return navigate("/login", { replace: true });
+      }
     }
 
     const page = await route.loader();
