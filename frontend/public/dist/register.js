@@ -191,7 +191,7 @@ export async function mount(el, ctx) {
     })();
     (function setupPasswordToggle() {
         const pwd = qs("#pwd");
-        const toggle = qs("#togglepwd");
+        const toggle = qs("#togglePwd"); // Corregido: P mayúscula
         if (!pwd || !toggle)
             return;
         toggle.addEventListener("click", () => {
@@ -204,6 +204,13 @@ export async function mount(el, ctx) {
         e.preventDefault();
         const form = e.currentTarget;
         const data = Object.fromEntries(new FormData(form).entries());
+        // Validar fecha de nacimiento
+        const birthdateInput = qs('input[name="birthdate"]');
+        const birthdateValidation = validateBirthdate(birthdateInput?.value || '');
+        if (!birthdateValidation.valid) {
+            setError(birthdateValidation.message);
+            return;
+        }
         setError("");
         setLoading(true);
         try {
@@ -231,4 +238,26 @@ export async function mount(el, ctx) {
         initGoogleUI(el, navigate);
     })
         .catch(console.error);
+    function validateBirthdate(date) {
+        // Verificar si la fecha está vacía
+        if (!date)
+            return { valid: true, message: '' }; // Opcional, permitir sin fecha
+        const birthDate = new Date(date);
+        const today = new Date();
+        // Verificar que sea una fecha válida
+        if (isNaN(birthDate.getTime())) {
+            return {
+                valid: false,
+                message: t("birthdate.invalid") || "Fecha inválida"
+            };
+        }
+        // Verificar que no sea una fecha futura
+        if (birthDate > today) {
+            return {
+                valid: false,
+                message: t("birthdate.future") || "La fecha no puede ser futura"
+            };
+        }
+        return { valid: true, message: '' };
+    }
 }

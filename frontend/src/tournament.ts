@@ -60,6 +60,20 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 
     return { text: statusText, class: statusClass };
   }
+  let isAuthed = false;
+
+    try {
+		const response = await ctx.api("/api/auth/me");
+
+		isAuthed = !!(response && response.user);
+	} catch (error) {
+		isAuthed = false;
+	}
+
+	if (!isAuthed) {
+		ctx.navigate("/login", { replace: true });
+		return;
+	}
   
   el.innerHTML = `
     <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">

@@ -2,6 +2,18 @@ import { initializeLanguages } from "./translate.js";
 export async function mount(el, ctx) {
     // Inicializar el sistema de traducción primero
     await initializeLanguages();
+    let isAuthed = false;
+    try {
+        const response = await ctx.api("/api/auth/me");
+        isAuthed = !!(response && response.user);
+    }
+    catch (error) {
+        isAuthed = false;
+    }
+    if (!isAuthed) {
+        ctx.navigate("/login", { replace: true });
+        return;
+    }
     document.body.className = "min-h-screen bg-black text-white";
     el.innerHTML = `
 	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
@@ -265,7 +277,6 @@ export async function mount(el, ctx) {
             ctx.navigate("/", { replace: true });
         }
     });
-    // Charts.js ya no es necesario
     const meUser = await me(ctx);
     let viewedUser = meUser;
     if (viewedId && (!meUser || viewedId !== meUser.id)) {
@@ -294,7 +305,6 @@ export async function mount(el, ctx) {
     // Inicializar el sistema de traducción
     await initializeLanguages();
 }
-// Función de Charts.js eliminada - ya no se necesita
 // ========= Utilidades =========
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => Array.from(p.querySelectorAll(s));

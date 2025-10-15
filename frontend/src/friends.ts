@@ -12,6 +12,21 @@ type UserLite = {
 export async function mount(el: HTMLElement, ctx: Ctx) {
 	// Inicializar el sistema de traducción primero
 	await initializeLanguages();
+
+	let isAuthed = false;
+
+	try {
+		const response = await ctx.api("/api/auth/me");
+
+		isAuthed = !!(response && response.user);
+	} catch (error) {
+		isAuthed = false;
+	}
+
+	if (!isAuthed) {
+		ctx.navigate("/login", { replace: true });
+		return;
+	}
 	
 	const t = ctx.t;
 
@@ -244,7 +259,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 			results.innerHTML = `<div class="text-red-400 text-center py-4">
 				<div class="text-2xl mb-2">❌</div>
 				<div>${t("friends.search_error") || "Error buscando amigos"}</div>
-				<div class="text-xs opacity-60 mt-1">${escapeHTML(err?.message || "Error desconocido")}</div>
 			</div>`;
 		}
 	}

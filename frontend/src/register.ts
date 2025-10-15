@@ -197,7 +197,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 
   (function setupPasswordToggle() {
 	const pwd = qs<HTMLInputElement>("#pwd");
-	const toggle = qs<HTMLButtonElement>("#togglepwd");
+	const toggle = qs<HTMLButtonElement>("#togglePwd"); // Corregido: P mayúscula
 	if (!pwd || !toggle) return;
 	toggle.addEventListener("click", () => {
 		const isPwd = pwd.type === "password";
@@ -210,6 +210,15 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	e.preventDefault();
 	const form = e.currentTarget as HTMLFormElement;
 	const data = Object.fromEntries(new FormData(form).entries());
+
+	// Validar fecha de nacimiento
+	const birthdateInput = qs<HTMLInputElement>('input[name="birthdate"]');
+	const birthdateValidation = validateBirthdate(birthdateInput?.value || '');
+	
+	if (!birthdateValidation.valid) {
+		setError(birthdateValidation.message);
+		return;
+	}
 
 	setError("");
 	setLoading(true);
@@ -237,4 +246,30 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 		initGoogleUI(el, navigate);
 	})
 	.catch(console.error);
+
+	function validateBirthdate(date: string): { valid: boolean; message: string } {
+	  // Verificar si la fecha está vacía
+	  if (!date) return { valid: true, message: '' }; // Opcional, permitir sin fecha
+	  
+	  const birthDate = new Date(date);
+	  const today = new Date();
+	  
+	  // Verificar que sea una fecha válida
+	  if (isNaN(birthDate.getTime())) {
+	    return { 
+	      valid: false, 
+	      message: t("birthdate.invalid") || "Fecha inválida"
+	    };
+	  }
+	  
+	  // Verificar que no sea una fecha futura
+	  if (birthDate > today) {
+	    return { 
+	      valid: false, 
+	      message: t("birthdate.future") || "La fecha no puede ser futura"
+	    };
+	  }
+	  
+	  return { valid: true, message: '' };
+	}
 }

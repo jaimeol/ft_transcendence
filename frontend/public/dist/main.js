@@ -61,6 +61,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             { path: "/pong", loader: () => import("./pong.js"), requiresAuth: true },
             { path: "/tournament", loader: () => import("./tournament.js"), requiresAuth: true },
             { path: "/tournament-pong", loader: () => import("./tournament-pong.js"), requiresAuth: true },
+            { path: "/stats", loader: () => import("./stats.js"), requiresAuth: true },
         ],
     });
 });

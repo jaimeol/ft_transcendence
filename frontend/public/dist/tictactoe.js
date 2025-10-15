@@ -41,6 +41,18 @@ const WIN_COMBOS = [
     ],
 ];
 export async function mount(el, { t, api, navigate }) {
+    let isAuthed = false;
+    try {
+        const response = await api("/api/auth/me");
+        isAuthed = !!(response && response.user);
+    }
+    catch (error) {
+        isAuthed = false;
+    }
+    if (!isAuthed) {
+        navigate("/login", { replace: true });
+        return;
+    }
     el.innerHTML = `
 	<div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex flex-col">
 
@@ -179,31 +191,40 @@ export async function mount(el, { t, api, navigate }) {
     let currentPlayer = "X";
     let gameOver = false;
     let lastResult = null;
-    const playerName = (p) => (p === "X" ? (t?.("ttt_player1") ?? "Jugador 1") : (t?.("ttt_player2") ?? "Jugador 2"));
+    const playerName = (p) => {
+        if (p === "X") {
+            return me?.display_name || t?.("ttt_player1") || "Jugador 1";
+        }
+        else {
+            return secondPlayer?.displayName || t?.("ttt_player2") || "Jugador 2";
+        }
+    };
     function refreshTexts() {
         if (!statusEl)
             return;
         if (!gameOver) {
-            statusEl.textContent = `${t?.("ttt_turn") ?? "Turno"}: ${currentPlayer}`;
+            const currentPlayerName = playerName(currentPlayer);
+            statusEl.textContent = `${t?.("ttt_turn") || "Turno"}: ${currentPlayerName} (${currentPlayer})`;
         }
         else if (lastResult) {
             if (lastResult === "draw") {
-                const txt = t?.("ttt_draw") ?? "Empate";
+                const txt = t?.("ttt_draw") || "Empate";
                 statusEl.textContent = txt;
                 if (winnerText)
                     winnerText.textContent = txt;
             }
             else {
-                const label = `${playerName(lastResult.player)} (${lastResult.player}) ${t?.("ttt_wins") ?? "gana"}`;
+                const winnerPlayerName = playerName(lastResult.player);
+                const label = `${winnerPlayerName} (${lastResult.player}) ${t?.("ttt_wins") || "gana"}`;
                 statusEl.textContent = label;
                 if (winnerText)
                     winnerText.textContent = label;
             }
         }
         if (resetBtn)
-            resetBtn.textContent = t?.("ttt_restart") ?? "Reiniciar";
+            resetBtn.textContent = t?.("ttt_restart") || "Reiniciar";
         if (playAgainBtn)
-            playAgainBtn.textContent = t?.("ttt_play_again") ?? "Jugar de nuevo";
+            playAgainBtn.textContent = t?.("ttt_play_again") || "Jugar de nuevo";
     }
     function winnerUserId(result) {
         if (!result || result === "draw" || !me || !secondPlayer)
@@ -217,35 +238,45 @@ export async function mount(el, { t, api, navigate }) {
             return;
         savedThisGame = true;
         const duration_ms = Math.round(performance.now() - gameStartTs);
-        const base = {
-            mode: "pvp",
-            game: "tictactoe",
-            opponent_id: secondPlayer.id,
-            duration_ms,
-        };
         try {
-            if (lastResult === "draw") {
+            // Depuración
+            console.log("Guardando partido:", { lastResult });
+            // Datos base
+            const requestBody = {
+                mode: "pvp",
+                game: "tictactoe",
+                opponent_id: Number(secondPlayer.id),
+                duration_ms
+            };
+            if (typeof lastResult === "string" && lastResult === "draw") {
+                // CASO DE EMPATE
                 await api("/api/matches", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ ...base, is_draw: true }),
+                    body: JSON.stringify({
+                        ...requestBody,
+                        is_draw: true
+                    })
                 });
             }
             else {
-                const w = winnerUserId(lastResult);
-                if (w === null)
-                    throw new Error("No se pudo deducir winner_id");
+                // CASO DE VICTORIA - HAY QUE SIMPLIFICAR
+                // 1. Determinar el ganador claramente
+                const winner_id = lastResult.player === "X" ? Number(me.id) : Number(secondPlayer.id);
                 await api("/api/matches", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ ...base, is_draw: false, winner_id: w }),
+                    body: JSON.stringify({
+                        ...requestBody,
+                        winner_id: winner_id,
+                        is_draw: false
+                    })
                 });
             }
+            console.log("Partida guardada correctamente");
         }
         catch (err) {
-            console.error("Error al guardar la partida: ", err);
+            console.error("Error al guardar la partida:", err);
             savedThisGame = false;
         }
     }
@@ -445,7 +476,13 @@ export async function mount(el, { t, api, navigate }) {
                 credentials: "include",
                 body: JSON.stringify({ email, password }),
             });
-            secondPlayer = data;
+            // Extraer los datos correctamente
+            secondPlayer = {
+                id: Number(data?.id || data?.user?.id),
+                displayName: data?.display_name || data?.user?.display_name || email,
+                email: email
+            };
+            console.log("Segundo jugador autenticado:", secondPlayer);
             pvpReady = true;
             pvpOverlay?.classList.add("hidden");
             blocker?.classList.add("hidden");

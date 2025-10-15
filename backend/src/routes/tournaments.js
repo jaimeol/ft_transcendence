@@ -172,7 +172,7 @@ async function tournamentsRoutes(app, opts) {
 
 	// GET /api/tournaments/:id - Get tournament details
 	app.get('/api/tournaments/:id', async (req, reply) => {
-  const uid = req.session.uid;
+	const uid = req.session.uid;
   // Debug logs removed for production
 
   if (!uid) {

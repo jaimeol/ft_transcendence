@@ -2,57 +2,69 @@ import { initializeLanguages } from "./translate.js";
 export async function mount(el, ctx) {
     // Inicializar el sistema de traducción primero
     await initializeLanguages();
+    let isAuthed = false;
+    try {
+        const response = await ctx.api("/api/auth/me");
+        isAuthed = !!(response && response.user);
+    }
+    catch (error) {
+        isAuthed = false;
+    }
+    if (!isAuthed) {
+        ctx.navigate("/login", { replace: true });
+        return;
+    }
     el.innerHTML = `
-        <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
-            <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-                <a href="/home" class="flex items-center gap-2">
-                    <div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
-                    <span class="font-semibold">ft_transcendence</span>
-                </a>
-                <div class="flex items-center gap-3">
-                    <div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
-                        <button class="hover:underline" onclick="window.changeLanguage?.('en')">EN</button>
-                        <span class="mx-1 text-white/40">|</span>
-                        <button class="hover:underline" onclick="window.changeLanguage?.('es')">ES</button>
-                        <span class="mx-1 text-white/40">|</span>
-                        <button class="hover:underline" onclick="window.changeLanguage?.('fr')">FR</button>
-                      </div>
-                      <a href="/logout" class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs">
-                        ${ctx.t("logout") ?? "Logout"}
-                      </a>
-                </div>
-              </div>
-        </header>
+		<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+			<div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+				<a href="/home" class="flex items-center gap-2">
+					<div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+					<span class="font-semibold">ft_transcendence</span>
+				</a>
+				<div class="flex items-center gap-3">
+					<div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+						<button class="hover:underline" onclick="window.changeLanguage?.('en')">EN</button>
+						<span class="mx-1 text-white/40">|</span>
+						<button class="hover:underline" onclick="window.changeLanguage?.('es')">ES</button>
+						<span class="mx-1 text-white/40">|</span>
+						<button class="hover:underline" onclick="window.changeLanguage?.('fr')">FR</button>
+					  </div>
+					  <a href="/logout" class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs">
+						${ctx.t("logout") ?? "Logout"}
+					  </a>
+				</div>
+			  </div>
+		</header>
 
-        <main class="max-w-5xl mx-auto px-4 py-8">
-            <h1 class="text-2xl font-bold mb-4" data-translate="home.recentMatches">${ctx.t("home.recentMatches") ?? "Partidos"}</h1>
+		<main class="max-w-5xl mx-auto px-4 py-8">
+			<h1 class="text-2xl font-bold mb-4" data-translate="home.recentMatches">${ctx.t("home.recentMatches") ?? "Partidos"}</h1>
 
-            <!-- Controles -->
-              <div class="flex flex-wrap items-center gap-2 mb-4">
-                <select id="filter-game" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-white/80 [color-scheme:dark]">
-                      <option value="all">${ctx.t("all") ?? "Todos"}</option>
-                      <option value="pong">${ctx.t("pong") ?? "🏓 Pong"}</option>
-                      <option value="tictactoe">${ctx.t("ttt") ?? "❌⭘ Tic-Tac-Toe"}</option>
-                </select>
-                <select id="filter-result" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-white/80 ">
-                    <option value="all">${ctx.t("all") ?? "Todos"}</option>
-                    <option value="W">${ctx.t("win") ?? "Victoria"}</option>
-                    <option value="D">${ctx.t("draw") ?? "Empate"}</option>
-                    <option value="L">${ctx.t("lose") ?? "Derrota"}</option>
-                </select>
-            </div>
+			<!-- Controles -->
+			  <div class="flex flex-wrap items-center gap-2 mb-4">
+				<select id="filter-game" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-white/80 [color-scheme:dark]">
+					  <option value="all">${ctx.t("all") ?? "Todos"}</option>
+					  <option value="pong">${ctx.t("pong") ?? "🏓 Pong"}</option>
+					  <option value="tictactoe">${ctx.t("ttt") ?? "❌⭘ Tic-Tac-Toe"}</option>
+				</select>
+				<select id="filter-result" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-white/80 ">
+					<option value="all">${ctx.t("all") ?? "Todos"}</option>
+					<option value="W">${ctx.t("win") ?? "Victoria"}</option>
+					<option value="D">${ctx.t("draw") ?? "Empate"}</option>
+					<option value="L">${ctx.t("lose") ?? "Derrota"}</option>
+				</select>
+			</div>
 
-            <!-- Lista -->
-            <section class="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur">
-                <div id="list" class="text-sm text-white/80 space-y-2">—</div>
-                <div class="mt-4 flex justify-center">
-                    <button id="btn-more" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 hidden">
-                        ${ctx.t("load_more") ?? "Mostrar más"}
-                    </button>
-                </div>
-            </section>
-        </main>
-    `;
+			<!-- Lista -->
+			<section class="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur">
+				<div id="list" class="text-sm text-white/80 space-y-2">—</div>
+				<div class="mt-4 flex justify-center">
+					<button id="btn-more" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 hidden">
+						${ctx.t("load_more") ?? "Mostrar más"}
+					</button>
+				</div>
+			</section>
+		</main>
+	`;
     const $ = (s) => el.querySelector(s);
     const listEl = $("#list");
     const filterGame = $("#filter-game");
@@ -139,11 +151,11 @@ export async function mount(el, ctx) {
         }
     }
     listEl.innerHTML = `
-        <div class="flex items-center gap-2 text-white/60">
-            <span class="inline-block w-3 h-3 rounded-full animate-pulse bg-white/30"></span>
-            ${ctx.t("loading") ?? "Cargando..."}
-        </div>
-    `;
+		<div class="flex items-center gap-2 text-white/60">
+			<span class="inline-block w-3 h-3 rounded-full animate-pulse bg-white/30"></span>
+			${ctx.t("loading") ?? "Cargando..."}
+		</div>
+	`;
     let meId = 0;
     let all = [];
     try {
@@ -165,13 +177,13 @@ export async function mount(el, ctx) {
         const dur = prettyDuration(d?.duration_ms);
         const icon = gameIcon(g);
         const meta = `
-            <div class="flex item-center gap-2 text-xs text-white/60 mt-0.5">
-                ${gamePill(g)}
-                <span>•</span>
-                <span>${when}</span>
-                ${dur ? `<span>•</span><span>${dur}</span>` : ""}
-            </div>
-        `;
+			<div class="flex item-center gap-2 text-xs text-white/60 mt-0.5">
+				${gamePill(g)}
+				<span>•</span>
+				<span>${when}</span>
+				${dur ? `<span>•</span><span>${dur}</span>` : ""}
+			</div>
+		`;
         const toneCls = res === "W" ? "text-emerald-300" :
             res === "L" ? "text-rose-300" :
                 "text-zinc-300";
@@ -181,39 +193,39 @@ export async function mount(el, ctx) {
                 ? `<div class="text-2xl font-extrabold tabular-nums ${toneCls}">${sc.you}&nbsp;–&nbsp;${sc.rival}</div>`
                 : `<div class="text-sm opacity-70">${ctx.t("no_score") ?? "Sin marcador"}</div>`;
             return `
-                  <li class="group rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-lg">
-                            ${icon}
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2">
-                                <div class="text-white truncate">vs ${oppName}</div>
-                                  ${resultPill(res)}
-                            </div>
-                            ${meta}
-                        </div>
-                        <div class="text-right">
-                            ${scoreHTML}
-                          </div>
-                    </div>
-                </li>`;
+				  <li class="group rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-3">
+					<div class="flex items-center gap-3">
+						<div class="w-10 h-10 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-lg">
+							${icon}
+						</div>
+						<div class="min-w-0 flex-1">
+							<div class="flex items-center gap-2">
+								<div class="text-white truncate">vs ${oppName}</div>
+								  ${resultPill(res)}
+							</div>
+							${meta}
+						</div>
+						<div class="text-right">
+							${scoreHTML}
+						  </div>
+					</div>
+				</li>`;
         }
         return `
-            <li class="group rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-lg">
-                        ${icon}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2">
-                            <div class="text-white truncate">vs ${oppName}</div>
-                                ${resultPill(res)}
-                        </div>
-                        ${meta}
-                    </div>
-                </div>
-            </li>`;
+			<li class="group rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition p-3">
+				<div class="flex items-center gap-3">
+					<div class="w-10 h-10 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-lg">
+						${icon}
+					</div>
+					<div class="min-w-0 flex-1">
+						<div class="flex items-center gap-2">
+							<div class="text-white truncate">vs ${oppName}</div>
+								${resultPill(res)}
+						</div>
+						${meta}
+					</div>
+				</div>
+			</li>`;
     }
     function applyFilters(list) {
         const g = filterGame?.value || "all";
@@ -271,10 +283,10 @@ export async function mount(el, ctx) {
         if (gameSelect) {
             const currentValue = gameSelect.value;
             gameSelect.innerHTML = `
-                <option value="all">${ctx.t("all") ?? "Todos"}</option>
-                <option value="pong">${ctx.t("pong") ?? "🏓 Pong"}</option>
-                <option value="tictactoe">${ctx.t("ttt") ?? "❌⭘ Tic-Tac-Toe"}</option>
-            `;
+				<option value="all">${ctx.t("all") ?? "Todos"}</option>
+				<option value="pong">${ctx.t("pong") ?? "🏓 Pong"}</option>
+				<option value="tictactoe">${ctx.t("ttt") ?? "❌⭘ Tic-Tac-Toe"}</option>
+			`;
             gameSelect.value = currentValue;
         }
         // Actualizar opciones del select de resultados
@@ -282,11 +294,11 @@ export async function mount(el, ctx) {
         if (resultSelect) {
             const currentValue = resultSelect.value;
             resultSelect.innerHTML = `
-                <option value="all">${ctx.t("all") ?? "Todos"}</option>
-                <option value="W">${ctx.t("win") ?? "Victoria"}</option>
-                <option value="D">${ctx.t("draw") ?? "Empate"}</option>
-                <option value="L">${ctx.t("lose") ?? "Derrota"}</option>
-            `;
+				<option value="all">${ctx.t("all") ?? "Todos"}</option>
+				<option value="W">${ctx.t("win") ?? "Victoria"}</option>
+				<option value="D">${ctx.t("draw") ?? "Empate"}</option>
+				<option value="L">${ctx.t("lose") ?? "Derrota"}</option>
+			`;
             resultSelect.value = currentValue;
         }
         // Actualizar botón "Mostrar más"

@@ -1,9 +1,24 @@
 import type { Ctx } from "./router.js";
-import { currentTranslations, initializeLanguages } from "./translate.js";
+import { initializeLanguages } from "./translate.js";
 
 export async function mount(el: HTMLElement, ctx: Ctx) {
 	// Inicializar el sistema de traducción primero
 	await initializeLanguages();
+
+	let isAuthed = false;
+
+    try {
+		const response = await ctx.api("/api/auth/me");
+
+		isAuthed = !!(response && response.user);
+	} catch (error) {
+		isAuthed = false;
+	}
+
+	if (!isAuthed) {
+		ctx.navigate("/login", { replace: true });
+		return;
+	}
 
 	document.body.className = "min-h-screen bg-black text-white";
 
@@ -272,8 +287,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 		}
   	});
 
-	// Charts.js ya no es necesario
-
 	const meUser = await me(ctx);
 	let viewedUser: Me | null = meUser;
 
@@ -306,8 +319,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	// Inicializar el sistema de traducción
 	await initializeLanguages();
 }
-
-// Función de Charts.js eliminada - ya no se necesita
 
 // ========= Utilidades =========
 const $ = <T extends HTMLElement = HTMLElement>(s: string, p: Document | HTMLElement = document) =>
