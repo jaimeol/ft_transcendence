@@ -198,13 +198,9 @@ async function tournamentsRoutes(app, opts) {
       GROUP BY t.id
     `).get(uid, uid, tournamentId);
 
-    console.log('Tournament query result:', tournament);
     if (!tournament) {
-      console.log('Tournament not found');
       return reply.code(404).send({ error: 'Tournament not found' });
     }
-
-    console.log('Getting participants...');
     const participants = db.prepare(`
       SELECT tp.*, u.display_name, u.email
       FROM tournament_participants tp
@@ -213,11 +209,8 @@ async function tournamentsRoutes(app, opts) {
       ORDER BY tp.joined_at ASC
     `).all(tournamentId);
 
-    console.log('Participants:', participants);
-
     let matches = [];
     if (tournament.status === 'active' || tournament.status === 'completed' || tournament.status === 'finished') {
-      console.log('Getting matches...');
       
       // CORREGIR LA CONSULTA PARA INCLUIR LOS PARTICIPANT IDs
 	  matches = db.prepare(`
@@ -232,14 +225,10 @@ async function tournamentsRoutes(app, opts) {
         WHERE tm.tournament_id = ?
         ORDER BY tm.round ASC, tm.position ASC
       `).all(tournamentId);
-      
-      console.log('Matches with participant IDs:', matches);
     }
 
     tournament.participants = participants;
     tournament.matches = matches;
-    console.log('Final tournament object:', tournament);
-    console.log('=== END GET TOURNAMENT DETAILS ===');
 
     reply.send(tournament);
   } catch (error) {
@@ -519,6 +508,85 @@ async function tournamentsRoutes(app, opts) {
 		}
 	});
 
+	// POST /api/tournaments/:tournamentId/matches/:matchId/verify-opponent - Verify opponent authentication for match
+	app.post('/api/tournaments/:tournamentId/matches/:matchId/verify-opponent', async (req, reply) => {
+		const uid = req.session.uid;
+		
+		if (!uid) {
+			return reply.code(401).send({ error: 'Not authenticated' });
+		}
+
+		const { email, password } = req.body;
+		
+		if (!email || !password) {
+			return reply.code(400).send({ error: 'Email and password are required' });
+		}
+		
+		const tournamentId = parseInt(req.params.tournamentId);
+		const matchId = parseInt(req.params.matchId);
+		console.log('Tournament ID:', tournamentId, 'Match ID:', matchId);
+		
+		try {
+			// Get match details and verify current user is in this match
+			const match = db.prepare(`
+				SELECT tm.*,
+							 p1.user_id as player1_user_id, p1.alias as player1_alias,
+							 p2.user_id as player2_user_id, p2.alias as player2_alias
+				FROM tournament_matches tm
+				LEFT JOIN tournament_participants p1 ON tm.player1_id = p1.id
+				LEFT JOIN tournament_participants p2 ON tm.player2_id = p2.id
+				WHERE tm.tournament_id = ? AND tm.id = ?
+			`).get(tournamentId, matchId);
+
+			if (!match) {
+				return reply.code(404).send({ error: 'Match not found' });
+			}
+
+			// Verify that the current user is one of the players in this match
+			if (match.player1_user_id !== uid && match.player2_user_id !== uid) {
+				return reply.code(403).send({ error: 'You are not a participant in this match' });
+			}
+
+			// Determine who the opponent is
+			const opponentUserId = match.player1_user_id === uid ? match.player2_user_id : match.player1_user_id;
+			const opponentAlias = match.player1_user_id === uid ? match.player2_alias : match.player1_alias;
+
+			// Verify opponent credentials
+			const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+			console.log('User found by email:', user ? `ID: ${user.id}, email: ${user.email}` : 'NOT FOUND');
+			console.log('User password hash exists:', user ? (user.password_hash ? 'YES' : 'NO/NULL') : 'N/A');
+			console.log('User password hash length:', user && user.password_hash ? user.password_hash.length : 0);
+			
+			if (!user) {
+				return reply.code(401).send({ error: 'Invalid credentials' });
+			}
+
+			// Verify that the authenticated user is the expected opponent
+			if (user.id !== opponentUserId) {
+				return reply.code(403).send({ error: 'You are not the expected opponent for this match' });
+			}
+
+			// Verify password
+			const bcrypt = require('bcrypt');
+			const validPassword = await bcrypt.compare(password, user.password_hash);
+			
+			if (!validPassword) {
+				return reply.code(401).send({ error: 'Invalid credentials' });
+			}
+			
+			return {
+				success: true,
+				opponentId: user.id,
+				opponentName: user.display_name,
+				opponentAlias: opponentAlias,
+				message: 'Opponent authenticated successfully'
+			};
+		} catch (error) {
+			console.error('Error verifying opponent:', error);
+			return reply.code(500).send({ error: 'Error verifying opponent authentication' });
+		}
+	});
+
 	// POST /api/tournaments/:tournamentId/matches/:matchId/result - Update match result
 	app.post('/api/tournaments/:tournamentId/matches/:matchId/result', async (req, reply) => {
 		const uid = req.session.uid;
@@ -535,9 +603,12 @@ async function tournamentsRoutes(app, opts) {
 
 		try {
 			const match = db.prepare(`
-				SELECT tm.*, t.status, t.current_round
+				SELECT tm.*, t.status, t.current_round,
+					   p1.user_id as player1_user_id, p2.user_id as player2_user_id
 				FROM tournament_matches tm
 				JOIN tournaments t ON tm.tournament_id = t.id
+				LEFT JOIN tournament_participants p1 ON tm.player1_id = p1.id
+				LEFT JOIN tournament_participants p2 ON tm.player2_id = p2.id
 				WHERE tm.id = ? AND tm.tournament_id = ?
 			`).get(matchId, tournamentId);
 
@@ -553,15 +624,18 @@ async function tournamentsRoutes(app, opts) {
 				return reply.code(400).send({ error: 'Match already completed' });
 			}
 
-			if (winnerId !== match.player1_id && winnerId !== match.player2_id) {
+			if (winnerId !== match.player1_user_id && winnerId !== match.player2_user_id) {
 				return reply.code(400).send({ error: 'Winner must be one of the match players' });
 			}
+
+			// Convert winnerId (user ID) to participant ID for database storage
+			const winnerParticipantId = winnerId === match.player1_user_id ? match.player1_id : match.player2_id;
 
 			db.prepare(`
 				UPDATE tournament_matches
 				SET winner_id = ?, score_player1 = ?, score_player2 = ?, played_at = datetime('now')
 				WHERE id = ?
-			`).run(winnerId, scorePlayer1, scorePlayer2, matchId);
+			`).run(winnerParticipantId, scorePlayer1, scorePlayer2, matchId);
 
 			await autoAdvanceRoundIfComplete(app, db, tournamentId, match.current_round);
 
