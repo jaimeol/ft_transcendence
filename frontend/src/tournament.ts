@@ -754,10 +754,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
     
     // Group matches by round
     const rounds: Record<number, any[]> = {};
-    for (const m of t.matches) { 
-      rounds[m.round] = rounds[m.round] || []; 
-      rounds[m.round].push(m); 
-    }
+    for (const m of t.matches) (rounds[m.round] = rounds[m.round] || []).push(m);
     const keys = Object.keys(rounds).map(k => parseInt(k)).sort((a,b)=>a-b);
     
     // Función para obtener el nombre de la ronda (reutilizada)
