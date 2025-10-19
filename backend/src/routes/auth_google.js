@@ -236,4 +236,53 @@ module.exports = async function (fastify) {
       return reply.code(400).send("Token de Google inválido: " + e.message);
     }
   });
+
+  fastify.post("/auth/google-second", async (req, reply) => {
+    try {
+      const me = req.session.uid;
+      if (!me) return reply.code(401).send({ error: "Unauthorized" });
+
+      const body = req.body || {};
+      const token = body.token || body.id_token || body.credential;
+      if (!token) return reply.code(400).send({ error: "Falta token" });
+      if (!CLIENT_ID) return reply.code(500).send({ error: "Backend sin CLIENT_ID" });
+
+      const { h, p, s, header, payload, signature } = parseJwt(token);
+
+      if (header.alg !== "RS256" || !header.kid) return reply.code(400).send({ error: "Token no soportado" });
+      const jwk = await getGoogleJwkByKid(header.kid);
+      if (jwk.kty !== "RSA") return reply.code(400).send({ error: "KTY no soportado" });
+
+      const publicKey = importRsaPublicKeyFromJwk(jwk);
+      const ok = verifyRS256(`${h}.${p}`, signature, publicKey);
+      if (!ok) return reply.code(401).send({ error: "Firma inválida" });
+
+      const now = Math.floor(Date.now() / 1000);
+      const issOk = payload.iss === "https://accounts.google.com" || payload.iss === "accounts.google.com";
+      if (!issOk) return reply.code(401).send({ error: "iss inválido" });
+      if (payload.aud !== CLIENT_ID) return reply.code(401).send({ error: "aud inválido" });
+      if (payload.exp < now) return reply.code(401).send({ error: "Token expirado" });
+      if (payload.email_verified === false) return reply.code(401).send({ error: "Email no verificado" });
+
+      const email = payload.email;
+      const googleId = payload.sub;
+      if (!email) return reply.code(400).send({ error: "Email no presente en token" });
+      if (!googleId) return reply.code(400).send({ error: "Google ID no presente en token" });
+
+      const db = fastify.db;
+      const user = db.prepare("SELECT * FROM users WHERE email = ? OR google_id = ?").get(email, googleId);
+      if (!user) return reply.code(401).send({ error: "Usuario no encontrado" });
+      if (user.id === me) return reply.code(400).send({ error: "El segundo jugador debe ser diferente" });
+
+      return reply.send({
+        id: user.id,
+        displayName: user.display_name,
+        email: user.email,
+        avatar_path: user.avatar_path
+      });
+    } catch (e) {
+      fastify.log.error("google-second error:", e);
+      return reply.code(400).send({ error: "Token de Google inválido" });
+    }
+  });
 };

@@ -1,56 +1,58 @@
 import { currentTranslations, initializeLanguages } from "./translate.js";
 import type { Ctx } from "./router.js";
+// + importa el botón de Google
+import { renderGoogleSecondButton } from "./google.js";
 
 type Player = { id: number; displayName?: string; email?: string } | null;
 
 export async function mount(el: HTMLElement, ctx: Ctx) {
-	// Inicializar traducciones y configuración
-	await initializeLanguages();
-	
-	el.innerHTML = `
-	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
-		<div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-			<a href="/home" class="flex items-center gap-2" data-nav>
-				<div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
-				<span class="font-semibold">ft_transcendence</span>
-			</a>
+    // Inicializar traducciones y configuración
+    await initializeLanguages();
+    
+    el.innerHTML = `
+    <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
+        <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/home" class="flex items-center gap-2" data-nav>
+                <div class="size-7 rounded-lg bg-gradient-to-br from-indigo-400 to-emerald-400"></div>
+                <span class="font-semibold">ft_transcendence</span>
+            </a>
 
-			<div class="flex items-center gap-3">
-				<div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
-					<button class="hover:underline" data-lang="en">EN</button>
-					<span class="mx-1 text-white/40">|</span>
-					<button class="hover:underline" data-lang="es">ES</button>
-					<span class="mx-1 text-white/40">|</span>
-					<button class="hover:underline" data-lang="fr">FR</button>
-				</div>
-				<button id="logoutBtn"
+            <div class="flex items-center gap-3">
+                <div class="bg-white/5 border border-white/10 px-2 py-1 rounded-full text-xs backdrop-blur">
+                    <button class="hover:underline" data-lang="en">EN</button>
+                    <span class="mx-1 text-white/40">|</span>
+                    <button class="hover:underline" data-lang="es">ES</button>
+                    <span class="mx-1 text-white/40">|</span>
+                    <button class="hover:underline" data-lang="fr">FR</button>
+                </div>
+                <button id="logoutBtn"
 		  class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
 		  data-translate="home.logout">
 		  Cerrar sesión
 		</button>
-			</div>
-		</div>
-	</header>
+            </div>
+        </div>
+    </header>
 
-	<!-- Main -->
-	<main class="flex-1">
-		<div class="max-w-5xl mx-auto px-4 py-8">
-			<!-- Cabecera del juego -->
-			<div class="mb-6">
-			<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
-				<span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
+    <!-- Main -->
+    <main class="flex-1">
+        <div class="max-w-5xl mx-auto px-4 py-8">
+            <!-- Cabecera del juego -->
+            <div class="mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+                <span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
 				Ft_Transcendence — Pong 2v2
-				</span>
-			</h1>
-			<div id="score" class="mt-2 text-white/70 text-lg font-mono">P1 0-0 | P2 0-0</div>
-			</div>
+                </span>
+            </h1>
+            <div id="score" class="mt-2 text-white/70 text-lg font-mono">P1 0-0 | P2 0-0</div>
+            </div>
 
-			<!-- Contenedor del canvas -->
-			<section class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-4">
-			<div class="overflow-x-auto">
-				<!-- Contenedor relativo para canvas + overlay -->
-				<div class="relative w-full max-w-[1200px] mx-auto">
-				<canvas
+            <!-- Contenedor del canvas -->
+            <section class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-4">
+            <div class="overflow-x-auto">
+                <!-- Contenedor relativo para canvas + overlay -->
+                <div class="relative w-full max-w-[1200px] mx-auto">
+                <canvas
 					id="pong"
 					width="1200"
 					height="800"
@@ -60,97 +62,127 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 					id="board-blocker"
 					class="absolute inset-0 bg-black z-40 hidden"
 				></div>
-				</div>
-			</div>
-			</section>
-		</div>
-	</main>
+                </div>
+            </div>
+            </section>
+        </div>
+    </main>
 
-	<!-- Selector de modo (nuevo) -->
-	<div id="mode-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
-		<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
-			<h2 class="text-2xl font-bold mb-6 text-center">Selecciona Modo</h2>
-			<div class="flex flex-col gap-3 items-center justify-center">
-				<button type="button" class="mode-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold w-full" data-mode="ai">2 Jugadores vs IA</button>
-				<button type="button" class="mode-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold w-full" data-mode="pvp">2 Jugadores vs 2 Jugadores</button>
-			</div>
-		</div>
-	</div>
+    <!-- Selector de modo (nuevo) -->
+    <div id="mode-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
+        <div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
+            <h2 class="text-2xl font-bold mb-6 text-center">Selecciona Modo</h2>
+            <div class="flex flex-col gap-3 items-center justify-center">
+                <button type="button" class="mode-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold w-full" data-mode="ai">2 Jugadores vs IA</button>
+                <button type="button" class="mode-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold w-full" data-mode="pvp">2 Jugadores vs 2 Jugadores</button>
+            </div>
+        </div>
+    </div>
 
-	<div id="players-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
-		<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
-			<h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_players">Selecciona Jugadores</h2>
-			<div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-				<button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="1" data-translate="one_player"> 1 Jugador</button>
-				<button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="2" data-translate="two_players"> 2 Jugadores</button>
-			</div>
-		</div>
-	</div>
-	
-	<!-- Overlay dificultad -->
-	<div id="difficulty-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate-fade-in">
-		<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
-			<h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_difficulty">Selecciona dificultad</h2>
-			<div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-				<button type="button" class="difficulty-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" data-translate="easy" data-level="easy">Fácil</button>
-				<button type="button" class="difficulty-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded" data-translate="medium" data-level="medium">Media</button>
-				<button type="button" class="difficulty-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" data-translate="hard" data-level="hard">Difícil</button>
-			</div>
-		</div>
-	</div>
+    <div id="players-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
+        <div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
+            <h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_players">Selecciona Jugadores</h2>
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
+                <button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="1" data-translate="one_player"> 1 Jugador</button>
+                <button type="button" class="players-btn bg-white/20 hover:bg-white/30 transition px-4 py-2 rounded font-semibold" data-players="2" data-translate="two_players"> 2 Jugadores</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overlay dificultad -->
+    <div id="difficulty-overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate-fade-in">
+        <div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl w-[min(92vw,28rem)]">
+            <h2 class="text-2xl font-bold mb-6 text-center" data-translate="select_difficulty">Selecciona dificultad</h2>
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
+                <button type="button" class="difficulty-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" data-translate="easy" data-level="easy">Fácil</button>
+                <button type="button" class="difficulty-btn bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded" data-translate="medium" data-level="medium">Media</button>
+                <button type="button" class="difficulty-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" data-translate="hard" data-level="hard">Difícil</button>
+            </div>
+        </div>
+    </div>
 
-	<!-- Overlay login para el segundo jugador -->
-	<div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
-		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
-			<h2 class="text-xl font-semibold mb-4" id="pvp-login-heading">${ctx.t("pvp.second_player")}</h2>
-			<form id="pvp-login-form" class="flex flex-col gap-3">
-			<input id="pvp-email" type="email" placeholder="Email"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-			<input id="pvp-password" type="password" placeholder="${ctx.t("auth.password") ?? "Contraseña"}"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-			<button type="submit"
-					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
-				${ctx.t("pvp.start_match") ?? "Empezar partida"}
-			</button>
-			</form>
-			<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
-		</div>
-	</div>
+    <!-- Overlay login para el segundo jugador -->
+    <div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h2 class="text-xl font-semibold mb-4" id="pvp-login-heading">${ctx.t("pvp.second_player")}</h2>
+            <form id="pvp-login-form" class="flex flex-col gap-3">
+            <input id="pvp-email" type="email" placeholder="Email"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+            <input id="pvp-password" type="password" placeholder="${ctx.t("auth.password") ?? "Contraseña"}"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+            <button type="submit"
+                    class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
+                ${ctx.t("pvp.start_match") ?? "Empezar partida"}
+            </button>
+            </form>
 
-	<!-- Login para el tercer jugador (nuevo) -->
-	<div id="pvp-login-overlay3" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
-		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
-			<h2 class="text-xl font-semibold mb-4">Jugador 3 (Equipo Rival)</h2>
-			<form id="pvp-login-form3" class="flex flex-col gap-3">
-				<input id="pvp-email3" type="email" placeholder="Email"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-				<input id="pvp-password3" type="password" placeholder="Contraseña"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-				<button type="submit" class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
-					Continuar
-				</button>
-			</form>
-			<p id="pvp-login-error3" class="text-red-400 text-sm mt-3 hidden"></p>
-		</div>
-	</div>
+            <!-- separador -->
+            <div class="mt-4 flex items-center gap-2 text-white/40 text-xs">
+              <span class="flex-1 h-px bg-white/10"></span>
+              <span>o</span>
+              <span class="flex-1 h-px bg-white/10"></span>
+            </div>
+            <!-- botón Google jugador 2 -->
+            <div id="pvp-google-host2" class="mt-3 flex justify-center"></div>
 
-	<!-- Login para el cuarto jugador (nuevo) -->
-	<div id="pvp-login-overlay4" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
-		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
-			<h2 class="text-xl font-semibold mb-4">Jugador 4 (Equipo Rival)</h2>
-			<form id="pvp-login-form4" class="flex flex-col gap-3">
-				<input id="pvp-email4" type="email" placeholder="Email"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-				<input id="pvp-password4" type="password" placeholder="Contraseña"
-					class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-				<button type="submit" class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
-					Iniciar Partida
-				</button>
-			</form>
-			<p id="pvp-login-error4" class="text-red-400 text-sm mt-3 hidden"></p>
-		</div>
-	</div>
-	`;
+            <p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
+        </div>
+    </div>
+
+    <!-- Login para el tercer jugador (nuevo) -->
+    <div id="pvp-login-overlay3" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h2 class="text-xl font-semibold mb-4">Jugador 3 (Equipo Rival)</h2>
+            <form id="pvp-login-form3" class="flex flex-col gap-3">
+                <input id="pvp-email3" type="email" placeholder="Email"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+                <input id="pvp-password3" type="password" placeholder="Contraseña"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+                <button type="submit" class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
+                    Continuar
+                </button>
+            </form>
+
+            <!-- separador -->
+            <div class="mt-4 flex items-center gap-2 text-white/40 text-xs">
+              <span class="flex-1 h-px bg-white/10"></span>
+              <span>o</span>
+              <span class="flex-1 h-px bg-white/10"></span>
+            </div>
+            <!-- botón Google jugador 3 -->
+            <div id="pvp-google-host3" class="mt-3 flex justify-center"></div>
+
+            <p id="pvp-login-error3" class="text-red-400 text-sm mt-3 hidden"></p>
+        </div>
+    </div>
+
+    <!-- Login para el cuarto jugador (nuevo) -->
+    <div id="pvp-login-overlay4" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h2 class="text-xl font-semibold mb-4">Jugador 4 (Equipo Rival)</h2>
+            <form id="pvp-login-form4" class="flex flex-col gap-3">
+                <input id="pvp-email4" type="email" placeholder="Email"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+                <input id="pvp-password4" type="password" placeholder="Contraseña"
+                    class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+                <button type="submit" class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
+                    Iniciar Partida
+                </button>
+            </form>
+
+            <!-- separador -->
+            <div class="mt-4 flex items-center gap-2 text-white/40 text-xs">
+              <span class="flex-1 h-px bg-white/10"></span>
+              <span>o</span>
+              <span class="flex-1 h-px bg-white/10"></span>
+            </div>
+            <!-- botón Google jugador 4 -->
+            <div id="pvp-google-host4" class="mt-3 flex justify-center"></div>
+
+            <p id="pvp-login-error4" class="text-red-400 text-sm mt-3 hidden"></p>
+        </div>
+    </div>
+    `;
 
 	const subs = new AbortController();
 	const on = <K extends keyof WindowEventMap>(type: K, handler: (ev: WindowEventMap[K]) => any) =>
@@ -362,7 +394,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
         }
     }
 
-	// Inicial: mostrar overlay de dificultad si no está especificada
+	// Inicial: mostrar overlay de dificultad si no está especificificada
 	if (mode === 'ai') {
 		if (!difficulty) {
 			diffOverlay?.classList.remove('hidden');
@@ -389,97 +421,166 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	/* -------------------------
 	   Login para el segundo jugador
 	   ------------------------- */
-	blocker?.classList.remove('hidden');
-	const pvpOverlay = $('#pvp-login-overlay')!;
-	pvpOverlay.classList.remove('hidden');
+    blocker?.classList.remove('hidden');
+    const pvpOverlay = $('#pvp-login-overlay')!;
+    pvpOverlay.classList.remove('hidden');
 
-	// Función genérica para manejar login
-	async function handlePlayerLogin(
-		email: string,
-		password: string,
-		successCallback: (player: Player) => void,
-		errorElement: HTMLElement
-	) {
-		try {
-			const res = await fetch('/api/auth/login-second', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({ email, password }),
-			});
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const data = await res.json();
-			successCallback(data);
-		} catch {
-			errorElement.textContent = "Credenciales inválidas";
-			errorElement.classList.remove('hidden');
-		}
-	}
+    // Función genérica para manejar login
+    async function handlePlayerLogin(
+        email: string,
+        password: string,
+        successCallback: (player: Player) => void,
+        errorElement: HTMLElement
+    ) {
+        try {
+            const res = await fetch('/api/auth/login-second', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ email, password }),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            successCallback(data);
+        } catch (e) {
+            errorElement.textContent = "Credenciales inválidas";
+            errorElement.classList.remove('hidden');
+        }
+    }
 
-	// Configurar login para el segundo jugador
-	const form = el.querySelector<HTMLFormElement>('#pvp-login-form')!;
-	const errorEl = $('#pvp-login-error')!;
-	
-	form.addEventListener('submit', async (ev) => {
-		ev.preventDefault();
-		const email = (el.querySelector<HTMLInputElement>('#pvp-email')!).value;
-		const password = (el.querySelector<HTMLInputElement>('#pvp-password')!).value;
-		
-		await handlePlayerLogin(email, password, (player) => {
-			secondPlayer = player;
-			pvpReady = true;
-			pvpOverlay.classList.add('hidden');
-			
-			// Si es modo pvp, mostrar login para jugador 3
-			if (mode === 'pvp') {
-				const pvpOverlay3 = $('#pvp-login-overlay3')!;
-				pvpOverlay3.classList.remove('hidden');
-			} else {
-				// Modo AI, ya podemos empezar
-				blocker?.classList.add('hidden');
-			}
-		}, errorEl);
-	});
+    // Configurar login para el segundo jugador
+    const form = el.querySelector<HTMLFormElement>('#pvp-login-form')!;
+    const errorEl = $('#pvp-login-error')!;
+    
+    form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const email = (el.querySelector<HTMLInputElement>('#pvp-email')!).value;
+        const password = (el.querySelector<HTMLInputElement>('#pvp-password')!).value;
+        
+        await handlePlayerLogin(email, password, (player) => {
+            secondPlayer = player;
+            pvpReady = true;
+            pvpOverlay.classList.add('hidden');
+            
+            // Si es modo pvp, mostrar login para jugador 3
+            if (mode === 'pvp') {
+                const pvpOverlay3 = $('#pvp-login-overlay3')!;
+                pvpOverlay3.classList.remove('hidden');
+            } else {
+                // Modo AI, ya podemos empezar
+                blocker?.classList.add('hidden');
+            }
+        }, errorEl);
+    });
 
-	// Configurar login para el tercer jugador (solo en modo pvp)
-	if (mode === 'pvp') {
-		const form3 = el.querySelector<HTMLFormElement>('#pvp-login-form3')!;
-		const errorEl3 = $('#pvp-login-error3')!;
-		
-		form3.addEventListener('submit', async (ev) => {
-			ev.preventDefault();
-			const email = (el.querySelector<HTMLInputElement>('#pvp-email3')!).value;
-			const password = (el.querySelector<HTMLInputElement>('#pvp-password3')!).value;
-			
-			await handlePlayerLogin(email, password, (player) => {
-				thirdPlayer = player;
-				pvpReady3 = true;
-				
-				// Ocultar este overlay y mostrar el del jugador 4
-				$('#pvp-login-overlay3')!.classList.add('hidden');
-				$('#pvp-login-overlay4')!.classList.remove('hidden');
-			}, errorEl3);
-		});
+    // Botón Google para jugador 2
+    {
+        const host2 = el.querySelector<HTMLDivElement>('#pvp-google-host2');
+        if (host2) {
+            void renderGoogleSecondButton(
+                host2,
+                (player) => {
+                    secondPlayer = player;
+                    pvpReady = true;
+                    pvpOverlay.classList.add('hidden');
+                    if (mode === 'pvp') {
+                        $('#pvp-login-overlay3')!.classList.remove('hidden');
+                    } else {
+                        blocker?.classList.add('hidden');
+                    }
+                    errorEl?.classList.add('hidden');
+                },
+                (msg) => {
+                    if (errorEl) {
+                        errorEl.textContent = msg || 'Error al autenticar con Google';
+                        errorEl.classList.remove('hidden');
+                    }
+                }
+            );
+        }
+    }
 
-		// Configurar login para el cuarto jugador
-		const form4 = el.querySelector<HTMLFormElement>('#pvp-login-form4')!;
-		const errorEl4 = $('#pvp-login-error4')!;
-		
-		form4.addEventListener('submit', async (ev) => {
-			ev.preventDefault();
-			const email = (el.querySelector<HTMLInputElement>('#pvp-email4')!).value;
-			const password = (el.querySelector<HTMLInputElement>('#pvp-password4')!).value;
-			
-			await handlePlayerLogin(email, password, (player) => {
-				fourthPlayer = player;
-				pvpReady4 = true;
-				
-				// Todos los jugadores listos, ocultar overlay y desbloquear juego
-				$('#pvp-login-overlay4')!.classList.add('hidden');
-				blocker?.classList.add('hidden');
-			}, errorEl4);
-		});
-	}
+    // Configurar login para el tercer jugador (solo en modo pvp)
+    if (mode === 'pvp') {
+        const form3 = el.querySelector<HTMLFormElement>('#pvp-login-form3')!;
+        const errorEl3 = $('#pvp-login-error3')!;
+        
+        form3.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const email = (el.querySelector<HTMLInputElement>('#pvp-email3')!).value;
+            const password = (el.querySelector<HTMLInputElement>('#pvp-password3')!).value;
+            
+            await handlePlayerLogin(email, password, (player) => {
+                thirdPlayer = player;
+                pvpReady3 = true;
+                $('#pvp-login-overlay3')!.classList.add('hidden');
+                $('#pvp-login-overlay4')!.classList.remove('hidden');
+            }, errorEl3);
+        });
+
+        // Botón Google para jugador 3
+        {
+            const host3 = el.querySelector<HTMLDivElement>('#pvp-google-host3');
+            if (host3) {
+                void renderGoogleSecondButton(
+                    host3,
+                    (player) => {
+                        thirdPlayer = player;
+                        pvpReady3 = true;
+                        $('#pvp-login-overlay3')!.classList.add('hidden');
+                        $('#pvp-login-overlay4')!.classList.remove('hidden');
+                        errorEl3?.classList.add('hidden');
+                    },
+                    (msg) => {
+                        if (errorEl3) {
+                            errorEl3.textContent = msg || 'Error al autenticar con Google';
+                            errorEl3.classList.remove('hidden');
+                        }
+                    }
+                );
+            }
+        }
+
+        // Configurar login para el cuarto jugador
+        const form4 = el.querySelector<HTMLFormElement>('#pvp-login-form4')!;
+        const errorEl4 = $('#pvp-login-error4')!;
+        
+        form4.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const email = (el.querySelector<HTMLInputElement>('#pvp-email4')!).value;
+            const password = (el.querySelector<HTMLInputElement>('#pvp-password4')!).value;
+            
+            await handlePlayerLogin(email, password, (player) => {
+                fourthPlayer = player;
+                pvpReady4 = true;
+                $('#pvp-login-overlay4')!.classList.add('hidden');
+                blocker?.classList.add('hidden');
+            }, errorEl4);
+        });
+
+        // Botón Google para jugador 4
+        {
+            const host4 = el.querySelector<HTMLDivElement>('#pvp-google-host4');
+            if (host4) {
+                void renderGoogleSecondButton(
+                    host4,
+                    (player) => {
+                        fourthPlayer = player;
+                        pvpReady4 = true;
+                        $('#pvp-login-overlay4')!.classList.add('hidden');
+                        blocker?.classList.add('hidden');
+                        errorEl4?.classList.add('hidden');
+                    },
+                    (msg) => {
+                        if (errorEl4) {
+                            errorEl4.textContent = msg || 'Error al autenticar con Google';
+                            errorEl4.classList.remove('hidden');
+                        }
+                    }
+                );
+            }
+        }
+    }
 
 	/* -------------------------
 	   TECLAS (asignación según modo)

@@ -1,5 +1,6 @@
 import { currentTranslations, initializeLanguages } from "./translate.js";
 import type { Ctx } from "./router.js";
+import { renderGoogleSecondButton } from "./google.js";
 
 type Player = { id: number; displayName?: string; email?: string } | null;
 
@@ -127,6 +128,17 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
                 ${ctx.t("pvp.start_match") ?? "Empezar partida"}
             </button>
             </form>
+
+            <!-- separador -->
+            <div class="mt-4 flex items-center gap-2 text-white/40 text-xs">
+              <span class="flex-1 h-px bg-white/10"></span>
+              <span>o</span>
+              <span class="flex-1 h-px bg-white/10"></span>
+            </div>
+
+            <!-- botón Google -->
+            <div id="pvp-google-host" class="mt-3 flex justify-center"></div>
+
             <p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
         </div>
     </div>
@@ -326,6 +338,8 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
         const heading = $('#pvp-login-heading')!;
         
         heading.textContent = ctx.t("pvp.second_player");
+
+        // login manual
         form.addEventListener('submit', async (ev) => {
             ev.preventDefault();
             const email = (el.querySelector<HTMLInputElement>('#pvp-email')!).value;
@@ -343,11 +357,33 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
                 pvpReady = true;
                 pvpOverlay.classList.add('hidden');
                 blocker?.classList.add('hidden');
+                errorEl.classList.add('hidden');
             } catch {
                 errorEl.textContent = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";
                 errorEl.classList.remove('hidden');
             }
         });
+
+        // botón Google (segundo jugador)
+        const host = el.querySelector<HTMLDivElement>('#pvp-google-host');
+        if (host) {
+          void renderGoogleSecondButton(
+            host,
+            (player) => {
+              secondPlayer = player;
+              pvpReady = true;
+              pvpOverlay.classList.add('hidden');
+              blocker?.classList.add('hidden');
+              errorEl?.classList.add('hidden');
+            },
+            (msg) => {
+              if (errorEl) {
+                errorEl.textContent = msg || 'Error al autenticar con Google';
+                errorEl.classList.remove('hidden');
+              }
+            }
+          );
+        }
     } else {
         // no pvp -> ocultar blocker
         blocker?.classList.add('hidden');

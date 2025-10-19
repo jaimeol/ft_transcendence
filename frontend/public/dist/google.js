@@ -190,3 +190,50 @@ export async function initGoogleUI(root, navigate) {
         }
     }
 }
+// 👉 NUEVA FUNCIÓN: renderiza el botón para el segundo jugador
+export async function renderGoogleSecondButton(host, onSuccess, onError) {
+    try {
+        const clientId = await fetchClientId();
+        if (!clientId)
+            throw new Error("GOOGLE_CLIENT_ID vacío");
+        await loadGIS();
+        // Inicializa con callback específico para “segundo jugador”
+        window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: async ({ credential }) => {
+                try {
+                    const r = await fetch("/api/auth/google-second", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ token: credential }), // acepta token/id_token/credential
+                    });
+                    if (!r.ok) {
+                        const t = await r.text();
+                        onError?.(`HTTP ${r.status}: ${t}`);
+                        return;
+                    }
+                    const player = await r.json();
+                    onSuccess(player);
+                }
+                catch (e) {
+                    onError?.(e?.message || "Fallo de red");
+                }
+            },
+            auto_select: false,
+            itp_support: true,
+            use_fedcm_for_prompt: true,
+        });
+        // Render del botón oficial
+        window.google.accounts.id.renderButton(host, {
+            theme: "filled_black",
+            size: "large",
+            width: 280,
+            text: "continue_with",
+            shape: "rectangular",
+        });
+    }
+    catch (e) {
+        onError?.(e?.message || "No se pudo preparar Google");
+    }
+}
