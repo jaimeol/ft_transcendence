@@ -1,3 +1,5 @@
+import { renderGoogleSecondButton } from "./google.js";
+import { initializeLanguages, changeLanguage, updateContent } from "./translate.js"; // <- añade updateContent y changeLanguage
 const WIN_COMBOS = [
     [
         [0, 0],
@@ -41,6 +43,7 @@ const WIN_COMBOS = [
     ],
 ];
 export async function mount(el, { t, api, navigate }) {
+    await initializeLanguages();
     let isAuthed = false;
     try {
         const response = await api("/api/auth/me");
@@ -54,7 +57,7 @@ export async function mount(el, { t, api, navigate }) {
         return;
     }
     el.innerHTML = `
-	<div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex flex-col">
+    <div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex flex-col">
 
 	<!-- Header -->
 	<header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
@@ -110,10 +113,10 @@ export async function mount(el, { t, api, navigate }) {
 			<!-- Controles -->
 			<div class="mt-4 flex items-center justify-center">
 			<button id="resetBtn"
-					class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 font-semibold"
-					data-translate="ttt.restart">
-				${t("ttt.restart") ?? "Reiniciar"}
-			</button>
+                    class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 font-semibold"
+					data-translate="ttt_restart">
+                ${t("ttt_restart") ?? "Reiniciar"}
+            </button>
 			</div>
 		</section>
 		</div>
@@ -121,18 +124,34 @@ export async function mount(el, { t, api, navigate }) {
 
 	<!-- Overlay login segundo jugador -->
 	<div id="pvp-login-overlay" class="fixed inset-0 hidden flex items-center justify-center bg-black/60 z-50">
-		<div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
-		<h2 class="text-xl font-semibold mb-4" data-translate="ttt.second_player">${t("pvp.second_player") ?? "Segundo jugador"}</h2>
-		<form id="pvp-login-form" class="flex flex-col gap-3">
-			<input id="pvp-email" type="email" placeholder="Email"
-				 class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-			<input id="pvp-password" type="password" placeholder="${t("auth.password") ?? "Contraseña"}"
-				 class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
-			<button type="submit"
-					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold">
-			${t("pvp.start_match") ?? "Empezar partida"}
-			</button>
-		</form>
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 w-full max-w-md">
+		<h2 class="text-xl font-semibold mb-4" data-translate="pvp.second_player">${t("pvp.second_player") ?? "Segundo jugador"}</h2>
+        <form id="pvp-login-form" class="flex flex-col gap-3">
+            <input id="pvp-email" type="email"
+         placeholder="${t("field-email") ?? "Email"}"
+         data-translate-placeholder="field-email"
+         class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+            <input id="pvp-password" type="password"
+         placeholder="${t("auth.password") ?? "Contraseña"}"
+         data-translate-placeholder="auth.password"
+                  class="w-full rounded-xl bg-white/10 px-4 py-2 outline-none" required>
+            <button type="submit"
+					class="rounded-xl bg-white/20 hover:bg-white/30 transition px-4 py-2 font-semibold"
+          data-translate="pvp.start_match">
++			${t("pvp.start_match") ?? "Empezar partida"}
+            </button>
+        </form>
+
+		<!-- separador visual -->
+		<div class="my-4 flex items-center gap-3 text-white/60">
+			<div class="flex-1 h-px bg-white/10"></div>
+			<span>o</span>
+			<div class="flex-1 h-px bg-white/10"></div>
+		</div>
+
+		<!-- botón Google para 2º jugador -->
+		<div id="google-second-host" class="flex justify-center"></div>
+
 		<p id="pvp-login-error" class="text-red-400 text-sm mt-3 hidden"></p>
 		</div>
 	</div>
@@ -144,10 +163,10 @@ export async function mount(el, { t, api, navigate }) {
 		<h2 id="winnerText" class="text-3xl sm:text-4xl font-extrabold mb-6 text-emerald-300"></h2>
 		<div class="flex gap-3 justify-center">
 			<button id="playAgainBtn"
-					class="px-5 py-2.5 rounded-xl font-semibold bg-emerald-500/90 hover:bg-emerald-500 text-black/90 transition"
-					data-translate="ttt.play_again">
-			${t("ttt.play_again") ?? "Jugar de nuevo"}
-			</button>
+                     class="px-5 py-2.5 rounded-xl font-semibold bg-emerald-500/90 hover:bg-emerald-500 text-black/90 transition"
+                     data-translate="ttt.play_again">
+                 ${t("ttt.play_again") ?? "Jugar de nuevo"}
+             </button>
 			<button id="closeOverlayBtn"
 					class="px-5 py-2.5 rounded-xl font-semibold bg-white/10 hover:bg-white/15 border border-white/15 transition"
 					data-translate="ttt.close">
@@ -170,6 +189,7 @@ export async function mount(el, { t, api, navigate }) {
     const pvpOverlay = el.querySelector("#pvp-login-overlay");
     const form = el.querySelector("#pvp-login-form");
     const errorEl = el.querySelector("#pvp-login-error");
+    const googleSecondHost = el.querySelector("#google-second-host");
     if (!canvas)
         throw new Error("Canvas not found");
     if (!svg)
@@ -494,6 +514,42 @@ export async function mount(el, { t, api, navigate }) {
             errorEl.textContent = t?.("pvp_invalid_credentials") ?? "Credenciales inválidas";
             errorEl?.classList.remove("hidden");
         }
+    });
+    // Renderiza el botón de Google (segundo jugador)
+    if (googleSecondHost) {
+        renderGoogleSecondButton(googleSecondHost, (player) => {
+            secondPlayer = {
+                id: Number(player.id),
+                displayName: player.displayName || player.email || "Player 2",
+                email: player.email
+            };
+            pvpReady = true;
+            document.querySelector("#pvp-login-overlay")?.classList.add("hidden");
+            document.querySelector("#board-blocker")?.classList.add("hidden");
+            gameStartTs = performance.now();
+            savedThisGame = false;
+            refreshTexts();
+        }, (msg) => {
+            if (errorEl) {
+                errorEl.textContent = msg || "Error con Google";
+                errorEl.classList.remove("hidden");
+            }
+        });
+    }
+    // APLICAR TRADUCCIONES A LO RECIÉN INSERTADO
+    updateContent();
+    // Botones de idioma (EN | ES | FR)
+    el.querySelectorAll('[data-lang]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lang = btn.getAttribute('data-lang');
+            if (lang)
+                changeLanguage(lang);
+        });
+    });
+    // Cuando cambia el idioma: re-aplicar traducciones y textos dinámicos
+    window.addEventListener('languageChanged', () => {
+        updateContent();
+        refreshTexts();
     });
     drawBoard();
     refreshTexts();
