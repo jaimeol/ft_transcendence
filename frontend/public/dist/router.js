@@ -42,16 +42,19 @@ export function createRouter(opts) {
         // Scroll top tras cada navegación
         window.scrollTo({ top: 0, behavior: "instant" });
     }
+    // 2. MODIFICADO: La firma de la función acepta 'state'
     function navigate(path, opts) {
         // Normaliza: permitir pasar path relativos tipo "./login"
         const url = new URL(path, location.origin);
         const full = url.pathname + url.search + url.hash;
         if (full === location.pathname + location.search + location.hash && !opts?.replace)
             return;
+        // 3. MODIFICADO: Pasa el 'state' (o un objeto vacío) a la API de History
         if (opts?.replace)
-            history.replaceState({}, "", full);
+            history.replaceState(opts.state || {}, "", full);
+        // 4. MODIFICADO: Pasa el 'state' (o un objeto vacío) a la API de History
         else
-            history.pushState({}, "", full);
+            history.pushState(opts?.state || {}, "", full);
         render(url.pathname);
     }
     function onPopState() {

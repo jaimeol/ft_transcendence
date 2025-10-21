@@ -136,19 +136,57 @@ app.get('/ws/chat', { websocket: true }, (connection, req) => {
       if (!isFriends || blockedMeToOther || blockedOtherToMe) return;
 
       const k = kind === 'invite' ? 'invite' : 'text';
-      const meta = k === 'invite' ? JSON.stringify({ game: 'pong' }) : null;
-      const finalBody = k === 'invite' ? (body || '🎮 ¡Te reto a jugar a Pong! Ven a mi ordenador para jugar.') : body;
+
+      const finalMeta = (k === 'invite')
+        ? JSON.stringify(meta || { game: 'pong', status: 'pending' })
+        : null;
+      const finalBody = k === 'invite' ? (body || '🎮 ¡Te reto a jugar a Pong!') : body;
       
       const info = require('./db').db.prepare(`
         INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
         VALUES (?, ?, ?, ?, ?)
-      `).run(uid, other, finalBody, k, meta);
+      `).run(uid, other, finalBody, k, finalMeta);
       const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
 
       // Eco al emisor con el cid para reconciliar
       try { connection.socket.send(JSON.stringify({ type: k === 'invite' ? 'invite' : 'message', message: saved, cid })); } catch {}
       // Push al destinatario (sin cid)
       app.websocketPush(other, { type: k === 'invite' ? 'invite' : 'message', message: saved });
+
+      if (msg.type === 'accept_invite') {
+        try {
+          const { messageId } = msg;
+          const uid_guest = req.session.uid;
+
+          const originalMsg = require('./db').db.prepare(
+            "SELECT * FROM messages WHERE id = ? AND receiver_id = ? AND kind = 'invite'"
+          ).get(messageId, uid_guest);
+
+          if (!originalMsg) {
+            app.log.warn(`Invalid invite accept attemp by ${uid_guest} for msg ${messageId}`);
+            return;
+          }
+
+          const oldMeta = JSON.parse(originalMsg.meta || '{}');
+          if (oldMeta.status !== 'pending') return;
+
+          const newMeta = JSON.stringify({ ...oldMeta, status: 'accepted' });
+          require('./db').db.prepare(
+            "UPDATE messages SET meta = ? WHERE id = ?"
+          ).run(newMeta, messageId);
+
+          const updateMsg = require('./db').db.prepare(
+            "SELECT * FROM messages WHERE id = ?"
+          ).get(messageId);
+
+          const uid_host = updateMsg.sender_id;
+
+          app.websocketPush(uid_host, { type: 'invite_update', message: updateMsg });
+          app.websocketPush(uid_guest, { type: 'invite_update', message: updateMsg });
+        } catch(err) {
+          app.log.error(err, 'Error processing accept_invite');
+        }
+      }
     }
   });
 
@@ -164,9 +202,6 @@ app.register(friendsRoutes);
 app.register(chatRoutes);
 app.register(matchesRoutes);
 app.register(tournamentsRoutes);
-
-const { setupTournamentNotifications } = require('./routes/tournaments');
-setupTournamentNotifications(app);
 
 const indexPath = path.join(__dirname, '..', 'public', 'index.html');
 

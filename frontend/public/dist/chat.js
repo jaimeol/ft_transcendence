@@ -37,6 +37,99 @@ export function mountChat(host, ctx) {
     let autoStickBottom = true; // sólo pegar al fondo si el usuario está abajo
     let isFetchingOlder = false; // evita cargas simultáneas
     const subs = new AbortController();
+    function renderMessageBubble(m) {
+        const isMine = m.sender_id === me.id;
+        const baseClass = 'rounded-2xl px-3 py-2';
+        const inviteBody = m.body || (m.kind === 'invite' ? '🎮 ¡Te reto a jugar a Pong!' : (m.body ?? ''));
+        let meta = {};
+        try {
+            meta = m.meta ? JSON.parse(m.meta) : {};
+        }
+        catch { }
+        // 1. Mensajes de Sistema
+        if (m.kind === 'system') {
+            return h('div', { class: `${baseClass} bg-yellow-600/80 text-black font-semibold` }, m.body ?? '');
+        }
+        // 2. Mensajes de Invitación
+        if (m.kind === 'invite') {
+            const status = meta.status || 'pending'; // 'pending' o 'accepted'
+            if (isMine) {
+                // --- Soy el ANFITRIÓN (A) ---
+                const bubble = h('div', { class: `${baseClass} bg-emerald-600/80 flex items-center justify-between gap-3` });
+                const text = h('span', {}, inviteBody);
+                const button = h('button', {
+                    class: `px-3 py-1 rounded text-black font-semibold text-sm whitespace-nowrap ${status === 'pending'
+                        ? 'bg-gray-400 cursor-not-allowed' // Deshabilitado
+                        : 'bg-green-500 hover:bg-green-400' // Habilitado
+                    }`,
+                    ...(status === 'pending' && { disabled: 'true' }) // Propiedad disabled
+                }, ctx.t("chat.start_game") ?? "Empezar");
+                if (status === 'accepted') {
+                    // Solo añadimos el 'onclick' si está aceptada
+                    button.onclick = () => {
+                        const url = `/pong?mode=pvp&pvp_players=1`;
+                        ctx.navigate(url, {
+                            state: {
+                                opponentId: m.receiver_id,
+                                isInvite: true
+                            }
+                        });
+                    };
+                }
+                bubble.append(text, button);
+                return bubble;
+            }
+            else {
+                // --- Soy el INVITADO (B) ---
+                if (status === 'pending') {
+                    // Botón para Aceptar
+                    return h('button', {
+                        class: `${baseClass} bg-emerald-700/60 hover:bg-emerald-600 transition font-semibold w-full text-center`,
+                        onclick: async () => {
+                            if (!m.id)
+                                return;
+                            let accepted = false;
+                            // Enviar evento de aceptación por WebSocket
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                try {
+                                    ws.send(JSON.stringify({ type: 'accept_invite', messageId: m.id }));
+                                    accepted = true;
+                                }
+                                catch (e) {
+                                    console.warn("WebSocket send failed, falling back to HTTP", e);
+                                }
+                            }
+                            if (!accepted) {
+                                try {
+                                    const response = await api(`/api/chat/accept-invite/${m.id}`, {
+                                        method: 'POST'
+                                    });
+                                    if (response && response.message) {
+                                        updateMessageInUI(response.message);
+                                        accepted = true;
+                                    }
+                                    else {
+                                        throw new Error("Invalid response from accept invite API");
+                                    }
+                                }
+                                catch (err) {
+                                    console.error("Failed to accept invite via HTTP:", err);
+                                    alert('Error al aceptar la invitación. Intenta recargar');
+                                }
+                            }
+                        }
+                    }, inviteBody + ` (${ctx.t("chat.accept_invite") ?? "¡Aceptar!"})`);
+                }
+                else {
+                    // Ya aceptado, solo mostrar texto
+                    return h('div', { class: `${baseClass} bg-emerald-700/60 opacity-70` }, (ctx.t("chat.invite_accepted") ?? "¡Invitación aceptada! Ve al ordenador del anfitrión."));
+                }
+            }
+        }
+        // 3. Mensajes de Texto Normales
+        const bubbleClass = isMine ? 'bg-indigo-600/80' : 'bg-white/10';
+        return h('div', { class: `${baseClass} ${bubbleClass}` }, m.body ?? '');
+    }
     const on = (type, handler) => window.addEventListener(type, handler, { signal: subs.signal });
     // ===== API (expuesta por tu app en window.api) =====
     async function api(url, init) { return ctx.api(url, init); }
@@ -104,6 +197,10 @@ export function mountChat(host, ctx) {
                     addMessageToUI(data.message, data.cid);
                 if (data.type === 'invite')
                     addMessageToUI(data.message);
+                if (data.type === 'system')
+                    addMessageToUI(data.message); // Maneja notificaciones del sistema
+                if (data.type === 'invite_update')
+                    updateMessageInUI(data.message);
             }
             catch { }
         };
@@ -113,11 +210,25 @@ export function mountChat(host, ctx) {
         }
         catch { } };
     }
+    function updateMessageInUI(m) {
+        if (!m.id)
+            return;
+        const wrapper = $(`[data-msg-id="${m.id}"]`, host);
+        if (!wrapper)
+            return; // El mensaje no está cargado/visible
+        const timeEl = wrapper.querySelector('[data-time]'); // Guardar el timestamp
+        const newBubble = renderMessageBubble(m); // Renderizar la nueva burbuja
+        wrapper.innerHTML = ''; // Limpiar la burbuja antigua
+        wrapper.append(newBubble); // Añadir la nueva
+        if (timeEl)
+            wrapper.append(timeEl); // Re-añadir el timestamp
+    }
     function addMessageToUI(m, cid) {
         if (!currentPeer)
             return;
         const isThisChat = (m.sender_id === currentPeer.id && m.receiver_id === me.id) ||
-            (m.sender_id === me.id && m.receiver_id === currentPeer.id);
+            (m.sender_id === me.id && m.receiver_id === currentPeer.id) ||
+            (m.sender_id === 0 && currentPeer.id === 0 && m.receiver_id === me.id); // Mostrar notificaciones del sistema
         if (!isThisChat)
             return;
         const box = $('#chat-messages', host);
@@ -133,19 +244,18 @@ export function mountChat(host, ctx) {
             maybeStickToBottom(box);
             return;
         }
-        if (m.id && renderedIds.has(m.id))
+        if (m.id && renderedIds.has(m.id)) {
+            updateMessageInUI(m);
             return;
-        const mine = m.sender_id === me.id;
+        }
+        const isMine = m.sender_id === me.id;
         const wrapper = h('div', {
-            class: `max-w-[80%] ${mine ? 'self-end' : 'self-start'} my-1`,
+            class: `max-w-[80%] ${isMine ? 'self-end' : 'self-start'} my-1`,
             ...(m.id ? { 'data-msg-id': String(m.id) } : {})
         });
-        const bubbleClass = m.kind === 'invite'
-            ? (mine ? 'bg-emerald-600/80' : 'bg-emerald-700/60')
-            : (mine ? 'bg-indigo-600/80' : 'bg-white/10');
-        const bubble = h('div', { class: `rounded-2xl px-3 py-2 ${bubbleClass}` }, m.body ?? (m.kind === 'invite' ? '🎮 Invitación a jugar a Pong' : ''));
+        const bubble = renderMessageBubble(m);
         const time = h('div', {
-            class: `text-[11px] opacity-60 mt-0.5 ${mine ? 'text-right' : 'text-left'}`,
+            class: `text-[11px] opacity-60 mt-0.5 ${isMine ? 'text-right' : 'text-left'}`,
             'data-time': '1'
         }, fmtTime(m.created_at));
         wrapper.append(bubble, time);
@@ -155,7 +265,6 @@ export function mountChat(host, ctx) {
         resizeMessagesViewport();
         maybeStickToBottom(box);
     }
-    const addInviteToUI = addMessageToUI;
     async function loadPeers() {
         const { peers } = await api('/api/chat/peers');
         const { blocked } = await api('/api/chat/blocked');
@@ -261,10 +370,7 @@ export function mountChat(host, ctx) {
                     class: `max-w-[80%] ${mine ? 'self-end' : 'self-start'} my-1`,
                     'data-msg-id': String(m.id)
                 });
-                const bubbleClass = m.kind === 'invite'
-                    ? (mine ? 'bg-emerald-600/80' : 'bg-emerald-700/60')
-                    : (mine ? 'bg-indigo-600/80' : 'bg-white/10');
-                const bubble = h('div', { class: `rounded-2xl px-3 py-2 ${bubbleClass}` }, m.body ?? (m.kind === 'invite' ? '🎮 Invitación a jugar a Pong' : ''));
+                const bubble = renderMessageBubble(m);
                 const time = h('div', {
                     class: `text-[11px] opacity-60 mt-0.5 ${mine ? 'text-right' : 'text-left'}`
                 }, fmtTime(m.created_at));
@@ -321,7 +427,9 @@ export function mountChat(host, ctx) {
         catch { }
     }
     async function sendInvite(to) {
-        const body = '🎮 ¡Te reto a jugar a Pong! Ven a mi ordenador para jugar.';
+        const body = '🎮 ¡Te reto a jugar a Pong!';
+        const cid = randCid();
+        const meta = { game: 'pong', status: 'pending' };
         // Crear mensaje optimista en la UI
         const optimisticMsg = {
             id: 0, // temporal
@@ -329,13 +437,14 @@ export function mountChat(host, ctx) {
             receiver_id: to,
             body,
             kind: 'invite',
+            meta: JSON.stringify(meta),
             created_at: new Date().toISOString()
         };
         // Mostrar inmediatamente en la UI
-        addMessageToUI(optimisticMsg);
+        addMessageToUI(optimisticMsg, cid);
         try {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                const payload = JSON.stringify({ type: 'send', kind: 'invite', to, body });
+                const payload = JSON.stringify({ type: 'send', kind: 'invite', to, body, meta, cid });
                 ws.send(payload);
             }
             else {

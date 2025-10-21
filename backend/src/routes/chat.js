@@ -20,8 +20,15 @@ async function routes (fastify) {
   fastify.get('/api/chat/peers', async (req, reply) => {
     const uid = req.session.uid;
     if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
+
+    const systemPeer = {
+      id: 0,
+      display_name: 'Marvin',
+      avatar_path: '/uploads/Marvin.png'
+    };
+
     const rows = db.prepare(`
-      SELECT u.id, u.display_name, u.avatar_path
+      SELECT u.id, display_name, u.avatar_path
       FROM users u
       WHERE u.id IN (
         SELECT CASE WHEN requester_id = ? THEN addressee_id ELSE requester_id END
@@ -30,7 +37,8 @@ async function routes (fastify) {
       )
       ORDER BY u.display_name
     `).all(uid, uid, uid);
-    return { peers: rows };
+
+    return { peers: [systemPeer, ...rows]};
   });
 
   // Historial con un usuario (paginable por fecha ascendente)
@@ -40,9 +48,11 @@ async function routes (fastify) {
     const other = Number(req.params.userId);
     const limit = Math.max(1, Math.min(100, Number(req.query.limit || 50)));
     const before = req.query.before ? String(req.query.before) : null;
-
-    if (!isFriends(uid, other)) return reply.code(403).send({ error: 'Not friends' });
-    if (blocked(uid, other) || blocked(other, uid)) return reply.code(403).send({ error: 'Blocked' });
+    
+    if (other !== 0){
+      if (!isFriends(uid, other)) return reply.code(403).send({ error: 'Not friends' });
+      if (blocked(uid, other) || blocked(other, uid)) return reply.code(403).send({ error: 'Blocked' });
+    }
 
     const base = `
       SELECT * FROM messages
@@ -147,6 +157,76 @@ async function routes (fastify) {
     if (!uid) return reply.code(401).send({ error: 'Unauthorized' });
     const rows = db.prepare(`SELECT * FROM notifications WHERE user_id = ? AND read_at IS NULL ORDER BY created_at DESC`).all(uid);
     return { notifications: rows };
+  });
+
+  // Enviar notificación como mensaje del sistema
+  fastify.post('/api/chat/notify', async (req, reply) => {
+    const { to, body, meta } = req.body || {};
+    const other = Number(to);
+
+    if (!other || !body) return reply.code(400).send({ error: 'Missing fields' });
+
+    // Inserta el mensaje como un mensaje del sistema
+    const info = db.prepare(`
+      INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
+      VALUES (?, ?, ?, 'system', ?)
+    `).run(0, other, body, meta ? JSON.stringify(meta) : null);
+    const msg = db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
+
+    // Empuja el mensaje al destinatario si está conectado
+    fastify.websocketPush?.(other, { type: 'system', message: msg });
+
+    return { message: msg };
+  });
+
+  fastify.post('/api/chat/accept-invite/:messageId', async (req, reply) => {
+    const uid_guest = req.session.uid;
+    const messageId = Number(req.params.messageId);
+
+    if (!uid_guest || !messageId) {
+      return reply.code(400).send({ error: 'Bad Request' });
+    }
+
+    try {
+      // 1. Validar que el invitado es el destinatario de este mensaje
+      const originalMsg = db.prepare(
+        "SELECT * FROM messages WHERE id = ? AND receiver_id = ? AND kind = 'invite'"
+      ).get(messageId, uid_guest);
+
+      if (!originalMsg) {
+        return reply.code(404).send({ error: 'Invitation not found or not for you' });
+      }
+
+      const oldMeta = JSON.parse(originalMsg.meta || '{}');
+      if (oldMeta.status !== 'pending') {
+         // Ya aceptada o estado inválido, devolvemos el mensaje actual
+         return { message: originalMsg };
+      }
+
+      // 2. Actualizar el estado de la invitación
+      const newMeta = JSON.stringify({ ...oldMeta, status: 'accepted' });
+      db.prepare(
+        "UPDATE messages SET meta = ? WHERE id = ?"
+      ).run(newMeta, messageId);
+
+      // 3. Obtener y devolver el mensaje actualizado
+      const updatedMsg = db.prepare(
+        "SELECT * FROM messages WHERE id = ?"
+      ).get(messageId);
+
+      // 4. IMPORTANTE: Intentar notificar al Host vía WebSocket si está conectado
+      const uid_host = updatedMsg.sender_id;
+      fastify.websocketPush?.(uid_host, { type: 'invite_update', message: updatedMsg });
+      // También notificamos al guest por si acaso tiene WS pero falló el envío original
+      fastify.websocketPush?.(uid_guest, { type: 'invite_update', message: updatedMsg });
+
+
+      return { message: updatedMsg }; // Devolver el mensaje actualizado
+
+    } catch (err) {
+      fastify.log.error(err, 'Error processing POST /api/chat/accept-invite');
+      return reply.code(500).send({ error: 'Failed to accept invitation' });
+    }
   });
 }
 

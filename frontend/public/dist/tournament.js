@@ -1,5 +1,6 @@
 // frontend/src/tournament.ts
 import { initializeLanguages } from "./translate.js";
+import { renderGoogleSecondButton } from "./google.js";
 export async function mount(el, ctx) {
     // Inicializar el sistema de traducción primero
     await initializeLanguages();
@@ -566,6 +567,7 @@ export async function mount(el, ctx) {
             existingModal.remove();
         // First, identify who is the opponent (the one who needs to authenticate)
         let opponentName = '';
+        let opponentUserId = null;
         let currentUserName = '';
         try {
             // Get current user info to determine who is the opponent
@@ -578,14 +580,20 @@ export async function mount(el, ctx) {
             // Determine who is the opponent
             if (currentUserId.toString() === matchData.player1Id) {
                 opponentName = matchData.player2;
+                opponentUserId = Number(matchData.player2Id);
                 currentUserName = matchData.player1;
             }
             else if (currentUserId.toString() === matchData.player2Id) {
                 opponentName = matchData.player1;
+                opponentUserId = Number(matchData.player1Id);
                 currentUserName = matchData.player2;
             }
             else {
                 alert('You are not a participant in this match');
+                return;
+            }
+            if (!opponentUserId) {
+                alert('Could not determine opponent ID');
                 return;
             }
         }
@@ -599,16 +607,11 @@ export async function mount(el, ctx) {
         modal.className = 'fixed inset-0 bg-black/90 backdrop-blur z-50 flex items-center justify-center p-4';
         modal.innerHTML = `
       <div class="bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/30 rounded-2xl p-6 max-w-md w-full mx-4 backdrop-blur-xl">
-        <button onclick="document.getElementById('matchAuthModal')?.remove()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60">✕</button>
-        
         <h2 class="text-2xl font-semibold mb-4 text-center">
           <span data-translate="tournament.opponentAuth">${ctx.t("tournament.opponentAuth") ?? "Opponent Authentication"}</span>
         </h2>
         
         <div class="mb-6">
-          <p class="text-white/70 text-sm text-center mb-4">
-            ${ctx.t("tournament.opponentMustAuth") ?? "Your opponent must authenticate to start the match"}
-          </p>
           <div class="text-center font-semibold mb-4">
             ${escapeHtml(currentUserName)} vs ${escapeHtml(opponentName)}
           </div>
@@ -628,6 +631,12 @@ export async function mount(el, ctx) {
             <input type="password" id="authPassword" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg" placeholder="${ctx.t("tournament.passwordPlaceholder") ?? "Enter your password"}" required>
           </div>
 
+          <div class="mt-4 flex items-center gap-2 text-white/40 text-xs">
+            <span class="flex-1 h-px bg-white/10"></span>
+            <span>o</span>
+            <span class="flex-1 h-px bg-white/10"></span>
+          </div>
+          <div id="auth-google-host" class="mt-3 flex justify-center"></div>
           <div id="authError" class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"></div>
 
           <div class="flex gap-3 pt-4">
@@ -665,8 +674,6 @@ export async function mount(el, ctx) {
             authBtn.disabled = true;
             authBtn.textContent = ctx.t("tournament.authenticating") ?? "Authenticating...";
             try {
-                console.log('=== FRONTEND AUTH DEBUG ===');
-                console.log('Authenticating opponent with:', { email, matchData });
                 const response = await apiFetch(`/api/tournaments/${matchData.tournamentId}/matches/${matchData.matchId}/verify-opponent`, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -674,10 +681,7 @@ export async function mount(el, ctx) {
                         password
                     })
                 });
-                console.log('Authentication response:', response);
                 if (response.ok) {
-                    console.log('Authentication successful!');
-                    // Authentication successful, start the match
                     const params = new URLSearchParams({
                         matchId: matchData.matchId,
                         tournamentId: matchData.tournamentId,
@@ -690,12 +694,10 @@ export async function mount(el, ctx) {
                     ctx.navigate(`/tournament-pong?${params.toString()}`);
                 }
                 else {
-                    console.log('Authentication failed:', response.data);
                     showError(response.data?.error || (ctx.t("tournament.authenticationFailed") ?? "Authentication failed"));
                 }
             }
             catch (error) {
-                console.log('Authentication error (catch):', error);
                 showError(ctx.t("tournament.authenticationError") ?? "Authentication error");
                 console.error('Authentication error:', error);
             }
@@ -715,6 +717,27 @@ export async function mount(el, ctx) {
                 authBtn?.click();
             }
         });
+        const googleHost = modal.querySelector('#auth-google-host');
+        if (googleHost) {
+            void renderGoogleSecondButton(googleHost, (player) => {
+                if (player && player.id === opponentUserId) {
+                    const params = new URLSearchParams({
+                        matchId: matchData.matchId,
+                        tournamentId: matchData.tournamentId,
+                        player1: matchData.player1,
+                        player2: matchData.player2,
+                        player1Id: matchData.player1Id,
+                        player2Id: matchData.player2Id,
+                    });
+                    modal.remove();
+                    ctx.navigate(`/tournament-pong?${params.toString()}`);
+                }
+                else {
+                    const name = player?.displayName || 'ese usuario';
+                    showError(`Has iniciado sesión como ${name}, pero se esperaba a ${opponentName}.`);
+                }
+            });
+        }
         // Focus on email input
         setTimeout(() => emailInput?.focus(), 100);
     }

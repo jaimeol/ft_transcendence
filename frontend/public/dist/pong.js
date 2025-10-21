@@ -20,6 +20,8 @@ export async function mount(el, ctx) {
     let mode = url.searchParams.get('mode');
     let players = url.searchParams.get('players');
     let pvpPlayers = url.searchParams.get('pvp_players');
+    const inviteOpponentId = history.state?.opponent_id;
+    const isInvite = !!history.state?.isInvite;
     if ((mode === 'ai' && players === '2') || (mode === 'pvp' && pvpPlayers === '2')) {
         const pong2v2Module = await import('./pong2v2.js');
         return pong2v2Module.mount(el, ctx);
@@ -300,6 +302,31 @@ export async function mount(el, ctx) {
             });
         });
         return; // salimos: el reload/replace cargará la misma ruta pero con pvp_players
+    }
+    if (isInvite && inviteOpponentId && isPVP && pvpPlayers === '1') {
+        blocker?.classList.remove('hidden');
+        try {
+            const { user } = await ctx.api(`/api/users/${inviteOpponentId}`);
+            if (!user)
+                throw new Error(`Opponent id with ${inviteOpponentId} not found`);
+            secondPlayer = {
+                id: user.id,
+                displayName: user.display_name,
+                email: user.email
+            };
+            pvpReady = true;
+            blocker?.classList.add('hidden');
+            history.replaceState({}, "", url.toString());
+        }
+        catch (e) {
+            console.error("Failed to load opponent from invite:", e);
+            blocker?.classList.remove('hidden');
+            const pvpOverlay = $('#pvp-login-overlay');
+            pvpOverlay.classList.remove('hidden');
+            const errorEl = $('pvp-login-error');
+            errorEl.textContent = "Error al cargar el oponente. Inicia sesión manualmente.";
+            history.replaceState({}, "", url.toString());
+        }
     }
     // Si es PVP 1v1 mostramos overlay de login / blocker
     if (isPVP && pvpPlayers === '1') {

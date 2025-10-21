@@ -3,7 +3,7 @@ export type Ctx = {
   t: (k: string) => string;
   user: any | null;
   isAuthed: () => boolean;
-  navigate: (path: string, opts?: { replace?: boolean }) => void;
+  navigate: (path: string, opts?: { replace?: boolean, state?: any }) => void; // <-- 1. MODIFICADO
 };
 
 type PageModule = { mount: (el: HTMLElement, ctx: Ctx) => void | Promise<void> };
@@ -63,13 +63,18 @@ export function createRouter(opts: { routes: Route[]; root: HTMLElement; ctx: Ct
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }
 
-  function navigate(path: string, opts?: { replace?: boolean }) {
+  // 2. MODIFICADO: La firma de la función acepta 'state'
+  function navigate(path: string, opts?: { replace?: boolean, state?: any }) {
     // Normaliza: permitir pasar path relativos tipo "./login"
     const url = new URL(path, location.origin);
     const full = url.pathname + url.search + url.hash;
     if (full === location.pathname + location.search + location.hash && !opts?.replace) return;
-    if (opts?.replace) history.replaceState({}, "", full);
-    else history.pushState({}, "", full);
+
+    // 3. MODIFICADO: Pasa el 'state' (o un objeto vacío) a la API de History
+    if (opts?.replace) history.replaceState(opts.state || {}, "", full);
+    // 4. MODIFICADO: Pasa el 'state' (o un objeto vacío) a la API de History
+    else history.pushState(opts?.state || {}, "", full);
+    
     render(url.pathname);
   }
 

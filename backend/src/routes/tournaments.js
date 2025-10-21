@@ -260,7 +260,7 @@ async function tournamentsRoutes(app, opts) {
 				return reply.code(400).send({ error: 'Tournament is not in registration phase' });
 			}
 
-			// Get all participants with user details
+			// Get all participants
 			const participants = db.prepare(`
 				SELECT tp.*, u.display_name 
 				FROM tournament_participants tp
@@ -270,11 +270,6 @@ async function tournamentsRoutes(app, opts) {
 
 			if (participants.length < 2) {
 				return reply.code(400).send({ error: 'Need at least 2 participants to start tournament' });
-			}
-
-			// Check if tournament is full
-			if (participants.length !== tournament.max_players) {
-				return reply.code(400).send({ error: 'Tournament must be full to start' });
 			}
 
 			// Shuffle participants randomly
@@ -311,15 +306,9 @@ async function tournamentsRoutes(app, opts) {
 				'UPDATE tournaments SET status = ?, current_round = ? WHERE id = ?'
 			).run('active', 1, id);
 
-			// Send notifications to all participants about their matches
-			for (const match of matches) {
-				if (match.player1) {
-					await sendTournamentNotification(app, match.player1.user_id, tournament.name, 1, match.player2?.alias || 'BYE');
-				}
-				if (match.player2) {
-					await sendTournamentNotification(app, match.player2.user_id, tournament.name, 1, match.player1?.alias || 'BYE');
-				}
-			}
+			// Notify participants about the tournament start
+			// MODIFICADO: Usar el placeholder {tournamentName}
+			await notifyParticipants(app, id, `🏆 ¡El torneo "{tournamentName}" ha comenzado! Revisa los emparejamientos.`);
 
 			return reply.send({ 
 				success: true, 
@@ -646,6 +635,7 @@ async function tournamentsRoutes(app, opts) {
 		}
 	});
 
+	// MODIFICADO: Añadida lógica de notificación
 	async function autoAdvanceRoundIfComplete(app, db, tournamentId, currentRound) {
 		try {
 			const incompleteMatches = db.prepare(`
@@ -668,14 +658,18 @@ async function tournamentsRoutes(app, opts) {
 			
 			if (winners.length <= 1) {
 				let winnerUserId = null;
+				let winnerAlias = "N/A";
 				
 				if (winners.length === 1) {
-					// Convertir participant_id a user_id
+					// Convertir participant_id a user_id y obtener alias
 					const winnerParticipant = db.prepare(`
-						SELECT user_id FROM tournament_participants WHERE id = ?
+						SELECT user_id, alias FROM tournament_participants WHERE id = ?
 					`).get(winners[0].winner_id);
 					
-					winnerUserId = winnerParticipant ? winnerParticipant.user_id : null;
+					if (winnerParticipant) {
+						winnerUserId = winnerParticipant.user_id;
+						winnerAlias = winnerParticipant.alias;
+					}
 				}
 
 				db.prepare(`
@@ -686,11 +680,22 @@ async function tournamentsRoutes(app, opts) {
 
 				console.log(`Tournament ${tournamentId} finished with winner user_id: ${winnerUserId}`);
 
+				// === NOTIFICACIÓN DE FIN DE TORNEO ===
+				const tournament = db.prepare('SELECT name FROM tournaments WHERE id = ?').get(tournamentId);
+				const message = `🏆 ¡El torneo "${tournament.name}" ha finalizado! El ganador es ${winnerAlias}.`;
 				const participants = db.prepare(`
 					SELECT user_id FROM tournament_participants WHERE tournament_id = ?
 				`).all(tournamentId);
 
 				for (const participant of participants) {
+					// Usar app.inject para llamar a la API de chat
+					await app.inject({
+					  method: 'POST',
+					  url: '/api/chat/notify',
+					  payload: { to: participant.user_id, body: message }
+					});
+
+					// El websocketPush original sigue siendo bueno para notificaciones de UI (no-chat)
 					if (app.websocketPush) {
 						app.websocketPush(participant.user_id, {
 							type: 'tournament_finished',
@@ -699,6 +704,7 @@ async function tournamentsRoutes(app, opts) {
 						});
 					}
 				}
+				// ======================================
 
 				return;
 			}
@@ -721,8 +727,37 @@ async function tournamentsRoutes(app, opts) {
 				VALUES(?, ?, ?, ?, ?)
 			`);
 
+			// === NOTIFICACIÓN DE AVANCE DE RONDA ===
+			const tournament = db.prepare('SELECT name FROM tournaments WHERE id = ?').get(tournamentId);
+			// ======================================
+
 			for (const match of nextMatches) {
 				insertMatch.run(tournamentId, match.round, match.position, match.player1_id, match.player2_id);
+
+				// === NOTIFICACIÓN DE PRÓXIMO PARTIDO ===
+				try {
+					const p1 = db.prepare('SELECT user_id, alias FROM tournament_participants WHERE id = ?').get(match.player1_id);
+					const p2 = db.prepare('SELECT user_id, alias FROM tournament_participants WHERE id = ?').get(match.player2_id);
+
+					if (p1 && p2) {
+						const msg1 = `🏆 ¡Siguiente ronda! Juegas contra ${p2.alias} en el torneo "${tournament.name}" (Ronda ${nextRound}).`;
+						await app.inject({
+						  method: 'POST',
+						  url: '/api/chat/notify',
+						  payload: { to: p1.user_id, body: msg1 }
+						});
+						
+						const msg2 = `🏆 ¡Siguiente ronda! Juegas contra ${p1.alias} en el torneo "${tournament.name}" (Ronda ${nextRound}).`;
+						await app.inject({
+						  method: 'POST',
+						  url: '/api/chat/notify',
+						  payload: { to: p2.user_id, body: msg2 }
+						});
+					}
+				} catch (e) {
+					console.error('Error sending round notification:', e);
+				}
+				// =======================================
 			}
 
 			db.prepare(`
@@ -749,247 +784,33 @@ async function tournamentsRoutes(app, opts) {
 			console.error('Error in autoAdvanceRoundIfComplete:', error);
 		}
 	}
-
-
-
-
 }
 
-// Helper function to start a tournament
-async function startTournament(app, db, tournamentId) {
-	// Get tournament info
-	const tournament = db.prepare(`
-		SELECT * FROM tournaments WHERE id = ?
-	`).get(tournamentId);
-
-	// Get all participants
-	const participants = db.prepare(`
-		SELECT * FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at
-	`).all(tournamentId);
-
-	if (participants.length < 2) {
-		throw new Error('Not enough participants');
-	}
-
-	// Shuffle participants for random bracket
-	const shuffled = [...participants].sort(() => Math.random() - 0.5);
-
-	// Create first round matches
-	const matches = [];
-	for (let i = 0; i < shuffled.length; i += 2) {
-		const player1 = shuffled[i];
-		const player2 = shuffled[i + 1] || null; // Handle odd number of players
-
-		matches.push({
-			tournament_id: tournamentId,
-			round: 1,
-			position: Math.floor(i / 2),
-			player1_id: player1.id,
-			player2_id: player2?.id || null
-		});
-	}
-
-	// Insert matches
-	const insertMatch = db.prepare(`
-		INSERT INTO tournament_matches (tournament_id, round, position, player1_id, player2_id)
-		VALUES (?, ?, ?, ?, ?)
-	`);
-
-	for (const match of matches) {
-		const result = insertMatch.run(match.tournament_id, match.round, match.position, match.player1_id, match.player2_id);
-		
-		// Notificar a los jugadores de su primer partido si ambos existen
-		if (match.player1_id && match.player2_id) {
-			const matchId = result.lastInsertRowid;
-			
-			// Notificar inmediatamente para el primer partido
-			setTimeout(async () => {
-				if (app.notifyMatchReady) {
-					await app.notifyMatchReady(tournamentId, matchId);
-				}
-			}, 1000); // Pequeño delay para asegurar que la transacción se complete
-		}
-	}
-
-	// Update tournament status
-	db.prepare(`
-		UPDATE tournaments 
-		SET status = 'active', started_at = datetime('now')
-		WHERE id = ?
-	`).run(tournamentId);
-}
-
-// Helper function to advance to next round if current round is complete
-async function advanceRoundIfComplete(app, db, tournamentId, currentRound) {
-	// Check if all matches in current round are complete
-	const incompleteMatches = db.prepare(`
-		SELECT COUNT(*) as count
-		FROM tournament_matches
-		WHERE tournament_id = ? AND round = ? AND winner_id IS NULL
-	`).get(tournamentId, currentRound);
-
-	if (incompleteMatches.count > 0) {
-		return; // Round not complete yet
-	}
-
-	// Get winners of current round
-	const winners = db.prepare(`
-		SELECT winner_id FROM tournament_matches
-		WHERE tournament_id = ? AND round = ? AND winner_id IS NOT NULL
-	`).all(tournamentId, currentRound);
-
-	if (winners.length <= 1) {
-		// Tournament complete
-		if (winners.length === 1) {
-			const winner = db.prepare(`
-				SELECT tp.user_id, u.display_name 
-				FROM tournament_participants tp
-				JOIN users u ON tp.user_id = u.id
-				WHERE tp.id = ?
-			`).get(winners[0].winner_id);
-
-			db.prepare(`
-				UPDATE tournaments 
-				SET status = 'finished', winner_id = ?, completed_at = datetime('now')
-				WHERE id = ?
-			`).run(winner.user_id, tournamentId);
-		}
-		return;
-	}
-
-	// Create next round matches
-	const nextRound = currentRound + 1;
-	const nextMatches = [];
-
-	for (let i = 0; i < winners.length; i += 2) {
-		const player1 = winners[i];
-		const player2 = winners[i + 1] || null;
-
-		nextMatches.push({
-			tournament_id: tournamentId,
-			round: nextRound,
-			position: Math.floor(i / 2),
-			player1_id: player1.winner_id,
-			player2_id: player2?.winner_id || null
-		});
-	}
-
-	// Insert next round matches
-	const insertMatch = db.prepare(`
-		INSERT INTO tournament_matches (tournament_id, round, position, player1_id, player2_id)
-		VALUES (?, ?, ?, ?, ?)
-	`);
-
-	for (const match of nextMatches) {
-		const result = insertMatch.run(match.tournament_id, match.round, match.position, match.player1_id, match.player2_id);
-		
-		// Notificar a los jugadores de su nuevo partido si ambos existen
-		if (match.player1_id && match.player2_id) {
-			const matchId = result.lastInsertRowid;
-			
-			// Notificar con un pequeño delay
-			setTimeout(async () => {
-				if (app.notifyMatchReady) {
-					await app.notifyMatchReady(tournamentId, matchId);
-				}
-			}, 1000);
-		}
-	}
-
-	// Update tournament current round
-	db.prepare(`
-		UPDATE tournaments SET current_round = ? WHERE id = ?
-	`).run(nextRound, tournamentId);
-}
-
-// SISTEMA DE NOTIFICACIONES PARA TORNEOS
-async function notifyTournamentMatch(app, userId, tournamentName, opponentName, round) {
-	try {
-		const message = `🏆 ¡Es tu turno en el torneo "${tournamentName}"! Tu oponente es ${opponentName} (Ronda ${round}). ¡Ve a jugar tu partido!`;
-		
-		// Usar la función del sistema de chat
-		if (app.sendSystemNotification) {
-			await app.sendSystemNotification(userId, message, 'tournament');
-			app.log.info(`Tournament notification sent to user ${userId}`);
-		} else {
-			app.log.error('sendSystemNotification function not available');
-		}
-	} catch (error) {
-		app.log.error('Error sending tournament notification:', error);
-	}
-}
-
-// Función para notificar a los jugadores cuando comienza su turno
-async function notifyMatchReady(app, tournamentId, matchId) {
-	try {
-		const match = app.db.prepare(`
-			SELECT tm.*, 
-						 t.name as tournament_name,
-						 p1.alias as player1_alias,
-						 p2.alias as player2_alias,
-						 tp1.user_id as player1_user_id,
-						 tp2.user_id as player2_user_id
-			FROM tournament_matches tm
-			JOIN tournaments t ON tm.tournament_id = t.id
-			LEFT JOIN tournament_participants tp1 ON tm.player1_id = tp1.id
-			LEFT JOIN tournament_participants tp2 ON tm.player2_id = tp2.id
-			LEFT JOIN tournament_participants p1 ON tm.player1_id = p1.id
-			LEFT JOIN tournament_participants p2 ON tm.player2_id = p2.id
-			WHERE tm.id = ?
-		`).get(matchId);
-
-		if (match && match.player1_user_id && match.player2_user_id) {
-			// Notificar a ambos jugadores
-			await notifyTournamentMatch(app, match.player1_user_id, match.tournament_name, match.player2_alias, match.round);
-			await notifyTournamentMatch(app, match.player2_user_id, match.tournament_name, match.player1_alias, match.round);
-		}
-	} catch (error) {
-		app.log.error('Error notifying match ready:', error);
-	}
-}
-
-// Add helper function for tournament notifications
-async function sendTournamentNotification(app, userId, tournamentName, round, opponentAlias) {
-	try {
-		const message = `🏆 ¡Es tu turno! Juega en la ronda ${round} del torneo "${tournamentName}" contra ${opponentAlias}`;
-		
-		const result = app.db.prepare(
-			`INSERT INTO messages (sender_id, receiver_id, body, kind, created_at) 
-			 VALUES (?, ?, ?, ?, datetime('now'))`
-		).run(0, userId, message, 'system'); // sender_id = 0 is System
-
-		// Emit real-time notification if user is online
-		const connections = app.websocketConnections || {};
-		if (connections[userId]) {
-			connections[userId].send(JSON.stringify({
-				type: 'new_message',
-				message: {
-					id: result.lastInsertRowid,
-					sender_id: 0,
-					sender_name: 'System',
-					body: message,
-					kind: 'system',
-					created_at: new Date().toISOString()
-				}
-			}));
-		}
-
-		return { success: true, messageId: result.lastInsertRowid };
-	} catch (error) {
-		console.error('Error sending tournament notification:', error);
-		throw error;
-	}
-}
-
-// Exponer las funciones de notificación
-function setupTournamentNotifications(app) {
-	app.decorate('notifyTournamentMatch', (userId, tournamentName, opponentName, round) => 
-		notifyTournamentMatch(app, userId, tournamentName, opponentName, round)
-	);
-	app.decorate('notifyMatchReady', (tournamentId, matchId) => 
-		notifyMatchReady(app, tournamentId, matchId)
-	);
-}
+// ELIMINADO: Código de setupTournamentNotifications y helpers relacionados
+// module.exports.setupTournamentNotifications = setupTournamentNotifications; // <- ELIMINADO
 
 module.exports = tournamentsRoutes;
-module.exports.setupTournamentNotifications = setupTournamentNotifications;
+
+// MODIFICADO: Helper mejorado para incluir el nombre del torneo
+async function notifyParticipants(app, tournamentId, messageTemplate) {
+  const participants = app.db.prepare(`
+    SELECT user_id FROM tournament_participants WHERE tournament_id = ?
+  `).all(tournamentId);
+  
+  // AÑADIDO: Obtener el nombre del torneo
+  const tournament = app.db.prepare('SELECT name FROM tournaments WHERE id = ?').get(tournamentId);
+  const tournamentName = tournament ? tournament.name : `ID ${tournamentId}`;
+
+  // MODIFICADO: Reemplazar el nuevo placeholder
+  const message = messageTemplate
+	.replace("{tournamentName}", tournamentName)
+	.replace("{tournamentId}", tournamentId); // Mantener por retrocompatibilidad
+
+  for (const participant of participants) {
+    await app.inject({
+      method: 'POST',
+      url: '/api/chat/notify',
+      payload: { to: participant.user_id, body: message }
+    });
+  }
+}
