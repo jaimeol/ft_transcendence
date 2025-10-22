@@ -158,7 +158,7 @@ app.register(async function (fastify) {
           INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
           VALUES (?, ?, ?, ?, ?) 
         `).run(currentUid, other, finalBody, k, finalMeta);
-        const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`);
+        const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
 
         try { connection.socket.send(JSON.stringify({ type: k === 'invite' ? 'invite' : 'message', message: saved, cid })); } catch {}
         app.websocketPush(other, { type: k === 'invite' ? 'invite' : 'message', message: saved });
