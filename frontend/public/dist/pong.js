@@ -372,6 +372,8 @@ export async function mount(el, ctx) {
                 pvpOverlay.classList.add('hidden');
                 blocker?.classList.add('hidden');
                 errorEl?.classList.add('hidden');
+                host.innerHTML = "";
+                document.body.focus?.();
             }, (msg) => {
                 if (errorEl) {
                     errorEl.textContent = msg || 'Error al autenticar con Google';

@@ -90,13 +90,26 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 				if (status === 'accepted') {
 					// Solo añadimos el 'onclick' si está aceptada
 					button.onclick = () => {
-						const url = `/pong?mode=pvp&pvp_players=1`;
-						ctx.navigate(url, {
-							state: {
-								opponentId: m.receiver_id,
-								isInvite: true
-							}
-						});
+						try{
+							(button as HTMLButtonElement).disabled = true;
+							const original = button.textContent;
+							button.textContent = ctx.t("chat.starting") ?? "Iniciando...";
+
+							setTimeout(() => {
+								if (button.parentElement) button.remove();
+							}, 250);
+							const url = `/pong?mode=pvp&pvp_players=1`;
+							ctx.navigate(url, {
+								state: {
+									opponentId: m.receiver_id,
+									isInvite: true
+								}
+							});
+						} catch (err) {
+							(button as HTMLButtonElement).disabled = false;
+							button.textContent = ctx.t("chat.start_game") ?? "Empezar";
+							console.error("Failed to start match:",err)
+						}
 					};
 				}
 				bubble.append(text, button);
@@ -506,13 +519,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 					headers: { 'Content-Type': 'application/json' }
 				});
 			}
-		} catch (e) {
-			// if (process.env.NODE_ENV === 'development') {
-			// 	console.error('Error sending invite:', e);
-			// }
-			// TODO: Show user-friendly error message
-			// TODO: Remover el mensaje optimista si falla
-		}
+		} catch {}
 	}
 
 	function mountUI() {

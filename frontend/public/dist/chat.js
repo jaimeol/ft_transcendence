@@ -40,15 +40,25 @@ export function mountChat(host, ctx) {
     function renderMessageBubble(m) {
         const isMine = m.sender_id === me.id;
         const baseClass = 'rounded-2xl px-3 py-2';
-        const inviteBody = m.body || (m.kind === 'invite' ? '🎮 ¡Te reto a jugar a Pong!' : (m.body ?? ''));
         let meta = {};
         try {
             meta = m.meta ? JSON.parse(m.meta) : {};
         }
         catch { }
+        // Definir el cuerpo de la invitación
+        const inviteBody = ctx.t("chat.invite_body") ?? "🎮 ¡Te reto a jugar a Pong!";
         // 1. Mensajes de Sistema
         if (m.kind === 'system') {
-            return h('div', { class: `${baseClass} bg-yellow-600/80 text-black font-semibold` }, m.body ?? '');
+            let text = m.body || '';
+            if (meta.i18n) {
+                text = ctx.t(meta.i18n);
+                if (meta.params) {
+                    for (const [key, value] of Object.entries(meta.params)) {
+                        text = text.replace(`{{${key}}}`, String(value));
+                    }
+                }
+            }
+            return h('div', { class: `${baseClass} bg-yellow-600/80 text-black font-semibold` }, text);
         }
         // 2. Mensajes de Invitación
         if (m.kind === 'invite') {
@@ -67,13 +77,27 @@ export function mountChat(host, ctx) {
                 if (status === 'accepted') {
                     // Solo añadimos el 'onclick' si está aceptada
                     button.onclick = () => {
-                        const url = `/pong?mode=pvp&pvp_players=1`;
-                        ctx.navigate(url, {
-                            state: {
-                                opponentId: m.receiver_id,
-                                isInvite: true
-                            }
-                        });
+                        try {
+                            button.disabled = true;
+                            const original = button.textContent;
+                            button.textContent = ctx.t("chat.starting") ?? "Iniciando...";
+                            setTimeout(() => {
+                                if (button.parentElement)
+                                    button.remove();
+                            }, 250);
+                            const url = `/pong?mode=pvp&pvp_players=1`;
+                            ctx.navigate(url, {
+                                state: {
+                                    opponentId: m.receiver_id,
+                                    isInvite: true
+                                }
+                            });
+                        }
+                        catch (err) {
+                            button.disabled = false;
+                            button.textContent = ctx.t("chat.start_game") ?? "Empezar";
+                            console.error("Failed to start match:", err);
+                        }
                     };
                 }
                 bubble.append(text, button);
@@ -456,13 +480,7 @@ export function mountChat(host, ctx) {
                 });
             }
         }
-        catch (e) {
-            // if (process.env.NODE_ENV === 'development') {
-            // 	console.error('Error sending invite:', e);
-            // }
-            // TODO: Show user-friendly error message
-            // TODO: Remover el mensaje optimista si falla
-        }
+        catch { }
     }
     function mountUI() {
         host.innerHTML = '';

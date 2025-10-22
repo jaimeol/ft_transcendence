@@ -58,6 +58,13 @@
   "chat.invite": "Invite to pong",
   "chat.block": "Block",
   "chat.unblock": "Unblock",
+  "chat.start_game": "Start match",
+  "chat.starting": "Starting...",
+  "chat.match_played": "Match started",
+  "chat.accept_invite": "Accept invite",
+  "chat.invite_accepted": "Invite accepted — go to the host's computer.",
+  "chat.blocked": "User blocked",
+
   "profile.title": "Profile",
   "profile.memberSince": "Member since",
   "profile.level": "Level",

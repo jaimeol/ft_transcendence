@@ -404,6 +404,8 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
               pvpOverlay.classList.add('hidden');
               blocker?.classList.add('hidden');
               errorEl?.classList.add('hidden');
+              host.innerHTML = "";
+              document.body.focus?.();
             },
             (msg) => {
               if (errorEl) {

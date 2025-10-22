@@ -159,18 +159,19 @@ async function routes (fastify) {
     return { notifications: rows };
   });
 
-  // Enviar notificación como mensaje del sistema
+  // Enviar notificación como mensaje del sistema (con soporte para traducción)
   fastify.post('/api/chat/notify', async (req, reply) => {
-    const { to, body, meta } = req.body || {};
+    const { to, i18n, params } = req.body || {};
     const other = Number(to);
 
-    if (!other || !body) return reply.code(400).send({ error: 'Missing fields' });
+    if (!other || !i18n) return reply.code(400).send({ error: 'Missing fields' });
 
     // Inserta el mensaje como un mensaje del sistema
+    const meta = JSON.stringify({ i18n, params });
     const info = db.prepare(`
       INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
       VALUES (?, ?, ?, 'system', ?)
-    `).run(0, other, body, meta ? JSON.stringify(meta) : null);
+    `).run(0, other, null, meta); // `body` es null porque usamos `i18n` para el texto
     const msg = db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
 
     // Empuja el mensaje al destinatario si está conectado
@@ -226,6 +227,63 @@ async function routes (fastify) {
     } catch (err) {
       fastify.log.error(err, 'Error processing POST /api/chat/accept-invite');
       return reply.code(500).send({ error: 'Failed to accept invitation' });
+    }
+  });
+
+  // Marcar una invitación como jugada (solo el host puede hacerlo)
+  fastify.post('/api/chat/mark-played/:messageId', async (req, reply) => {
+    const uid_host = req.session.uid; // El usuario que hace la petición (debe ser el host)
+    const messageId = Number(req.params.messageId);
+
+    if (!uid_host || !messageId) {
+      return reply.code(400).send({ error: 'Bad Request' });
+    }
+
+    try {
+      // 1. Validar que el mensaje existe, es una invitación, y el usuario es el sender_id (host)
+      const originalMsg = db.prepare(
+        "SELECT * FROM messages WHERE id = ? AND sender_id = ? AND kind = 'invite'"
+      ).get(messageId, uid_host);
+
+      if (!originalMsg) {
+        return reply.code(404).send({ error: 'Invitation not found or you are not the host' });
+      }
+
+      // 2. Parsear meta y añadir/actualizar la bandera 'played'
+      const oldMeta = JSON.parse(originalMsg.meta || '{}');
+      // Solo marcamos como 'played' si ya estaba 'accepted' para evitar estados raros
+      if (oldMeta.status !== 'accepted') {
+         return reply.code(400).send({ error: 'Invite not accepted yet'});
+      }
+      
+      // Si ya estaba marcada como 'played', no hacemos nada más
+      if (oldMeta.played === true) {
+          return { message: originalMsg }; // Devolvemos el mensaje tal cual
+      }
+
+      const newMeta = JSON.stringify({ ...oldMeta, played: true });
+
+      // 3. Actualizar la base de datos
+      db.prepare(
+        "UPDATE messages SET meta = ? WHERE id = ?"
+      ).run(newMeta, messageId);
+
+      // 4. Obtener y devolver el mensaje actualizado
+      const updatedMsg = db.prepare(
+        "SELECT * FROM messages WHERE id = ?"
+      ).get(messageId);
+
+      // 5. Opcional: Notificar a ambos usuarios (host y guest) vía WebSocket que el estado cambió
+      // Esto es útil si ambos tienen el chat abierto, para que el botón se actualice en tiempo real.
+      const uid_guest = updatedMsg.receiver_id;
+      fastify.websocketPush?.(uid_host, { type: 'invite_update', message: updatedMsg });
+      fastify.websocketPush?.(uid_guest, { type: 'invite_update', message: updatedMsg });
+
+      return { message: updatedMsg };
+
+    } catch (err) {
+      fastify.log.error(err, 'Error processing POST /api/chat/mark-played');
+      return reply.code(500).send({ error: 'Failed to mark invitation as played' });
     }
   });
 }

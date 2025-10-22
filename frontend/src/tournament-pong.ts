@@ -1,23 +1,10 @@
-import { currentTranslations, initializeLanguages } from "./translate.js";
+import { currentTranslations, initializeLanguages, updateContent, changeLanguage } from "./translate.js";
 import type { Ctx } from "./router.js";
 
 export async function mount(el: HTMLElement, ctx: Ctx) {
-
-    let isAuthed = false;
-
-    try {
-		const response = await ctx.api("/api/auth/me");
-
-		isAuthed = !!(response && response.user);
-	} catch (error) {
-		isAuthed = false;
-	}
-
-	if (!isAuthed) {
-		ctx.navigate("/login", { replace: true });
-		return;
-	}
-
+    // Inicializar traducciones y configuración
+    await initializeLanguages();
+    
     el.innerHTML = `
     <header class="sticky top-0 z-50 backdrop-blur bg-black/30 border-b border-white/10">
         <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -37,7 +24,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
                 <button id="logoutBtn"
           class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs"
           data-translate="home.logout">
-          Cerrar sesión
+          ${ctx.t("home.logout") ?? "Cerrar sesión"}
         </button>
             </div>
         </div>
@@ -76,11 +63,20 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
     </main>
     `;
 
+    // aplicar traducciones a los data-translate insertados
+    updateContent();
+
+    // actualizar dinámicos al cambiar idioma
+    window.addEventListener('languageChanged', () => {
+      updateContent();
+      // re-render dinámicos si es necesario (p.ej. textos que usan params)
+      const playersNamesEl = el.querySelector('#players-names');
+      if (playersNamesEl) playersNamesEl.textContent = playersNamesEl.textContent; // noop para mantener consistencia
+    });
+
     const subs = new AbortController();
     const on = <K extends keyof WindowEventMap>(type: K, handler: (ev: WindowEventMap[K]) => any) =>
         window.addEventListener(type, handler as any, { signal: subs.signal });
-
-    await initializeLanguages();
 
     // Language buttons
     el.querySelectorAll<HTMLButtonElement>('[data-lang]').forEach(btn => {
@@ -192,18 +188,12 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
             });
 
             if (response.ok) {
-                console.log('Tournament result reported successfully');
                 savedThisGame = true;
-                
-                // Mostrar mensaje de éxito después de un breve delay
                 setTimeout(() => {
                     const winnerName = leftScore > rightScore ? player1Name : player2Name;
-                    alert(`${winnerName} wins! Result reported. Tournament will advance automatically.`);
-                    
-                    // Redirigir de vuelta a torneos
+                    alert(`${winnerName} ${ctx.t("tournament.result_reported") ?? "wins! Result reported. Tournament will advance automatically."}`);
                     ctx.navigate('/tournament');
                 }, 1500);
-                
             } else {
                 const error = await response.json();
                 console.error('Error reporting tournament result:', error);
@@ -299,13 +289,13 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
         if (gameOver) {
             ctx2d!.font = '40px Arial';
             const winnerName = leftScore > rightScore ? player1Name : player2Name;
-            ctx2d!.fillText(`${winnerName} Wins!`, canvas.width / 2, canvas.height / 2 - 50);
+            ctx2d!.fillText(`${winnerName} ${ctx.t("win") ?? "Wins!"}`, canvas.width / 2, canvas.height / 2 - 50);
             ctx2d!.font = '20px Arial';
             ctx2d!.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx2d!.fillText('Reporting result...', canvas.width / 2, canvas.height / 2);
+            ctx2d!.fillText(ctx.t("tournament.reporting") ?? "Reporting result...", canvas.width / 2, canvas.height / 2);
         } else if (!gameRunning) {
             ctx2d!.font = '30px Arial';
-            ctx2d!.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2);
+            ctx2d!.fillText(ctx.t("press_space_start") ?? "Press SPACE to start", canvas.width / 2, canvas.height / 2);
         }
     }
 

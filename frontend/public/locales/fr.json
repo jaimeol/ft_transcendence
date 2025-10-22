@@ -57,6 +57,12 @@
   "chat.invite": "Inviter au Pong",
   "chat.block": "Bloquer",
   "chat.unblock": "Débloquer",
+  "chat.start_game": "Démarrer le match",
+  "chat.starting": "Démarrage...",
+  "chat.match_played": "Match démarré",
+  "chat.accept_invite": "Accepter l'invitation",
+  "chat.invite_accepted": "Invitation acceptée — rendez-vous sur l'ordinateur de l'hôte.",
+  "chat.blocked": "Utilisateur bloqué",
   "profile.title": "Profil",
   "profile.memberSince": "Membre depuis",
   "profile.level": "Niveau",
@@ -245,5 +251,8 @@
   "friends.reject": "Refuser",
   "select_players": "Sélectionner le nombre de joueurs",
   "one_player": "1 Joueur",
-  "two_players": "2 Joueurs"
+  "two_players": "2 Joueurs",
+  "tournament.match": "Match de tournoi",
+  "tournament.result_reported": "gagne ! Résultat enregistré. Le tournoi avancera automatiquement.",
+  "tournament.reporting": "Envoi du résultat..."
 }
