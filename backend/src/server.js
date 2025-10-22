@@ -18,6 +18,7 @@ const tournamentsRoutes = require('./routes/tournaments');
 
 const { db } = require('./db');
 const { error } = require('console');
+const { connect } = require('http2');
 
 const certsDir = path.join(__dirname, '..', 'certs');
 const httpsOptions = {
@@ -97,66 +98,76 @@ app.decorate('websocketPush', (userId, payload) => {
 });
 
 // Endpoint WS autenticado por sesión
-app.get('/ws/chat', { websocket: true }, (connection, req) => {
-  const uid = req.session.uid; // <- autenticado vía cookie de sesión
-  if (!uid) { 
-    try { 
-      connection.socket.close(); 
-    } catch (err) {
-      app.log.warn('Failed to close unauthorized WebSocket:', err.message);
+app.register(async function (fastify) {
+  fastify.get('/ws/chat', { websocket: true }, (connection, req) => {
+    if (!req.session || !req.session.uid) {
+      fastify.log.warn('Intento de conexión WebSocket no autenticada. Rechazando.');
+      try {
+        connection.socket.close(1008, 'No autenticado');
+      } catch (err) {
+        fastify.log.warn('Failed to close unauthorized WebSocket:', err.message);
+      }
+      return;
     }
-    return; 
-  }
 
-  // Registrar
-  const set = socketsByUser.get(uid) || new Set();
-  set.add(connection.socket);
-  socketsByUser.set(uid, set);
+    connection.session = req.session;
+    const uid = connection.session.uid;
 
-  // Presencia simple
-  connection.socket.send(JSON.stringify({ type: 'hello', userId: uid }));
+    fastify.log.info(`Usuario autenticado ${uid} conectado via websocket`);
+    
+    const set = socketsByUser.get(uid) || new Set();
+    set.add(connection.socket);
+    socketsByUser.set(uid, set);
 
-  connection.socket.on('message', (buf) => {
-    let msg = {};
-    try { msg = JSON.parse(String(buf)); } catch { return; }
+    connection.socket.send(JSON.stringify({ type: 'hello', userId: uid }));
 
-    if (msg.type === 'send') {
-      const { to, body, kind, cid } = msg;
-      if (!to || (!body && kind !== 'invite')) return;
+    connection.socket.on('message', (buf) => {
+      if (!connection.session || !connection.session.uid) {
+        return;
+      }
 
-      const other = Number(to);
-      // Valida amistad/bloqueos como en la API HTTP
-      const isFriends = !!require('./db').db.prepare(`
-        SELECT 1 FROM friends
-        WHERE ((requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?))
-          AND status = 'accepted'
-      `).get(uid, other, other, uid);
-      const blockedMeToOther = !!require('./db').db.prepare(`SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?`).get(uid, other);
-      const blockedOtherToMe = !!require('./db').db.prepare(`SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?`).get(other, uid);
-      if (!isFriends || blockedMeToOther || blockedOtherToMe) return;
+      const currentUid = connection.session.uid;
 
-      const k = kind === 'invite' ? 'invite' : 'text';
+      let msg = {};
+      try { msg = JSON.parse(String(buf)); } catch { return; }
 
-      const finalMeta = (k === 'invite')
-        ? JSON.stringify(meta || { game: 'pong', status: 'pending' })
-        : null;
-      const finalBody = k === 'invite' ? (body || '🎮 ¡Te reto a jugar a Pong!') : body;
-      
-      const info = require('./db').db.prepare(`
-        INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(uid, other, finalBody, k, finalMeta);
-      const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
+      if (msg.type === 'send') {
+        const { to, body, kind, cid, meta } = msg;
+        if (!to || (!body && !kind !== 'invite')) return;
 
-      // Eco al emisor con el cid para reconciliar
-      try { connection.socket.send(JSON.stringify({ type: k === 'invite' ? 'invite' : 'message', message: saved, cid })); } catch {}
-      // Push al destinatario (sin cid)
-      app.websocketPush(other, { type: k === 'invite' ? 'invite' : 'message', message: saved });
+        const other = Number(to);
+
+        const isFriends = !!require('./db').db.prepare(`
+          SELECT 1 FROM friends
+          WHERE ((requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?))
+            AND status = 'accepted'
+        `).get(currentUid, other, other, currentUid);
+        const blockedMeToOther = !!require('./db').db.prepare(`SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?`).get(currentUid, other);
+        const blockedOtherToMe = !!require('./db').db.prepare(`SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?`).get(other, currentUid);
+        if (!isFriends || blockedMeToOther || blockedOtherToMe) return;
+
+        const k = kind === 'invite' ? 'invite' : 'text';
+
+        const finalMeta = (k === 'invite')
+          ? JSON.stringify(meta || { game: 'pong', status: 'pending' })
+          : null;
+        
+        const finalBody = k === 'invite' ? (body || '🎮 ¡Te reto a jugar a Pong!') : body;
+
+        const info = require('./db').db.prepare(`
+          INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
+          VALUES (?, ?, ?, ?, ?) 
+        `).run(currentUid, other, finalBody, k, finalMeta);
+        const saved = require('./db').db.prepare(`SELECT * FROM messages WHERE id = ?`);
+
+        try { connection.socket.send(JSON.stringify({ type: k === 'invite' ? 'invite' : 'message', message: saved, cid })); } catch {}
+        app.websocketPush(other, { type: k === 'invite' ? 'invite' : 'message', message: saved });
+      }
 
       if (msg.type === 'accept_invite') {
         try {
           const { messageId } = msg;
-          const uid_guest = req.session.uid;
+          const uid_guest = connection.session.uid;
 
           const originalMsg = require('./db').db.prepare(
             "SELECT * FROM messages WHERE id = ? AND receiver_id = ? AND kind = 'invite'"
@@ -167,7 +178,7 @@ app.get('/ws/chat', { websocket: true }, (connection, req) => {
             return;
           }
 
-          const oldMeta = JSON.parse(originalMsg.meta || '{}');
+           const oldMeta = JSON.parse(originalMsg.meta || '{}');
           if (oldMeta.status !== 'pending') return;
 
           const newMeta = JSON.stringify({ ...oldMeta, status: 'accepted' });
@@ -181,18 +192,25 @@ app.get('/ws/chat', { websocket: true }, (connection, req) => {
 
           const uid_host = updateMsg.sender_id;
 
-          app.websocketPush(uid_host, { type: 'invite_update', message: updateMsg });
-          app.websocketPush(uid_guest, { type: 'invite_update', message: updateMsg });
-        } catch(err) {
+          app.websocketPush(uid_host, { type: 'invite_update', message: updateMsg});
+          app.websocketPush(uid_guest, { type: 'invite_update', message: updateMsg});
+        } catch (err) {
           app.log.error(err, 'Error processing accept_invite');
         }
       }
-    }
-  });
+    });
 
-  connection.socket.on('close', () => {
-    const s = socketsByUser.get(uid);
-    if (s) { s.delete(connection.socket); if (s.size === 0) socketsByUser.delete(uid); }
+    connection.socket.on('close', () => {
+      
+      if (connection.session && connection.session.uid) {
+        const currentUid = connection.session.uid;
+        fastify.log.info(`Usuario ${currentUid} desconectado.`);
+        const s = socketsByUser.get(currentUid);
+        if (s) { s.delete(connection.socket); if (s.size === 0) socketsByUser.delete(currentUid); }
+      } else {
+        fastify.log.info('Conexión WebSocket no autenticada cerrada.');
+      }
+    });
   });
 });
 
