@@ -17,8 +17,6 @@ const tournamentsRoutes = require('./routes/tournaments');
 
 
 const { db } = require('./db');
-const { error } = require('console');
-const { connect } = require('http2');
 
 const certsDir = path.join(__dirname, '..', 'certs');
 const httpsOptions = {

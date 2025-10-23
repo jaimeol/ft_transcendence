@@ -690,9 +690,16 @@ async function tournamentsRoutes(app, opts) {
 				for (const participant of participants) {
 					// Usar app.inject para llamar a la API de chat
 					await app.inject({
-					  method: 'POST',
-					  url: '/api/chat/notify',
-					  payload: { to: participant.user_id, body: message }
+					  	method: 'POST',
+						url: '/api/chat/notify',
+						payload: {
+							to: participant.user_id,
+							body: 'notify.tournament_finished',
+							meta: {
+								tournamentName: tournament.name,
+								winnerAlias: winnerAlias
+							}
+						}
 					});
 
 					// El websocketPush original sigue siendo bueno para notificaciones de UI (no-chat)
@@ -740,18 +747,26 @@ async function tournamentsRoutes(app, opts) {
 					const p2 = db.prepare('SELECT user_id, alias FROM tournament_participants WHERE id = ?').get(match.player2_id);
 
 					if (p1 && p2) {
-						const msg1 = `🏆 ¡Siguiente ronda! Juegas contra ${p2.alias} en el torneo "${tournament.name}" (Ronda ${nextRound}).`;
+						const meta1 = {
+							opponentAlias: p2.alias,
+							tournamentName: tournament.name,
+							round: nextRound
+						}
 						await app.inject({
 						  method: 'POST',
 						  url: '/api/chat/notify',
-						  payload: { to: p1.user_id, body: msg1 }
+						  payload: { to: p1.user_id, body: 'notify.next_round', meta: meta1 }
 						});
 						
-						const msg2 = `🏆 ¡Siguiente ronda! Juegas contra ${p1.alias} en el torneo "${tournament.name}" (Ronda ${nextRound}).`;
+						const meta2 = {
+							opponentAlias: p1.alias,
+							tournamentName: tournament.name,
+							round: nextRound
+						}
 						await app.inject({
 						  method: 'POST',
 						  url: '/api/chat/notify',
-						  payload: { to: p2.user_id, body: msg2 }
+						  payload: { to: p2.user_id, body: 'notify.next_round', meta: meta2 }
 						});
 					}
 				} catch (e) {
@@ -801,16 +816,11 @@ async function notifyParticipants(app, tournamentId, messageTemplate) {
   const tournament = app.db.prepare('SELECT name FROM tournaments WHERE id = ?').get(tournamentId);
   const tournamentName = tournament ? tournament.name : `ID ${tournamentId}`;
 
-  // MODIFICADO: Reemplazar el nuevo placeholder
-  const message = messageTemplate
-	.replace("{tournamentName}", tournamentName)
-	.replace("{tournamentId}", tournamentId); // Mantener por retrocompatibilidad
-
   for (const participant of participants) {
     await app.inject({
       method: 'POST',
       url: '/api/chat/notify',
-      payload: { to: participant.user_id, body: message }
+      payload: { to: participant.user_id, body: 'notify.tournament_started', meta: tournamentName }
     });
   }
 }

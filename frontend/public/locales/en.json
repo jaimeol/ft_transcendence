@@ -252,5 +252,8 @@
   "birthdate.future": "Birth date cannot be in the future",
   "birthdate.underage": "You must be at least 18 years old to register",
   "email.name.in-use": "Email or display name already in use",
-  "register.unexpected": "Unexpected error, please try again"
+  "register.unexpected": "Unexpected error, please try again",
+  "notify.tournament_started": "🏆 The tournament \"{{tournamentName}}\" has started! Check the pairings.",
+  "notify.tournament_finished": "🏆 The tournament \"{{tournamentName}}\" has finished! The winner is {{winnerAlias}}.",
+  "notify.next_round": "🏆 Next round! You are playing against {{opponentAlias}} in the \"{{tournamentName}}\" tournament (Round {{round}})."
 }

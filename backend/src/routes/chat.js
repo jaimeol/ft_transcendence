@@ -159,19 +159,18 @@ async function routes (fastify) {
     return { notifications: rows };
   });
 
-  // Enviar notificación como mensaje del sistema (con soporte para traducción)
+  // Enviar notificación como mensaje del sistema
   fastify.post('/api/chat/notify', async (req, reply) => {
-    const { to, i18n, params } = req.body || {};
+    const { to, body, meta } = req.body || {};
     const other = Number(to);
 
-    if (!other || !i18n) return reply.code(400).send({ error: 'Missing fields' });
+    if (!other || !body) return reply.code(400).send({ error: 'Missing fields' });
 
     // Inserta el mensaje como un mensaje del sistema
-    const meta = JSON.stringify({ i18n, params });
     const info = db.prepare(`
       INSERT INTO messages (sender_id, receiver_id, body, kind, meta)
       VALUES (?, ?, ?, 'system', ?)
-    `).run(0, other, null, meta); // `body` es null porque usamos `i18n` para el texto
+    `).run(0, other, body, meta ? JSON.stringify(meta) : null);
     const msg = db.prepare(`SELECT * FROM messages WHERE id = ?`).get(info.lastInsertRowid);
 
     // Empuja el mensaje al destinatario si está conectado
@@ -230,7 +229,7 @@ async function routes (fastify) {
     }
   });
 
-  // Marcar una invitación como jugada (solo el host puede hacerlo)
+  
   fastify.post('/api/chat/mark-played/:messageId', async (req, reply) => {
     const uid_host = req.session.uid; // El usuario que hace la petición (debe ser el host)
     const messageId = Number(req.params.messageId);

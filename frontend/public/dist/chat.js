@@ -49,16 +49,12 @@ export function mountChat(host, ctx) {
         const inviteBody = ctx.t("chat.invite_body") ?? "🎮 ¡Te reto a jugar a Pong!";
         // 1. Mensajes de Sistema
         if (m.kind === 'system') {
-            let text = m.body || '';
-            if (meta.i18n) {
-                text = ctx.t(meta.i18n);
-                if (meta.params) {
-                    for (const [key, value] of Object.entries(meta.params)) {
-                        text = text.replace(`{{${key}}}`, String(value));
-                    }
-                }
-            }
-            return h('div', { class: `${baseClass} bg-yellow-600/80 text-black font-semibold` }, text);
+            const translatedBody = ctx.t(m.body ?? 'notify.unknown', meta);
+            const bubble = h('div', { class: `${baseClass} bg-yellow-600/80 text-black font-semibold` }, translatedBody);
+            // Añadir atributo para identificar mensajes del sistema
+            bubble.dataset.systemMessage = 'true';
+            bubble.dataset.messageId = String(m.id);
+            return bubble;
         }
         // 2. Mensajes de Invitación
         if (m.kind === 'invite') {

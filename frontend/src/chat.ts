@@ -58,15 +58,22 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 
 	function renderMessageBubble(m: Msg): HTMLElement {
 		const isMine = m.sender_id === me.id;
-		
 		const baseClass = 'rounded-2xl px-3 py-2';
-		const inviteBody = m.body || (m.kind === 'invite' ? '🎮 ¡Te reto a jugar a Pong!' : (m.body ?? ''));
 		let meta: any = {};
 		try { meta = m.meta ? JSON.parse(m.meta) : {}; } catch {}
 
+		// Definir el cuerpo de la invitación
+		const inviteBody = ctx.t("chat.invite_body") ?? "🎮 ¡Te reto a jugar a Pong!";
+
 		// 1. Mensajes de Sistema
 		if (m.kind === 'system') {
-			return h('div', { class: `${baseClass} bg-yellow-600/80 text-black font-semibold` }, m.body ?? '');
+			const translatedBody = ctx.t(m.body ?? 'notify.unknown', meta);
+			const bubble = h('div', { class: `${baseClass} bg-yellow-600/80 text-black font-semibold` }, translatedBody);
+
+			// Añadir atributo para identificar mensajes del sistema
+			bubble.dataset.systemMessage = 'true';
+			bubble.dataset.messageId = String(m.id);
+			return bubble;
 		}
 
 		// 2. Mensajes de Invitación
@@ -90,7 +97,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 				if (status === 'accepted') {
 					// Solo añadimos el 'onclick' si está aceptada
 					button.onclick = () => {
-						try{
+						try {
 							(button as HTMLButtonElement).disabled = true;
 							const original = button.textContent;
 							button.textContent = ctx.t("chat.starting") ?? "Iniciando...";
@@ -108,7 +115,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 						} catch (err) {
 							(button as HTMLButtonElement).disabled = false;
 							button.textContent = ctx.t("chat.start_game") ?? "Empezar";
-							console.error("Failed to start match:",err)
+							console.error("Failed to start match:", err);
 						}
 					};
 				}
@@ -130,7 +137,7 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 								try {
 									ws.send(JSON.stringify({ type: 'accept_invite', messageId: m.id }));
 									accepted = true;
-								} catch(e) {
+								} catch (e) {
 									console.warn("WebSocket send failed, falling back to HTTP", e);
 								}
 							}

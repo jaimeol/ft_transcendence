@@ -3,8 +3,8 @@ services:
     build: ./backend
     ports:
       - "1234:1234"
-    environment:
-      - GOOGLE_CLIENT_ID=42380017002-djg345a26snh503oksetl0nk3a7pa2t5.apps.googleusercontent.com
+    env_file:
+      - ./.env
     volumes:
       - ./backend:/app
       - /app/node_modules

@@ -1,6 +1,6 @@
 export type Ctx = {
   api: (url: string, init?: RequestInit) => Promise<any>;
-  t: (k: string) => string;
+  t: (k: string, vars?: Record<string, any>) => string;
   user: any | null;
   isAuthed: () => boolean;
   navigate: (path: string, opts?: { replace?: boolean, state?: any }) => void; // <-- 1. MODIFICADO

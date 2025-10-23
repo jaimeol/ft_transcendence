@@ -254,5 +254,8 @@
   "two_players": "2 Joueurs",
   "tournament.match": "Match de tournoi",
   "tournament.result_reported": "gagne ! Résultat enregistré. Le tournoi avancera automatiquement.",
-  "tournament.reporting": "Envoi du résultat..."
+  "tournament.reporting": "Envoi du résultat...",
+  "notify.tournament_started": "🏆 Le tournoi \"{{tournamentName}}\" a commencé ! Consultez les appariements.",
+  "notify.tournament_finished": "🏆 Le tournoi \"{{tournamentName}}\" est terminé ! Le gagnant est {{winnerAlias}}.",
+  "notify.next_round": "🏆 Prochain tour ! Vous jouez contre {{opponentAlias}} dans le tournoi \"{{tournamentName}}\" (Tour {{round}})."
 }

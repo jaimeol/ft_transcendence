@@ -6,7 +6,15 @@ declare global {
 	interface Window { api?: (url: string, init?: RequestInit) => Promise<any>; } 
 }
 
-const t = (k: string) => currentTranslations?.[k] ?? k;
+const t = (k: string, vars?: Record<string, any>): string => {
+	let str = currentTranslations?.[k] ?? k;
+	if (vars) {
+		for (const [key, value] of Object.entries(vars)) {
+			str = str.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), String(value));
+		}
+	}
+	return str;
+}
 
 async function api(url: string, init?: RequestInit) {
 	if (window.api) return window.api(url, init);

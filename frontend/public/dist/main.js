@@ -1,7 +1,15 @@
 import { createRouter } from "./router.js";
 import { initializeLanguages, currentTranslations, changeLanguage } from "./translate.js";
 window.changeLanguage = changeLanguage;
-const t = (k) => currentTranslations?.[k] ?? k;
+const t = (k, vars) => {
+    let str = currentTranslations?.[k] ?? k;
+    if (vars) {
+        for (const [key, value] of Object.entries(vars)) {
+            str = str.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), String(value));
+        }
+    }
+    return str;
+};
 async function api(url, init) {
     if (window.api)
         return window.api(url, init);
