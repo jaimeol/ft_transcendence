@@ -20,7 +20,7 @@ export async function mount(el, ctx) {
     let mode = url.searchParams.get('mode');
     let players = url.searchParams.get('players');
     let pvpPlayers = url.searchParams.get('pvp_players');
-    const inviteOpponentId = history.state?.opponent_id;
+    const inviteOpponentId = history.state?.opponentId;
     const isInvite = !!history.state?.isInvite;
     if ((mode === 'ai' && players === '2') || (mode === 'pvp' && pvpPlayers === '2')) {
         const pong2v2Module = await import('./pong2v2.js');
@@ -303,31 +303,6 @@ export async function mount(el, ctx) {
         });
         return; // salimos: el reload/replace cargará la misma ruta pero con pvp_players
     }
-    if (isInvite && inviteOpponentId && isPVP && pvpPlayers === '1') {
-        blocker?.classList.remove('hidden');
-        try {
-            const { user } = await ctx.api(`/api/users/${inviteOpponentId}`);
-            if (!user)
-                throw new Error(`Opponent id with ${inviteOpponentId} not found`);
-            secondPlayer = {
-                id: user.id,
-                displayName: user.display_name,
-                email: user.email
-            };
-            pvpReady = true;
-            blocker?.classList.add('hidden');
-            history.replaceState({}, "", url.toString());
-        }
-        catch (e) {
-            console.error("Failed to load opponent from invite:", e);
-            blocker?.classList.remove('hidden');
-            const pvpOverlay = $('#pvp-login-overlay');
-            pvpOverlay.classList.remove('hidden');
-            const errorEl = $('pvp-login-error');
-            errorEl.textContent = "Error al cargar el oponente. Inicia sesión manualmente.";
-            history.replaceState({}, "", url.toString());
-        }
-    }
     // Si es PVP 1v1 mostramos overlay de login / blocker
     if (isPVP && pvpPlayers === '1') {
         blocker?.classList.remove('hidden');
@@ -336,11 +311,28 @@ export async function mount(el, ctx) {
         const form = el.querySelector('#pvp-login-form');
         const errorEl = $('#pvp-login-error');
         const heading = $('#pvp-login-heading');
-        heading.textContent = ctx.t("pvp.second_player");
+        const emailInput = el.querySelector("#pvp-email");
+        if (isInvite && inviteOpponentId) {
+            ctx.api(`/api/users/${inviteOpponentId}`)
+                .then(resp => {
+                const user = resp?.user;
+                if (user) {
+                    heading.textContent = ctx.t("pvp.login_as", { name: user.display_name }) || `Iniciar sesión como ${user.display_name}`;
+                    if (user.email) {
+                        emailInput.value = user.email;
+                        emailInput.setAttribute("readonly", "true");
+                    }
+                }
+            })
+                .catch(() => { heading.textContent = ctx.t("pvp.second_player"); });
+        }
+        else {
+            heading.textContent = ctx.t("pvp.second_player");
+        }
         // login manual
         form.addEventListener('submit', async (ev) => {
             ev.preventDefault();
-            const email = (el.querySelector('#pvp-email')).value;
+            const email = emailInput.value;
             const password = (el.querySelector('#pvp-password')).value;
             try {
                 const res = await fetch('/api/auth/login-second', {
@@ -349,16 +341,27 @@ export async function mount(el, ctx) {
                     credentials: 'include',
                     body: JSON.stringify({ email, password }),
                 });
-                if (!res.ok)
-                    throw new Error(`HTTP ${res.status}`);
+                if (!res.ok) {
+                    let errorMsg = `HTTP ${res.status}`;
+                    try {
+                        const errData = await res.json();
+                        errorMsg = errData.error || errorMsg;
+                    }
+                    catch { }
+                    throw new Error(errorMsg);
+                }
                 const data = await res.json();
+                if (isInvite && inviteOpponentId && data.id !== inviteOpponentId) {
+                    throw new Error(ctx.t("pvp.wrong_user") ?? "¡Usuario incorrecto! Debes iniciar sesión como el jugador invitado.");
+                }
                 secondPlayer = data;
                 pvpReady = true;
                 pvpOverlay.classList.add('hidden');
                 blocker?.classList.add('hidden');
                 errorEl.classList.add('hidden');
             }
-            catch {
+            catch (err) {
+                const defaultError = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";
                 errorEl.textContent = ctx.t("pvp_invalid_credentials") ?? "Credenciales inválidas";
                 errorEl.classList.remove('hidden');
             }
@@ -367,6 +370,13 @@ export async function mount(el, ctx) {
         const host = el.querySelector('#pvp-google-host');
         if (host) {
             void renderGoogleSecondButton(host, (player) => {
+                if (isInvite && inviteOpponentId && player.id !== inviteOpponentId) {
+                    if (errorEl) {
+                        errorEl.textContent = ctx.t("pvp.wrong_user_google", { name: player.displayName }) ?? `Iniciaste sesión como ${player.displayName}, pero la invitación era para otro jugador.`;
+                        errorEl.classList.remove('hidden');
+                    }
+                    return;
+                }
                 secondPlayer = player;
                 pvpReady = true;
                 pvpOverlay.classList.add('hidden');

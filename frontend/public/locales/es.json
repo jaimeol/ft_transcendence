@@ -291,5 +291,8 @@
   "profile.avatar_updated": "Avatar actualizado",
   "profile.avatar_error": "Error subiendo avatar",
   "profile.email_updated": "Email actualizado",
-  "profile.email_error": "Error actualizando email"
+  "profile.email_error": "Error actualizando email",
+  "pvp.login_as": "Iniciar sesión como {{name}}",
+  "pvp.wrong_user": "¡Usuario incorrecto! Debes iniciar sesión como el jugador invitado.",
+  "pvp.wrong_user_google": "Iniciaste sesión como {{name}}, pero la invitación era para otro jugador."
 }

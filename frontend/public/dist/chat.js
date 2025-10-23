@@ -107,14 +107,16 @@ export function mountChat(host, ctx) {
             else {
                 // --- Soy el INVITADO (B) ---
                 if (status === 'pending') {
-                    // Botón para Aceptar
-                    return h('button', {
-                        class: `${baseClass} bg-emerald-700/60 hover:bg-emerald-600 transition font-semibold w-full text-center`,
+                    const bubbleContent = h('div', {
+                        class: `${baseClass} bg-emerald-700/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left`
+                    });
+                    const textSpan = h('span', {}, inviteBody);
+                    const acceptButton = h('button', {
+                        class: 'px-3 py-1 rounded bg-green-500 hover:bg-green-400 text-black font-semibold text-sm whitespace-nowrap transition-colors flex-shrink-0',
                         onclick: async () => {
                             if (!m.id)
                                 return;
                             let accepted = false;
-                            // Enviar evento de aceptación por WebSocket
                             if (ws && ws.readyState === WebSocket.OPEN) {
                                 try {
                                     ws.send(JSON.stringify({ type: 'accept_invite', messageId: m.id }));
@@ -131,7 +133,6 @@ export function mountChat(host, ctx) {
                                     });
                                     if (response && response.message) {
                                         updateMessageInUI(response.message);
-                                        accepted = true;
                                     }
                                     else {
                                         throw new Error("Invalid response from accept invite API");
@@ -143,7 +144,10 @@ export function mountChat(host, ctx) {
                                 }
                             }
                         }
-                    }, inviteBody + ` (${ctx.t("chat.accept_invite") ?? "¡Aceptar!"})`);
+                    }, ctx.t("chat.accept_invite") ?? "¡Aceptar!");
+                    bubbleContent.append(textSpan, acceptButton);
+                    return bubbleContent;
+                    // Botón para Aceptar
                 }
                 else {
                     // Ya aceptado, solo mostrar texto
@@ -221,7 +225,7 @@ export function mountChat(host, ctx) {
                 if (data.type === 'message')
                     addMessageToUI(data.message, data.cid);
                 if (data.type === 'invite')
-                    addMessageToUI(data.message);
+                    addMessageToUI(data.message, data.cid);
                 if (data.type === 'system')
                     addMessageToUI(data.message); // Maneja notificaciones del sistema
                 if (data.type === 'invite_update')
@@ -485,11 +489,18 @@ export function mountChat(host, ctx) {
             meta: JSON.stringify(meta),
             created_at: new Date().toISOString()
         };
-        // Mostrar inmediatamente en la UI
-        addMessageToUI(optimisticMsg, cid);
+        const box = $('#chat-messages', host);
+        const wrapper = h('div', {
+            class: 'max-w-[80%] self-end my-1',
+            'data-cid': cid
+        });
+        box.append(wrapper);
+        resizeMessagesViewport();
+        maybeStickToBottom(box);
         try {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                const payload = JSON.stringify({ type: 'send', kind: 'invite', to, body, meta, cid });
+                const wsBody = ctx.t("chat.invite_body") ?? "🎮 ¡Te reto a jugar a Pong!";
+                const payload = JSON.stringify({ type: 'send', kind: 'invite', to, body: wsBody, meta, cid });
                 ws.send(payload);
             }
             else {

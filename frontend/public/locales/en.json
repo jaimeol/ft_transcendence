@@ -288,5 +288,8 @@
   "profile.avatar_updated": "Avatar updated",
   "profile.avatar_error": "Error uploading avatar",
   "profile.email_updated": "Email updated",
-  "profile.email_error": "Error updating email"
+  "profile.email_error": "Error updating email",
+  "pvp.login_as": "Log in as {{name}}",
+  "pvp.wrong_user": "Incorrect user! You must log in as the invited player.",
+  "pvp.wrong_user_google": "You logged in as {{name}}, but the invitation was for another player."
 }
