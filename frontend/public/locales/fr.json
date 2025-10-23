@@ -34,6 +34,7 @@
   "bithdate-placeholder": "jj/mm/aaaa",
   "pass-placeholder": "Mot de passe (min. 8)",
   "action-back": "Retour",
+  "google-login": "Se connecter avec Google",
   "google.register": "S'inscrire avec Google",
   "no_account": "Pas de compte ?",
   "Profile-text": "Mon profil",

@@ -35,6 +35,7 @@
   "pass-placeholder": "Password (min. 8)",
   "action-back": "Back",
   "register.invalid.password": "Invalid password (minimum 8 characters)",
+  "google-login": "Log in with Google",
   "google.register": "Register with Google",
   "no_account": "Don't have an account?",
   "Profile-text": "My profile",

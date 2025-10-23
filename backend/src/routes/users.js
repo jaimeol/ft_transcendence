@@ -99,7 +99,6 @@ async function routes(fastify){
     
     const q = String(req.query.q || '').trim();
     if (!q) return { users: [] };
-    if (q.length < 2) return reply.code(400).send({ error: 'Search query too short' });
     if (q.length > 50) return reply.code(400).send({ error: 'Search query too long' });
     
     const like = `%${q}%`;

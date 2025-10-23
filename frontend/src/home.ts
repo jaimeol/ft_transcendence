@@ -318,6 +318,46 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	await loadFriendsCount();
 	await loadRecentMatches();
 
+	window.addEventListener("languageChanged", () => {
+		const t = ctx.t; // Helper para tener la 't' actualizada
+
+		// --- Textos Estáticos ---
+		$("#logoutBtn")!.textContent = t("home.logout") ?? "Cerrar sesión";
+		$('[data-translate="home.editProfile"]')!.textContent = t("home.editProfile") ?? "Editar perfil";
+		$('[data-translate="home.quickActions"]')!.textContent = t("home.quickActions") ?? "Acciones rápidas";
+		
+		// Tarjetas
+		$('[data-translate="home.cards.friends.title"]')!.textContent = t("home.cards.friends.title") ?? "Amigos";
+		$('[data-translate="home.cards.friends.desc"]')!.textContent = t("home.cards.friends.desc") ?? "Solicitudes y lista";
+		
+		$('[data-translate="play_ttt"]')!.textContent = t("play_ttt") ?? "Jugar tres en raya";
+		
+		$('[data-translate="play_ai"]')!.textContent = t("play_ai") ?? "Jugar vs IA";
+		$('[data-translate="select_difficulty"]')!.textContent = t("select_difficulty") ?? "Elige dificultad";
+
+		$('[data-translate="play_1v1"]')!.textContent = t("play_1v1") ?? "Jugar 1v1";
+
+		// Múltiples elementos con la misma clave
+		el.querySelectorAll<HTMLElement>('[data-translate="home.cards.pvp.desc"]').forEach(e => {
+			e.textContent = t("home.cards.pvp.desc") ?? "Local en el navegador";
+		});
+
+		$('[data-translate="tournament.title"]')!.textContent = t("tournament.title") ?? "Torneos";
+		$('[data-translate="tournament.subtitle"]')!.textContent = t("tournament.subtitle") ?? "Compite con otros";
+
+		$('[data-translate="stats.title"]')!.textContent = t("stats.title") ?? "Estadísticas";
+		$('[data-translate="stats.subtitle"]')!.textContent = t("stats.subtitle") ?? "Revisa tu rendimiento";
+
+		$('[data-translate="home.recentMatches"]')!.textContent = t("home.recentMatches") ?? "Últimos partidos";
+		$('[data-translate="home.viewAll"]')!.textContent = t("home.viewAll") ?? "Ver todos";
+		
+		// --- Textos Dinámicos ---
+		// Vuelve a ejecutar las funciones que generan texto dinámico
+		// para que usen la nueva función 't'
+		loadFriendsCount();
+		loadRecentMatches();
+	});
+
 	const chatHost = el.querySelector<HTMLElement>('#chat-host');
 	if (chatHost) {
 		mountChat(chatHost, ctx);

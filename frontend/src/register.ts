@@ -10,11 +10,9 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 
 	el.innerHTML = `
 	<div class="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white relative overflow-hidden">
-		<!-- Glows -->
-   		<div class="pointer-events-none absolute -top-24 -left-24 w-[36rem] h-[36rem] rounded-full bg-indigo-600/20 blur-3xl"></div>
+		<div class="pointer-events-none absolute -top-24 -left-24 w-[36rem] h-[36rem] rounded-full bg-indigo-600/20 blur-3xl"></div>
 		<div class="pointer-events-none absolute -bottom-32 -right-24 w-[30rem] h-[30rem] rounded-full bg-emerald-500/20 blur-3xl"></div>
 
-		<!-- Selector idioma -->
 		<div class="fixed top-4 right-4 z-50 text-sm whitespace-nowrap">
 	  		<div class="bg-white/5 border border-white/10 backdrop-blur px-3 py-1.5 rounded-full shadow">
 			<button class="hover:underline" onclick="window.changeLanguage?.('en')">EN</button>
@@ -29,20 +27,19 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 			<div class="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-8">
 				<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-center mb-6">
 					<span class="bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 bg-clip-text text-transparent" data-translate="register-title">
-						${t("register-title") || "Create Account"}
+						${t("register-title") || "Crear cuenta"}
 					</span>
 		  		</h1>
 
 				<form id="form-register" class="space-y-5" autocomplete="off">
-					<!-- Email -->
 					<div class="space-y-2">
-						<label class="text-sm text-zinc-300" data-translate="field-email">${t("field-email") || "Email"}</label>
+						<label class="text-sm text-zinc-300" data-translate="field-email">${t("field-email") || "Correo electrónico"}</label>
 						<input
 							class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
 								border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 							name="email"
 							data-translate-placeholder="email-placeholder"
-							placeholder="${t("email-placeholder") || "your@email.com"}"
+							placeholder="${t("email-placeholder") || "tu@email.com"}"
 							type="email"
 							inputmode="email"
 							spellcheck="false"
@@ -53,47 +50,44 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 				  		/>
 					</div>
 
-					<!-- Display name -->
 					<div class="space-y-2">
-						<label class="text-sm text-zinc-300" data-translate="field-display_name">${t("field-display_name") || "Display Name"}</label>
+						<label class="text-sm text-zinc-300" data-translate="field-display_name">${t("field-display_name") || "Nombre público"}</label>
 						<input
 							class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
 							border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 							name="display_name"
 							data-translate-placeholder="username-placeholder"
-							placeholder="${t("username-placeholder") || "Your public username"}"
+							placeholder="${t("username-placeholder") || "Tu nombre público"}"
 							autocomplete="nickname"
 							required
 				  		/>
 					</div>
 
-					<!-- Nombre y apellidos -->
 					<div class="flex gap-4">
 						<div class="flex-1 space-y-2">
-							<label class="text-sm text-zinc-300" data-translate="field-first_name">${t("field-first_name") || "Name"}</label>
+							<label class="text-sm text-zinc-300" data-translate="field-first_name">${t("field-first_name") || "Nombre"}</label>
 							<input
 								class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						  		name="first_name"
 								data-translate-placeholder="name-placeholder"
-								placeholder="${t("name-placeholder") || "Name"}"
+								placeholder="${t("name-placeholder") || "Nombre"}"
 								autocomplete="given-name"
 							/>
 						</div>
 						<div class="flex-1 space-y-2">
-							<label class="text-sm text-zinc-300" data-translate="field-last_name">${t("field-last_name") || "Last Name"}</label>
+							<label class="text-sm text-zinc-300" data-translate="field-last_name">${t("field-last_name") || "Apellido"}</label>
 							<input
 								class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 								name="last_name"
 								data-translate-placeholder="last_name-placeholder"
-								placeholder="${t("last_name-placeholder") || "Last Name"}"
+								placeholder="${t("last_name-placeholder") || "Apellido"}"
 								autocomplete="family-name"
 							/>
 						</div>
 					</div>
 
-					<!-- Fecha -->
 					<div class="space-y-2">
-						<label class="text-sm text-zinc-300" data-translate="field-birthdate">${t("field-birthdate") || "Date of birth"}</label>
+						<label class="text-sm text-zinc-300" data-translate="field-birthdate">${t("field-birthdate") || "Fecha de nacimiento"}</label>
 						<input
 							class="w-full p-3 rounded-xl bg-zinc-900/60 text-white placeholder-zinc-400
 								border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -102,9 +96,8 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 							autocomplete="bday"
 					  	/>
 					</div>
-					<!-- Contraseña -->
 					<div class="space-y-2">
-						<label class="text-sm text-zinc-300" data-translate="field-password">${t("field-password") || "Password"}</label>
+						<label class="text-sm text-zinc-300" data-translate="field-password">${t("field-password") || "Contraseña"}</label>
 						<div class="relative">
 							<input
 								id="pwd"
@@ -112,7 +105,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 									border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 								name="password"
 								data-translate-placeholder="pass-placeholder"
-								placeholder="${t("pass-placeholder") || "Password (min. 8)"}"
+								placeholder="${t("pass-placeholder") || "Contraseña (mín. 8)"}"
 								type="password"
 								minlength="8"
 								autocomplete="new-password"
@@ -127,7 +120,6 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 						</div>
 					</div>
 
-					<!-- Enviar -->
 					<button
 						id="submitBtn"
 						class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 font-semibold py-3 rounded-xl transition
@@ -136,33 +128,37 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 							disabled:opacity-60 disabled:cursor-not-allowed"
 						type="submit"
 						data-translate="action-register"
-					>${t("action-register") || "Register"}</button>
+					>${t("action-register") || "Registrarse"}</button>
 
-					<!-- Separador -->
 					<div class="relative">
 						<div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
 						<div class="relative flex justify-center text-sm"><span class="px-2 bg-zinc-900/60 text-zinc-400">o</span></div>
 					</div>
 
-					<!-- Google -->
 					<button id="google-btn" type="button" aria-label="Registrarse con Google" aria-busy="false"
 						class="w-full group inline-flex items-center justify-center gap-3 rounded-2xl font-medium h-11 px-4 text-sm
 							ring-1 ring-zinc-300/20 relative transition-all duration-200 ease-out
 							hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none
 							focus-visible:ring-2 focus-visible:ring-zinc-300/60 disabled:opacity-70 disabled:cursor-not-allowed">
 						<span class="relative inline-flex h-5 w-5 items-center justify-center">
-							<svg id="google-g-icon" viewBox="0 0 48 48" aria-hidden="true" class="h-5 w-5">...</svg>
-							<svg id="google-spinner" viewBox="0 0 24 24" class="h-5 w-5 animate-spin hidden" aria-hidden="true">...</svg>
+							<svg id="google-g-icon" viewBox="0 0 48 48" aria-hidden="true" class="h-5 w-5">
+								<path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l8.1 6.25C12.43 13.72 17.74 9.5 24 9.5z"></path>
+								<path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+								<path fill="#FBBC05" d="M10.66 28.71c-.6-1.8-1-3.75-1-5.71s.4-3.91 1-5.71l-8.1-6.25C.9 14.07 0 18.86 0 24c0 5.14.9 9.93 2.56 14.07l8.1-6.36z"></path>
+								<path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8.1 6.25C6.51 42.62 14.62 48 24 48z"></path>
+								<path fill="none" d="M0 0h48v48H0z"></path>
+							</svg>
+							<svg id="google-spinner" viewBox="0 0 24 24" class="h-5 w-5 animate-spin hidden" aria-hidden="true">…</svg>
 						</span>
-						<span id="google-label">${t("google.register") || "Register with Google"}</span>
+						<span id="google-label">${t("google.register") || "Registrarse con Google"}</span>
 						<span class="pointer-events-none ml-1 opacity-0 transition-opacity group-hover:opacity-100">→</span>
 					</button>
 
 					<div id="err" class="text-red-400 text-sm min-h-[1.25rem]"></div>
 				</form>
 
-				<a href="/login" class="block text-center mt-4 underline opacity-80 hover:opacity-100" data-translate="action-back">
-					${t("action-back") || "Back"}
+				<a href="/" class="block text-center mt-4 underline opacity-80 hover:opacity-100" data-translate="action-back">
+					${t("action-back") || "Volver"}
 				</a>
 			</div>
 		</section>
@@ -246,6 +242,44 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 		initGoogleUI(el, navigate);
 	})
 	.catch(console.error);
+
+	window.addEventListener("languageChanged", () => {
+		// Título
+		qs('[data-translate="register-title"]')!.textContent = t("register-title") || "Crear cuenta";
+		
+		// Labels
+		qs('[data-translate="field-email"]')!.textContent = t("field-email") || "Correo electrónico";
+		qs('[data-translate="field-display_name"]')!.textContent = t("field-display_name") || "Nombre público";
+		qs('[data-translate="field-first_name"]')!.textContent = t("field-first_name") || "Nombre";
+		qs('[data-translate="field-last_name"]')!.textContent = t("field-last_name") || "Apellido";
+		qs('[data-translate="field-birthdate"]')!.textContent = t("field-birthdate") || "Fecha de nacimiento";
+		qs('[data-translate="field-password"]')!.textContent = t("field-password") || "Contraseña";
+
+		// Placeholders
+		const emailInput = qs<HTMLInputElement>('input[name="email"]');
+		if (emailInput) emailInput.placeholder = t("email-placeholder") || "tu@email.com";
+		
+		const displayNameInput = qs<HTMLInputElement>('input[name="display_name"]');
+		if (displayNameInput) displayNameInput.placeholder = t("username-placeholder") || "Tu nombre público";
+
+		const firstNameInput = qs<HTMLInputElement>('input[name="first_name"]');
+		if (firstNameInput) firstNameInput.placeholder = t("name-placeholder") || "Nombre";
+
+		const lastNameInput = qs<HTMLInputElement>('input[name="last_name"]');
+		if (lastNameInput) lastNameInput.placeholder = t("last_name-placeholder") || "Apellido";
+
+		const passwordInput = qs<HTMLInputElement>('input[name="password"]');
+		if (passwordInput) passwordInput.placeholder = t("pass-placeholder") || "Contraseña (mín. 8)";
+
+		const submitBtn = qs<HTMLButtonElement>("#submitBtn");
+		if (submitBtn && !submitBtn.disabled) {
+			submitBtn.textContent = t("action-register") || "Registrarse";
+		}
+		
+		qs("#google-label")!.textContent = t("google.register") || "Registrarse con Google";
+		
+		qs('[data-translate="action-back"]')!.textContent = t("action-back") || "Volver";
+	});
 
 	function validateBirthdate(date: string): { valid: boolean; message: string } {
 	  // Verificar si la fecha está vacía
