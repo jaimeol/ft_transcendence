@@ -1681,10 +1681,6 @@ video {
   padding-top: 0.5rem;
 }
 
-.pt-3 {
-  padding-top: 0.75rem;
-}
-
 .pt-4 {
   padding-top: 1rem;
 }
@@ -2545,10 +2541,6 @@ dl > div dd {
 
   .sm\:items-end {
     align-items: flex-end;
-  }
-
-  .sm\:justify-start {
-    justify-content: flex-start;
   }
 
   .sm\:justify-between {

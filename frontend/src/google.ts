@@ -158,7 +158,7 @@ export async function initGoogleUI(root: HTMLElement, navigate: (p: string, o?: 
       setLoading(false);
       isLoading = false;
       console.warn("Timeout en Google Sign-In");
-    }, 10000);
+    }, 15000);
 
     try {
       await initGoogleOnce();

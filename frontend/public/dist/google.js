@@ -142,7 +142,7 @@ export async function initGoogleUI(root, navigate) {
             setLoading(false);
             isLoading = false;
             console.warn("Timeout en Google Sign-In");
-        }, 10000);
+        }, 15000);
         try {
             await initGoogleOnce();
             if (googleButtonRendered) {

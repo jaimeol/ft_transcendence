@@ -84,6 +84,8 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 				// --- Soy el ANFITRIÓN (A) ---
 				const bubble = h('div', { class: `${baseClass} bg-emerald-600/80 flex items-center justify-between gap-3` });
 				const text = h('span', {}, inviteBody);
+
+				const isPlayed = meta.played === true;
 				
 				const button = h('button', {
 					class: `px-3 py-1 rounded text-black font-semibold text-sm whitespace-nowrap ${
@@ -91,20 +93,17 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 							? 'bg-gray-400 cursor-not-allowed' // Deshabilitado
 							: 'bg-green-500 hover:bg-green-400' // Habilitado
 					}`,
-					...(status === 'pending' && { disabled: 'true' }) // Propiedad disabled
-				}, ctx.t("chat.start_game") ?? "Empezar");
+					...((status === 'pending' || isPlayed) && { disabled: 'true' }) // Propiedad disabled
+				}, isPlayed ? (ctx.t("chat.match_played") ?? "Partida iniciada") : (ctx.t("chat.start_game") ?? "Empezar"));
 
-				if (status === 'accepted') {
+				if (status === 'accepted' && !isPlayed) {
 					// Solo añadimos el 'onclick' si está aceptada
-					button.onclick = () => {
+					button.onclick = async () => {
 						try {
 							(button as HTMLButtonElement).disabled = true;
-							const original = button.textContent;
+							
 							button.textContent = ctx.t("chat.starting") ?? "Iniciando...";
 
-							setTimeout(() => {
-								if (button.parentElement) button.remove();
-							}, 250);
 							const url = `/pong?mode=pvp&pvp_players=1`;
 							ctx.navigate(url, {
 								state: {
@@ -112,6 +111,15 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 									isInvite: true
 								}
 							});
+
+							try {
+	                            await api(`/api/chat/mark-played/${m.id}`, { method: 'POST' });
+                            	const updatedMeta = { ...meta, played: true };
+                            	const updatedMessage = { ...m, meta: JSON.stringify(updatedMeta) };
+                            	updateMessageInUI(updatedMessage); // Update bubble visually
+                       		} catch (markErr) {
+                            	console.error("Failed to mark invite as played:", markErr);
+                        	}
 						} catch (err) {
 							(button as HTMLButtonElement).disabled = false;
 							button.textContent = ctx.t("chat.start_game") ?? "Empezar";
@@ -316,6 +324,27 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 
 		resizeMessagesViewport();
 		maybeStickToBottom(box);
+	}
+
+	async function updateChatTexts() {
+		// 1. Actualizar textos estáticos de la UI principal
+		const peersHeader = $('#chat-peers', host)?.previousElementSibling;
+		if (peersHeader) peersHeader.textContent = ctx.t("chat.friends") ?? "Amigos";
+		
+		const sendButton = host.querySelector('#chat-input + button'); // Botón "Enviar"
+		if (sendButton) sendButton.textContent = ctx.t("chat.send") ?? "Enviar";
+
+		await loadPeers(); 
+
+		if (currentPeer) {
+			updateHeader(currentPeer);
+			await loadHistory(currentPeer.id);
+		} else {
+			const input = $('#chat-input', host) as HTMLInputElement | null;
+			if (input) {
+				input.placeholder = ctx.t("chat.write") ?? "Escribe un mensaje...";
+			}
+		}
 	}
 
 	async function loadPeers() {
@@ -591,6 +620,10 @@ export function mountChat(host: HTMLElement, ctx: Ctx){
 		}
 
 		mountUI();
+
+		window.addEventListener('languageChanged', () => {
+			updateChatTexts();
+		}, { signal: subs.signal })
 		connectWS();
 		await loadPeers();
 	}

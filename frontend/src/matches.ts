@@ -45,8 +45,8 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 						<span class="mx-1 text-white/40">|</span>
 						<button class="hover:underline" onclick="window.changeLanguage?.('fr')">FR</button>
 					  </div>
-					  <a href="/logout" class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs">
-						${ctx.t("logout") ?? "Logout"}
+					  <a href="/logout" id="btn-logout"class="hidden sm:inline-flex items-center bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg text-xs">
+						${ctx.t("home.logout") ?? "Logout"}
 					  </a>
 				</div>
 			  </div>
@@ -309,7 +309,7 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 		
 		// Actualizar botón logout
 		const logoutBtn = el.querySelector('a[href="/logout"]');
-		if (logoutBtn) logoutBtn.textContent = ctx.t("logout") ?? "Logout";
+		if (logoutBtn) logoutBtn.textContent = ctx.t("home.logout") ?? "Logout";
 		
 		// Actualizar opciones del select de juegos
 		const gameSelect = $("#filter-game") as HTMLSelectElement;
@@ -346,6 +346,16 @@ export async function mount(el: HTMLElement, ctx: Ctx) {
 	filterGame?.addEventListener("change", () => render(true));
 	filterResult?.addEventListener("change", () => render(true));
 	btnMore?.addEventListener("click", () => render(false));
+
+	$("#btn-logout")?.addEventListener("click", async (e) => {
+        e.preventDefault(); // Previene que el enlace <a> navegue
+        try { 
+            await ctx.api("/api/auth/logout", { method: "POST" }); 
+        }
+        finally { 
+            ctx.navigate("/", { replace: true }); // Navega programáticamente
+        }
+    });
 
 	await render(true);
 
