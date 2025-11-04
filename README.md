@@ -69,13 +69,12 @@ This project demonstrates proficiency in developing a complex web application fr
     FRONTEND_URL=https://localhost:1234 # Adjust if needed
     NODE_ENV=development # or production
     ```
-    **
+    
 3.  **HTTPS Certificates:** Ensure SSL certificates (`server.key`, `server.crt`) are present in `backend/certs/`. For development, generate self-signed certificates:
     ```bash
     mkdir -p backend/certs
     openssl req -x509 -newkey rsa:4096 -keyout backend/certs/server.key -out backend/certs/server.crt -sha256 -days 365 -nodes -subj "/CN=localhost"
     ```
-    **
 
 ### Running the Application
 
